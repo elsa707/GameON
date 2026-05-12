@@ -1,0 +1,246 @@
+/* ===== DevExtreme overrides for two-column layout ===== */
+
+/* --- dxToolbar page header --- */
+#pageToolbar {
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+#pageToolbar .dx-toolbar {
+    background: transparent;
+}
+#pageToolbar .dx-toolbar-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 36px;
+}
+
+/* --- dxList columns --- */
+#companyList, #deptList {
+    flex: 1;
+    overflow: hidden;
+}
+#companyList .dx-list,
+#deptList .dx-list {
+    background: transparent;
+    border: none;
+}
+
+/* Search box inside dxList */
+#companyList .dx-list-search,
+#deptList .dx-list-search {
+    padding: 8px 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+/* List items — remove dx defaults, let card styles take over */
+#companyList .dx-list-item,
+#deptList .dx-list-item {
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 6px 1px !important;
+    border-radius: 8px;
+    max-width: calc(100% - 12px);
+    box-sizing: border-box;
+}
+#companyList .dx-list-item:first-child,
+#deptList .dx-list-item:first-child {
+    margin-top: 4px;
+}
+/* Kill any extra DX internal spacing */
+#companyList .dx-list-item .dx-list-item-content,
+#deptList .dx-list-item .dx-list-item-content {
+    padding: 0 !important;
+}
+
+/* Prevent columns from overflowing */
+.twocol-left,
+.twocol-left #companyList,
+.twocol-left .dx-list,
+.twocol-left .dx-scrollable-content {
+    min-width: 0;
+    max-width: 100%;
+}
+.dx-company-card,
+.dx-dept-card {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Remove DX selection highlight — our cards handle their own */
+#companyList .dx-list-item.dx-state-focused,
+#deptList .dx-list-item.dx-state-focused,
+#companyList .dx-list-item.dx-list-item-selected,
+#deptList .dx-list-item.dx-list-item-selected {
+    background: transparent !important;
+    color: inherit !important;
+}
+
+/* --- Company card --- */
+.dx-company-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.dx-company-card:hover {
+    border-color: var(--muted);
+    box-shadow: var(--shadow-sm);
+}
+.dx-list-item-selected .dx-company-card {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+/* Cross-search highlight (matches original .search-match) */
+.dx-company-card.search-match {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+.dx-company-card .cc-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+.dx-company-card .cc-user-count {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.dx-company-card .cc-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.dx-company-card .cc-country {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    background: var(--bg);
+    border-radius: 4px;
+    font-weight: 500;
+    margin-left: auto;
+}
+.dx-company-card .cc-edit {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    flex-shrink: 0;
+}
+.dx-company-card:hover .cc-edit,
+.dx-list-item-selected .dx-company-card .cc-edit {
+    opacity: 1;
+}
+.dx-company-card .cc-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* --- Department card --- */
+.dx-dept-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dx-dept-card:hover {
+    border-color: var(--muted);
+    box-shadow: var(--shadow-sm);
+}
+.dx-list-item-selected .dx-dept-card {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+.dx-dept-card .dc-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+.dx-dept-card .dc-company {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    padding: 2px 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    font-weight: 500;
+}
+.dx-dept-card .dc-stats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.dx-dept-card .dc-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.dx-dept-card .dc-actions .btn-icon {
+    opacity: 0;
+    transition: opacity 0.1s ease, background 0.15s ease, color 0.15s ease;
+}
+.dx-dept-card:hover .dc-actions .btn-icon,
+.dx-list-item-selected .dx-dept-card .dc-actions .btn-icon {
+    opacity: 1;
+}
+
+/* --- Side-panel dxForm --- */
+#editFormContainer {
+    padding: 0;
+}
+#editFormContainer .dx-form {
+    background: transparent;
+}
+#editFormContainer .dx-field-item {
+    padding: 0 0 12px 0;
+}
+#editFormContainer .dx-field-item-label-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Side-panel action buttons — override styles.css flex:1 for dxButtons */
+.edit-actions > div {
+    flex: 0 0 auto;
+}
+.edit-actions > div:first-child {
+    margin-right: auto;
+}
+.edit-actions > div:last-child .dx-button {
+    min-width: 110px;
+}
+
+/* --- dxPopup delete confirmation --- */
+.dx-popup-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* --- Scrollbar cleanup --- */
+#companyList .dx-scrollable-scroll,
+#deptList .dx-scrollable-scroll {
+    background: transparent;
+}

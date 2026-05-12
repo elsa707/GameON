@@ -1,0 +1,13 @@
+# Claude Code project state
+.claude/
+
+# Node
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor swap files
+*.swp
+*.swo

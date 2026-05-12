@@ -1,0 +1,359 @@
+/* ===== Users two-column (DX) — user card overrides ===== */
+
+/* dxList container for users */
+#usersList {
+    flex: 1;
+    overflow: hidden;
+}
+#usersList .dx-list {
+    background: transparent;
+    border: none;
+}
+#usersList .dx-list-search {
+    padding: 8px 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+#usersList .dx-list-item {
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 6px 1px !important;
+    border-radius: 8px;
+    max-width: calc(100% - 12px);
+    box-sizing: border-box;
+}
+#usersList .dx-list-item:first-child {
+    margin-top: 4px;
+}
+#usersList .dx-list-item .dx-list-item-content {
+    padding: 0 !important;
+}
+#usersList .dx-list-item.dx-state-focused,
+#usersList .dx-list-item.dx-list-item-selected {
+    background: transparent !important;
+    color: inherit !important;
+}
+#usersList .dx-scrollable-scroll {
+    background: transparent;
+}
+
+/* ===== User Card ===== */
+.dx-user-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.dx-user-card:hover {
+    border-color: var(--muted);
+    box-shadow: var(--shadow-sm);
+}
+.dx-list-item-selected .dx-user-card {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+.dx-user-card.user-inactive {
+    opacity: 0.6;
+}
+
+.dx-user-card .uc-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 30%;
+    gap: 2px;
+}
+.dx-user-card .uc-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.dx-user-card .uc-name-sub {
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+.dx-user-card .uc-contact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* --- In-card selection checkbox --- */
+.dx-user-card .uc-check-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px 0 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.dx-user-card .uc-check {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #1d4ed8;
+    margin: 0;
+}
+
+/* --- Bulk action bar (always visible; actions appear when items selected) --- */
+.bulk-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    min-height: 48px;
+    box-sizing: border-box;
+}
+.bulk-select-all-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+.bulk-select-all {
+    width: 16px;
+    height: 16px;
+    accent-color: #1d4ed8;
+    cursor: pointer;
+    margin: 0;
+}
+.bulk-selected-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+.bulk-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+.dx-user-card .uc-email {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.dx-user-card .uc-mobile {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.dx-user-card .uc-company {
+    font-size: 10px;
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    background: var(--bg);
+    border-radius: 4px;
+    font-weight: 500;
+    margin-top: 2px;
+    align-self: flex-start;
+}
+
+.dx-user-card .uc-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+.dx-user-card .uc-dept {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.dx-user-card .uc-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.dx-user-card .uc-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.dx-user-card .uc-actions .btn-icon {
+    opacity: 0;
+    transition: opacity 0.1s ease, background 0.15s ease, color 0.15s ease;
+}
+.dx-user-card:hover .uc-actions .btn-icon,
+.dx-list-item-selected .dx-user-card .uc-actions .btn-icon {
+    opacity: 1;
+}
+
+/* Narrow column fallbacks */
+@media (max-width: 1100px) {
+    .dx-user-card .uc-email { display: none; }
+    .dx-user-card .uc-dept { max-width: 90px; }
+}
+
+/* --- Inline collapse button next to the logo --- */
+.sidebar-logo {
+    position: relative;
+}
+.sidebar-collapse-top {
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: var(--sidebar-text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+}
+.sidebar-collapse-top:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+}
+.sidebar-collapse-top i {
+    font-size: 12px;
+    transition: transform 0.25s ease;
+}
+.sidebar.collapsed .sidebar-logo {
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 6px 14px;
+    justify-content: center;
+}
+.sidebar.collapsed .sidebar-collapse-top {
+    margin-left: 0;
+}
+.sidebar.collapsed .sidebar-collapse-top i {
+    transform: rotate(180deg);
+}
+
+/* --- Sidebar sections --- */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+.nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+}
+.nav-section + .nav-scope,
+.nav-scope + .nav-section,
+.nav-section + .nav-section:not(.nav-section-admin) {
+    margin-top: 4px;
+    padding-top: 8px;
+}
+.nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #94a3b8;
+    padding: 0 12px 4px;
+}
+.nav-scope {
+    padding: 4px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.nav-scope .dx-selectbox {
+    width: 100%;
+}
+.sidebar.collapsed .nav-section-label,
+.sidebar.collapsed .nav-scope {
+    display: none;
+}
+
+/* --- Disabled nav item (e.g. Topics — coming soon) --- */
+.sidebar-nav .nav-item.disabled {
+    color: var(--muted, #94a3b8);
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* --- Non-scrolling detail panel with inline title + subtitle --- */
+.detail-panel.open {
+    overflow: hidden;
+}
+.detail-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 12px 16px 14px;
+}
+.detail-topbar {
+    margin-bottom: 4px;
+}
+.detail-topbar,
+.detail-header,
+.edit-actions {
+    flex-shrink: 0;
+}
+.detail-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.detail-header h3 {
+    margin: 0;
+}
+.detail-header .detail-parent {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.detail-header .detail-parent:not(:empty)::before {
+    content: "·";
+    margin-right: 8px;
+    color: var(--muted);
+}
+#editFormContainer {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: visible;
+}
+#editFormContainer .dx-field-item {
+    padding-bottom: 6px !important;
+}
+.edit-actions {
+    margin-top: 8px;
+    padding-top: 10px;
+}

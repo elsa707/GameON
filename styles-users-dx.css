@@ -1,0 +1,295 @@
+/* ===== Users page — DevExtreme overrides ===== */
+
+/* --- Toolbar --- */
+#pageToolbar {
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+#pageToolbar .dx-toolbar {
+    background: transparent;
+}
+#pageToolbar .dx-toolbar-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 36px;
+}
+
+/* --- User count in toolbar --- */
+.toolbar-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 2px 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    font-weight: 500;
+    line-height: 36px;
+}
+
+/* --- Status filter chips --- */
+.status-chips {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+.col-header .status-chips {
+    margin-left: auto;
+}
+.status-chip {
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.status-chip:hover {
+    border-color: var(--muted);
+    color: var(--text-primary);
+}
+.status-chip.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+.status-chip.active[data-status="active"] {
+    background: #16a34a;
+    border-color: #16a34a;
+}
+.status-chip.active[data-status="disabled"] {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+/* --- Grid container --- */
+.grid-container {
+    flex: 1;
+    overflow: hidden;
+    padding: 16px 24px;
+}
+
+/* --- Scoped grid wrapper (dept-filtered page) --- */
+.dept-grid-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+.scope-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 40px 24px;
+}
+.scope-empty i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: var(--muted);
+}
+.scope-empty p {
+    font-size: 14px;
+    max-width: 320px;
+}
+
+/* --- dxDataGrid tweaks --- */
+#usersGrid {
+    height: 100%;
+}
+#usersGrid .dx-datagrid {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--white);
+}
+#usersGrid .dx-datagrid-headers {
+    border-bottom: 2px solid var(--border);
+}
+#usersGrid .dx-header-row td {
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+}
+#usersGrid .dx-data-row td {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+/* --- Login indicator pill (next to email or mobile) --- */
+.login-pill {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    background: #dbeafe;
+    color: #1d4ed8;
+    vertical-align: middle;
+}
+
+/* Row hover */
+#usersGrid .dx-data-row.dx-state-hover > td {
+    background: var(--company-hover);
+}
+/* Selected row */
+#usersGrid .dx-selection > td {
+    background: var(--accent-light) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Group panel */
+#usersGrid .dx-datagrid-group-panel {
+    padding: 8px 12px;
+    min-height: 36px;
+}
+#usersGrid .dx-datagrid-group-panel .dx-group-panel-message {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* --- Batch upload panel --- */
+.batch-upload-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 0 8px;
+}
+.batch-upload-hint {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+}
+.batch-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.batch-actions > div {
+    flex: 1 1 auto;
+}
+.batch-file-uploader {
+    margin-top: 4px;
+}
+.batch-upload-result {
+    font-size: 13px;
+    color: #334155;
+    min-height: 20px;
+}
+.batch-upload-result em {
+    color: #475569;
+    font-style: normal;
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+/* --- Status badges --- */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+}
+.status-active {
+    background: #f0fdf4;
+    color: #15803d;
+}
+.status-inactive {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+.status-date {
+    font-weight: 400;
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+/* Inactive row styling */
+#usersGrid .dx-data-row.row-inactive > td {
+    opacity: 0.55;
+}
+
+/* Enable button color */
+#usersGrid .btn-enable .dx-icon {
+    color: #15803d;
+}
+
+/* --- Toolbar switch + label --- */
+.toolbar-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 36px;
+    margin-right: 8px;
+}
+.toolbar-label.label-on {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* --- Pager --- */
+#usersGrid .dx-pager {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+}
+
+/* --- Filter row --- */
+#usersGrid .dx-datagrid-filter-row td {
+    padding: 4px 6px;
+}
+
+/* --- Popup action buttons --- */
+.dx-popup-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* --- Side-panel dxForm --- */
+#editFormContainer {
+    padding: 0;
+}
+#editFormContainer .dx-form {
+    background: transparent;
+}
+#editFormContainer .dx-field-item {
+    padding: 0 0 10px 0;
+}
+#editFormContainer .dx-field-item-label-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Side-panel action buttons — override styles.css flex:1 for dxButtons */
+.edit-actions > div {
+    flex: 0 0 auto;
+}
+.edit-actions > div:first-child {
+    margin-right: auto;
+}
+.edit-actions > div:last-child .dx-button {
+    min-width: 110px;
+}
