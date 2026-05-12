@@ -1682,6 +1682,7 @@ function topicRowHtml(topic, id) {
                     <span class="row-select"><input type="checkbox" class="row-checkbox" data-topic-name="${nameAttr}" onclick="onSelectCheckbox(event)"></span>
                     <span class="chevron"><i class="fas fa-chevron-right"></i></span>
                     <span class="company-name">${escapeAttr(topic.name)}</span>
+                    ${topic.description ? `<span class="row-description">${escapeAttr(topic.description)}</span>` : ''}
                     <span class="cell-pills">
                         <span class="chip chip-modules"><i class="fas fa-book-open"></i> ${subCount} sub-topic${subCount !== 1 ? 's' : ''}</span>
                         ${shareChip}
@@ -1711,8 +1712,8 @@ function subTopicRowHtml(sub, parentId, idx, total) {
     const meta = mediaMeta(sub.mediaType);
     const lastClass = idx === total - 1 ? ' last' : '';
     return `
-        <tr class="row-dept hidden" data-parent="${parentId}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName || '')}" data-description="" data-cover="" onclick="selectRow(this)">
-            <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector${lastClass}"></span><span class="dept-name">${escapeAttr(sub.name)}</span><span class="cell-pills"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="row-actions">
+        <tr class="row-dept hidden" data-parent="${parentId}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName || '')}" data-description="${escapeAttr(sub.description || '')}" data-cover="" onclick="selectRow(this)">
+            <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector${lastClass}"></span><span class="dept-name">${escapeAttr(sub.name)}</span>${sub.description ? `<span class="row-description">${escapeAttr(sub.description)}</span>` : ''}<span class="cell-pills"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="row-actions">
                 <div class="action-menu">
                     <button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
                     <div class="action-menu-popup" role="menu">
