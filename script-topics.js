@@ -43,6 +43,10 @@ const COVER_PRESETS = [
 
 const DEFAULT_COVER_URL = COVER_PRESETS[0];
 
+function randomCover() {
+    return COVER_PRESETS[Math.floor(Math.random() * COVER_PRESETS.length)];
+}
+
 function coverPickerHtml(currentCover, opts) {
     opts = opts || {};
     const url = currentCover || DEFAULT_COVER_URL;
@@ -148,9 +152,14 @@ function contentPickerHtml(idPrefix, defaults) {
             <input type="hidden" class="cp-media-type" value="${mediaType}">
 
             <div class="content-pane${kind === 'upload' ? '' : ' hidden'}" data-pane="upload">
-                <div class="media-upload-inline">
-                    <input type="file" class="cp-file" accept="application/pdf,image/*" onchange="onContentFileChange(this)">
-                    <span class="cp-detected media-filename">${uploadLabel}</span>
+                <div class="cp-dropzone" onclick="this.querySelector('.cp-file').click()"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="onContentFileDrop(this, event)">
+                    <i class="fas fa-upload"></i>
+                    <span class="cp-dropzone-hint">Drop file or <u>browse</u></span>
+                    <span class="cp-detected cp-dropzone-name">${mediaName ? escapeAttr(mediaName) : ''}</span>
+                    <input type="file" class="cp-file" accept="application/pdf,image/*" onchange="onContentFileChange(this)" style="display:none">
                 </div>
                 <input type="hidden" class="cp-media-name" value="${kind === 'upload' ? escapeAttr(mediaName) : ''}">
             </div>
@@ -185,6 +194,23 @@ function onContentFileChange(input) {
     const detected = detectMediaTypeFromFile(file) || 'PDF';
     picker.querySelector('.cp-media-type').value = detected;
     picker.querySelector('.cp-media-name').value = file.name;
+    const nameEl = picker.querySelector('.cp-dropzone-name');
+    if (nameEl) nameEl.textContent = file.name;
+    picker.classList.remove('error');
+}
+
+function onContentFileDrop(zone, event) {
+    event.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    const picker = zone.closest('.content-picker');
+    if (!picker) return;
+    const detected = detectMediaTypeFromFile(file) || 'PDF';
+    picker.querySelector('.cp-media-type').value = detected;
+    picker.querySelector('.cp-media-name').value = file.name;
+    const nameEl = picker.querySelector('.cp-dropzone-name');
+    if (nameEl) nameEl.textContent = file.name;
     picker.classList.remove('error');
 }
 
@@ -227,27 +253,8 @@ function readContentPicker(picker) {
     };
 }
 
-function minimizeTopicSection() {
-    const mini = document.getElementById('topicMini');
-    const section = document.getElementById('topicSection');
-    if (!mini || !section) return;
-    const nameInput = document.querySelector('#editFields input[name="name"]');
-    const name = (nameInput && nameInput.value || 'Untitled').trim() || 'Untitled';
-    const coverInput = section.querySelector('.cover-hidden-input');
-    const cover = coverInput ? coverInput.value : DEFAULT_COVER_URL;
-    document.getElementById('topicMiniName').textContent = name;
-    document.getElementById('topicMiniCover').src = cover || DEFAULT_COVER_URL;
-    section.classList.add('hidden');
-    mini.classList.remove('hidden');
-}
-
-function expandTopicSection() {
-    const mini = document.getElementById('topicMini');
-    const section = document.getElementById('topicSection');
-    if (!mini || !section) return;
-    section.classList.remove('hidden');
-    mini.classList.add('hidden');
-}
+function minimizeTopicSection() { /* no-op — replaced by tab layout */ }
+function expandTopicSection()   { /* no-op — replaced by tab layout */ }
 
 // ===== Add Topic — explicit Add Content / Add Sub-topic choice =====
 function chooseAddContent() {
@@ -272,6 +279,9 @@ function chooseAddSubTopic() {
     const picker = document.getElementById('choicePicker');
     picker.classList.add('hidden');
     picker.classList.remove('error');
+    const subsTab = document.getElementById('addTabSubs');
+    if (subsTab) subsTab.disabled = false;
+    switchAddTab('subs');
     openSubEditor('new');
 }
 
@@ -297,7 +307,7 @@ function removeTopicContent() {
 // ===== Inline sub-topic list + editor (used inside Add Topic) =====
 function openSubEditor(mode, idx) {
     _editingSubIdx = mode === 'new' ? -1 : idx;
-    let defaults = { name: '', mediaType: 'PDF', mediaName: '', kind: 'upload', linkedGameId: '', cover: '' };
+    let defaults = { name: '', mediaType: 'PDF', mediaName: '', kind: 'upload', cover: '' };
     if (mode === 'edit') {
         const item = document.querySelectorAll('#subsList .sub-list-item')[idx];
         if (item) {
@@ -305,7 +315,6 @@ function openSubEditor(mode, idx) {
             defaults.mediaType = item.dataset.mediaType || 'PDF';
             defaults.mediaName = item.dataset.mediaName || '';
             defaults.kind = kindForMediaType(defaults.mediaType);
-            defaults.linkedGameId = item.dataset.linkedGameId || '';
             defaults.cover = item.dataset.cover || '';
         }
     }
@@ -330,10 +339,6 @@ function openSubEditor(mode, idx) {
             <label>Content</label>
             ${contentPickerHtml('sub-editor', defaults)}
         </div>
-        <div class="form-group">
-            <label>Linked Game</label>
-            <select class="sub-edit-game">${buildLinkedGameOptions(defaults.linkedGameId)}</select>
-        </div>
         <div class="sub-editor-actions">
             <button type="button" class="btn btn-outline" onclick="cancelSubEditor()">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="commitSubEditor()">${mode === 'edit' ? 'Save sub-topic' : 'Add sub-topic'}</button>
@@ -341,10 +346,7 @@ function openSubEditor(mode, idx) {
     `;
     editor.classList.remove('hidden');
 
-    document.getElementById('choicePicker').classList.add('hidden');
     document.getElementById('addSubTopicBtnRow').classList.add('hidden');
-    // Always minimize the topic while the sub-editor is open.
-    minimizeTopicSection();
     setTimeout(() => editor.querySelector('.sub-edit-name').focus(), 0);
 }
 
@@ -355,12 +357,13 @@ function cancelSubEditor() {
     editor.innerHTML = '';
     const hasSubs = document.querySelectorAll('#subsList .sub-list-item').length > 0;
     if (hasSubs) {
-        // Show the "Add another sub-topic" button so the user can keep going.
         document.getElementById('addSubTopicBtnRow').classList.remove('hidden');
     } else {
-        // Back to the empty state — re-offer the two choices and re-show the topic form.
+        // No subs — revert to Tab 1 and re-offer the two choices.
+        const subsTab = document.getElementById('addTabSubs');
+        if (subsTab) subsTab.disabled = true;
+        switchAddTab('topic');
         document.getElementById('choicePicker').classList.remove('hidden');
-        expandTopicSection();
     }
 }
 
@@ -375,14 +378,12 @@ function commitSubEditor() {
         return;
     }
     const c = readContentPicker(picker);
-    const gameSelect = editor.querySelector('.sub-edit-game');
-    const linkedGameId = gameSelect ? gameSelect.value : '';
     const coverPicker = editor.querySelector('.cover-picker');
     const cover = coverPicker ? (coverPicker.querySelector('.cover-hidden-input').value || '') : '';
     const wasNew = _editingSubIdx === -1;
 
     if (wasNew) {
-        appendSubItem({ name: name, mediaType: c.mediaType, mediaName: c.mediaName, linkedGameId, cover });
+        appendSubItem({ name: name, mediaType: c.mediaType, mediaName: c.mediaName, cover });
         document.getElementById('subsListSection').classList.remove('hidden');
     } else {
         const items = document.querySelectorAll('#subsList .sub-list-item');
@@ -391,10 +392,7 @@ function commitSubEditor() {
             item.dataset.name = name;
             item.dataset.mediaType = c.mediaType;
             item.dataset.mediaName = c.mediaName;
-            item.dataset.linkedGameId = linkedGameId;
             item.dataset.cover = cover;
-            const game = lookupGameById(linkedGameId);
-            item.dataset.linkedGameName = game ? game.name : '';
             item.querySelector('.sub-list-name').textContent = name;
             const thumb = item.querySelector('.sub-list-cover');
             if (thumb) thumb.src = cover || DEFAULT_COVER_URL;
@@ -417,10 +415,9 @@ function commitSubEditor() {
 
 function appendSubItem(sub) {
     const list = document.getElementById('subsList');
-    const game = lookupGameById(sub.linkedGameId || '');
     const cover = sub.cover || DEFAULT_COVER_URL;
     const html = `
-        <div class="sub-list-item" data-name="${escapeAttr(sub.name)}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName)}" data-linked-game-id="${escapeAttr(sub.linkedGameId || '')}" data-linked-game-name="${escapeAttr(game ? game.name : '')}" data-cover="${escapeAttr(sub.cover || '')}">
+        <div class="sub-list-item" data-name="${escapeAttr(sub.name)}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName)}" data-cover="${escapeAttr(sub.cover || '')}">
             <img class="sub-list-cover" src="${escapeAttr(cover)}" alt="">
             <span class="sub-list-name">${escapeAttr(sub.name)}</span>
             <div class="sub-list-actions">
@@ -446,10 +443,12 @@ function removeSubItem(btn) {
     if (document.querySelectorAll('#subsList .sub-list-item').length === 0) {
         document.getElementById('subsListSection').classList.add('hidden');
         document.getElementById('addSubTopicBtnRow').classList.add('hidden');
-        expandTopicSection();
-        // Re-offer the choice unless an inline editor is open.
         const editor = document.getElementById('subEditor');
         if (editor.classList.contains('hidden')) {
+            // Revert to Tab 1 and re-offer the two choices.
+            const subsTab = document.getElementById('addTabSubs');
+            if (subsTab) subsTab.disabled = true;
+            switchAddTab('topic');
             document.getElementById('choicePicker').classList.remove('hidden');
         }
     }
@@ -459,6 +458,11 @@ function updateSubsCount() {
     const count = document.querySelectorAll('#subsList .sub-list-item').length;
     const el = document.getElementById('subsListCount');
     if (el) el.textContent = count;
+    const badge = document.getElementById('addTabSubsBadge');
+    if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+    }
 }
 
 // ===== Helpers =====
@@ -584,6 +588,7 @@ function deleteCurrent() {
         const topicId = currentEditRow.dataset.topic;
         document.querySelectorAll(`tr[data-parent="${topicId}"]`).forEach(r => r.remove());
         currentEditRow.remove();
+        snapshotCurrentScope();
         showToast(`"${name}" deleted`);
         showEmpty();
     } else if (currentEditType === 'module') {
@@ -592,6 +597,7 @@ function deleteCurrent() {
         const topicId = currentEditRow.getAttribute('data-parent');
         currentEditRow.remove();
         if (typeof updateTopicModuleCount === 'function') updateTopicModuleCount(topicId);
+        snapshotCurrentScope();
         showToast(`"${name}" deleted`);
         showEmpty();
     }
@@ -682,7 +688,6 @@ function openModuleEdit(row) {
     const mediaType = row.dataset.mediaType || 'PDF';
     const mediaName = row.dataset.mediaName || '';
     const cover = row.dataset.cover || '';
-    const linkedGameId = row.dataset.linkedGameId || '';
 
     document.getElementById('editTitle').textContent = 'Edit Sub-Topic';
     document.getElementById('editSubtitle').textContent = getScopeSubtitle();
@@ -705,10 +710,6 @@ function openModuleEdit(row) {
         <div class="form-group">
             <label>Content</label>
             ${contentPickerHtml('edit', { kind: kindForMediaType(mediaType), mediaType, mediaName })}
-        </div>
-        <div class="form-group">
-            <label>Linked Game</label>
-            <select name="linkedGameId">${buildLinkedGameOptions(linkedGameId)}</select>
         </div>
     `;
 
@@ -752,13 +753,13 @@ function saveEdit(evt) {
         row.querySelector('.company-name').textContent = name;
         row.dataset.description = description;
         row.dataset.cover = cover;
+        const topicThumb = row.querySelector('.row-thumb');
+        if (topicThumb) topicThumb.src = cover || randomCover();
 
         updateTopicRowChips(row);
+        snapshotCurrentScope();
         showToast(`"${name}" updated`);
-
-        currentEditRow = row;
-        setPanelMode('edit');
-        openTopicEdit(row);
+        showEmpty();
 
     } else if (currentEditType === 'module') {
         const name = data.get('name');
@@ -772,23 +773,17 @@ function saveEdit(evt) {
             ? readContentPicker(picker)
             : { mediaType: 'PDF', mediaName: '' };
         const cover = data.get('cover') || '';
-        const linkedGameId = data.get('linkedGameId') || '';
-        const linkedGame = lookupGameById(linkedGameId);
 
         row.querySelector('.dept-name').textContent = name;
         row.dataset.description = description;
         row.dataset.mediaType = content.mediaType;
         row.dataset.mediaName = content.mediaName;
         row.dataset.cover = cover;
-        row.dataset.linkedGameId = linkedGame ? linkedGame.id : '';
-        row.dataset.linkedGameName = linkedGame ? linkedGame.name : '';
 
         updateModuleRowChips(row);
+        snapshotCurrentScope();
         showToast(`"${name}" updated`);
-
-        currentViewRow = row;
-        setPanelMode('edit');
-        openModuleEdit(row);
+        showEmpty();
     }
 }
 
@@ -801,11 +796,7 @@ function createSubTopicRow(parentTopicId, sub) {
 
     const mediaType = sub.mediaType || 'PDF';
     const mediaName = sub.mediaName || '';
-    const linkedGame = lookupGameById(sub.linkedGameId || '');
     const meta = mediaMeta(mediaType);
-    const gameChip = linkedGame
-        ? `<span class="chip chip-game" title="Linked game"><i class="fas fa-trophy"></i> ${escapeAttr(linkedGame.name)}</span>`
-        : '';
 
     const tr = document.createElement('tr');
     tr.className = 'row-dept';
@@ -814,11 +805,9 @@ function createSubTopicRow(parentTopicId, sub) {
     tr.dataset.mediaType = mediaType;
     tr.dataset.mediaName = mediaName;
     tr.dataset.cover = sub.cover || '';
-    tr.dataset.linkedGameId = linkedGame ? linkedGame.id : '';
-    tr.dataset.linkedGameName = linkedGame ? linkedGame.name : '';
     tr.setAttribute('onclick', 'selectRow(this)');
     tr.innerHTML = `
-        <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector"></span><span class="dept-name">${escapeAttr(sub.name)}</span><span class="cell-pills"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span>${gameChip}</span><span class="row-actions">
+        <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector"></span><span class="dept-name">${escapeAttr(sub.name)}</span><span class="row-main-chip"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="cell-pills"></span><span class="row-actions">
             <div class="action-menu">
                 <button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
                 <div class="action-menu-popup" role="menu">
@@ -841,7 +830,6 @@ function readListedSubs() {
         name: item.dataset.name || '',
         mediaType: item.dataset.mediaType || 'PDF',
         mediaName: item.dataset.mediaName || '',
-        linkedGameId: item.dataset.linkedGameId || '',
         cover: item.dataset.cover || ''
     }));
 }
@@ -865,6 +853,7 @@ function saveAdd(data) {
         const contentVisible = contentSection && !contentSection.classList.contains('hidden');
         const hasSubs = document.querySelectorAll('#subsList .sub-list-item').length > 0;
         if (!contentVisible && !hasSubs) {
+            switchAddTab('topic');
             const picker = document.getElementById('choicePicker');
             if (picker) {
                 picker.classList.add('error');
@@ -940,6 +929,7 @@ function saveAdd(data) {
         const subSummary = listed.length
             ? ` with ${listed.length} sub-topic${listed.length !== 1 ? 's' : ''}`
             : '';
+        snapshotCurrentScope();
         showToast(`"${name}" added${subSummary}`);
         showEmpty();
 
@@ -959,11 +949,11 @@ function saveAdd(data) {
             description: data.get('description') || '',
             mediaType: content.mediaType,
             mediaName: content.mediaName,
-            cover: data.get('cover') || '',
-            linkedGameId: data.get('linkedGameId') || ''
+            cover: data.get('cover') || ''
         });
 
         const subName = data.get('name') || 'Untitled Sub-Topic';
+        snapshotCurrentScope();
         showToast(`"${subName}" added`);
         currentEditRow = tr;
         currentViewRow = tr;
@@ -975,17 +965,14 @@ function saveAdd(data) {
 // ===== Re-render a topic row's chip area =====
 function updateTopicRowChips(row) {
     const modCount = document.querySelectorAll(`tr[data-parent="${row.dataset.topic}"]`).length;
-    const pills = row.querySelector('.cell-pills');
-
+    const mainChip = row.querySelector('.row-main-chip');
+    if (!mainChip) return;
     if (modCount === 0 && row.dataset.mediaType) {
-        // Single-content topic: show the media type instead of "0 sub-topics".
         const meta = mediaMeta(row.dataset.mediaType);
-        pills.innerHTML = `<span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span>`;
+        mainChip.innerHTML = `<span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span>`;
         return;
     }
-    pills.innerHTML = `
-        <span class="chip chip-modules"><i class="fas fa-book-open"></i> ${modCount} sub-topic${modCount !== 1 ? 's' : ''}</span>
-    `;
+    mainChip.innerHTML = `<span class="chip chip-modules"><i class="fas fa-book-open"></i> ${modCount} sub-topic${modCount !== 1 ? 's' : ''}</span>`;
 }
 
 function updateTopicModuleCount(topicId) {
@@ -995,12 +982,8 @@ function updateTopicModuleCount(topicId) {
 
 function updateModuleRowChips(row) {
     const meta = mediaMeta(row.dataset.mediaType);
-    const pills = row.querySelector('.cell-pills');
-    const gameName = row.dataset.linkedGameName || '';
-    const gameChip = gameName
-        ? `<span class="chip chip-game" title="Linked game"><i class="fas fa-trophy"></i> ${escapeAttr(gameName)}</span>`
-        : '';
-    pills.innerHTML = `<span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span>${gameChip}`;
+    const mainChip = row.querySelector('.row-main-chip');
+    if (mainChip) mainChip.innerHTML = `<span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span>`;
 }
 
 function refreshModuleConnectors(topicId) {
@@ -1074,14 +1057,12 @@ function addTopic() {
     document.getElementById('editSubtitle').textContent = getScopeSubtitle();
 
     document.getElementById('editFields').innerHTML = `
-        <div class="topic-mini hidden" id="topicMini">
-            <img class="topic-mini-cover" id="topicMiniCover" src="${DEFAULT_COVER_URL}" alt="">
-            <div class="topic-mini-text">
-                <span class="topic-mini-label">Topic</span>
-                <span class="topic-mini-name" id="topicMiniName">Untitled</span>
-            </div>
+        <div class="add-topic-tabs">
+            <button type="button" class="add-topic-tab active" data-tab="topic" onclick="switchAddTab('topic')"><i class="fas fa-layer-group"></i> Topic</button>
+            <button type="button" class="add-topic-tab" data-tab="subs" id="addTabSubs" onclick="switchAddTab('subs')" disabled>Sub-topics <span class="tab-badge hidden" id="addTabSubsBadge"></span></button>
         </div>
-        <div id="topicSection">
+
+        <div class="add-topic-pane" id="tabPaneTopic">
             <div class="form-group">
                 <label>Cover Image</label>
                 ${coverPickerHtml('')}
@@ -1094,51 +1075,58 @@ function addTopic() {
                 <label>Description</label>
                 <input type="text" name="description" value="" placeholder="Topic description">
             </div>
-        </div>
-
-        <div class="sub-list-section hidden" id="subsListSection">
-            <div class="sub-list-head">
-                <label>Sub-topics</label>
-                <span class="sub-list-count-wrap"><span id="subsListCount">0</span> in this topic</span>
+            <div class="form-group hidden" id="topicContentSection">
+                <div class="content-section-head">
+                    <label>Content</label>
+                    <button type="button" class="btn-link-remove" onclick="removeTopicContent()" title="Remove content"><i class="fas fa-times"></i> Remove</button>
+                </div>
+                ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
             </div>
-            <div id="subsList" class="sub-list"></div>
-        </div>
-
-        <div class="form-group hidden" id="topicContentSection">
-            <div class="content-section-head">
-                <label>Content</label>
-                <button type="button" class="btn-link-remove" onclick="removeTopicContent()" title="Remove content"><i class="fas fa-times"></i> Remove</button>
+            <div class="choice-picker" id="choicePicker">
+                <p class="choice-prompt">What would you like to add to this topic?</p>
+                <div class="choice-buttons">
+                    <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddContent()">
+                        <i class="fas fa-upload"></i>
+                        <span class="choice-label">Add content</span>
+                        <span class="choice-hint">A single PDF, image, video URL, or text</span>
+                    </button>
+                    <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddSubTopic()">
+                        <i class="fas fa-list-ol"></i>
+                        <span class="choice-label">Add sub-topics</span>
+                        <span class="choice-hint">Break this topic into multiple pieces</span>
+                    </button>
+                </div>
             </div>
-            ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
         </div>
 
-        <div id="subEditor" class="sub-editor hidden"></div>
-
-        <div class="choice-picker" id="choicePicker">
-            <p class="choice-prompt">What would you like to add to this topic?</p>
-            <div class="choice-buttons">
-                <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddContent()">
-                    <i class="fas fa-upload"></i>
-                    <span class="choice-label">Add content</span>
-                    <span class="choice-hint">A single PDF, image, video URL, or text</span>
+        <div class="add-topic-pane hidden" id="tabPaneSubs">
+            <div class="sub-list-section hidden" id="subsListSection">
+                <div class="sub-list-head">
+                    <label>Sub-topics</label>
+                    <span class="sub-list-count-wrap"><span id="subsListCount">0</span> in this topic</span>
+                </div>
+                <div id="subsList" class="sub-list"></div>
+            </div>
+            <div id="subEditor" class="sub-editor hidden"></div>
+            <div class="add-sub-row hidden" id="addSubTopicBtnRow">
+                <button type="button" class="btn btn-outline btn-add-sub" id="addSubTopicBtn" onclick="openSubEditor('new')">
+                    <i class="fas fa-plus"></i> Add another sub-topic
                 </button>
-                <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddSubTopic()">
-                    <i class="fas fa-list-ol"></i>
-                    <span class="choice-label">Add sub-topic</span>
-                    <span class="choice-hint">Break this topic into multiple pieces</span>
-                </button>
             </div>
-        </div>
-
-        <div class="add-sub-row hidden" id="addSubTopicBtnRow">
-            <button type="button" class="btn btn-outline btn-add-sub" id="addSubTopicBtn" onclick="openSubEditor('new')">
-                <i class="fas fa-plus"></i> Add another sub-topic
-            </button>
         </div>
     `;
 
     setPanelMode('add');
     showEdit();
+}
+
+function switchAddTab(tab) {
+    document.querySelectorAll('#editFields .add-topic-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    const topicPane = document.getElementById('tabPaneTopic');
+    const subsPane  = document.getElementById('tabPaneSubs');
+    if (topicPane) topicPane.classList.toggle('hidden', tab !== 'topic');
+    if (subsPane)  subsPane.classList.toggle('hidden',  tab !== 'subs');
+
 }
 
 // ===== Add Sub-Topic =====
@@ -1168,16 +1156,16 @@ function addModule() {
             <select name="parentTopic">${topicOptions}</select>
         </div>
         <div class="form-group">
+            <label>Cover Image</label>
+            ${coverPickerHtml('')}
+        </div>
+        <div class="form-group">
             <label>Sub-Topic Name</label>
             <input type="text" name="name" value="" required placeholder="Sub-topic name">
         </div>
         <div class="form-group">
             <label>Content</label>
             ${contentPickerHtml('add', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
-        </div>
-        <div class="form-group">
-            <label>Linked Game</label>
-            <select name="linkedGameId">${buildLinkedGameOptions('')}</select>
         </div>
     `;
 
@@ -1363,6 +1351,7 @@ function bulkDisableSelected() {
         const topic = findTopicByName(name);
         if (topic) topic.active = false;
     });
+    persistTopicsScope();
     showToast(names.length + ' topic' + (names.length !== 1 ? 's' : '') + ' disabled');
     toggleBulkSelect();
 }
@@ -1485,20 +1474,19 @@ function openShareInPanel(target) {
     const company = companies.find(c => c.name.toLowerCase() === companyKey);
     if (!company) { showToast('Select a company first'); return; }
 
-    _currentShareTarget = target;
-
     const allDepts = departments.filter(d => d.companyId === company.id);
     const sharedNow = new Set(
         target.kind === 'topic' ? getSharedDepartments(companyKey, target.name) : []
     );
+    _currentShareTarget = Object.assign({}, target, { sharedDepts: Array.from(sharedNow) });
 
     const items = allDepts.map(d => {
         const already = sharedNow.has(d.name);
         return `
-            <label class="share-dept-item${already ? ' is-shared' : ''}">
-                <input type="checkbox" value="${escapeAttr(d.name)}"${already ? ' checked disabled' : ''}>
+            <label class="share-dept-item">
+                <input type="checkbox" value="${escapeAttr(d.name)}"${already ? ' checked' : ''}>
                 <span class="share-dept-name">${escapeAttr(d.name)}</span>
-                ${already ? '<span class="share-dept-tag">Already shared</span>' : ''}
+                ${already ? '<span class="share-dept-tag">Currently shared</span>' : ''}
             </label>
         `;
     }).join('') || '<div class="share-empty">This company has no departments to share with.</div>';
@@ -1524,11 +1512,13 @@ function syncShareConfirmButton() {
     const btn = document.getElementById('shareConfirmBtn');
     const list = document.getElementById('shareDeptList');
     if (!btn || !list) return;
-    const picked = list.querySelectorAll('input[type="checkbox"]:not(:disabled):checked');
-    btn.disabled = picked.length === 0;
-    btn.textContent = picked.length
-        ? `Share with ${picked.length} department${picked.length !== 1 ? 's' : ''}`
-        : 'Share';
+    const initial = new Set((_currentShareTarget && _currentShareTarget.sharedDepts) || []);
+    const current = new Set(Array.from(list.querySelectorAll('input:checked')).map(c => c.value));
+    const hasChanges = current.size !== initial.size
+        || Array.from(current).some(d => !initial.has(d))
+        || Array.from(initial).some(d => !current.has(d));
+    btn.disabled = !hasChanges;
+    btn.textContent = hasChanges ? 'Save' : 'No changes';
 }
 
 function cancelShare() {
@@ -1542,17 +1532,25 @@ function confirmShare() {
     const companyKey = _currentScope.companyKey;
     const list = document.getElementById('shareDeptList');
     if (!list) { showEmpty(); return; }
-    const picked = Array.from(list.querySelectorAll('input[type="checkbox"]:not(:disabled):checked'))
-        .map(c => c.value);
-    if (!picked.length) { showEmpty(); return; }
+
+    const initial = new Set(target.sharedDepts || []);
+    const current = new Set(Array.from(list.querySelectorAll('input:checked')).map(c => c.value));
+    const all     = Array.from(list.querySelectorAll('input')).map(c => c.value);
+    const toShare   = all.filter(d => current.has(d) && !initial.has(d));
+    const toUnshare = all.filter(d => !current.has(d) && initial.has(d));
 
     if (target.kind === 'topic') {
-        shareTopicWithDepartments(companyKey, target.name, picked);
-        showToast(`"${target.name}" shared with ${picked.length} department${picked.length !== 1 ? 's' : ''}`);
+        if (toShare.length)   shareTopicWithDepartments(companyKey, target.name, toShare);
+        if (toUnshare.length) unshareTopicFromDepartments(companyKey, target.name, toUnshare);
+        persistTopicsScope();
+        const total = toShare.length + toUnshare.length;
+        const parts = [];
+        if (toShare.length)   parts.push(`shared with ${toShare.length}`);
+        if (toUnshare.length) parts.push(`unshared from ${toUnshare.length}`);
+        if (parts.length) showToast(`"${target.name}" ${parts.join(', ')} department${total !== 1 ? 's' : ''}`);
         refreshTopics();
     } else {
-        // Games would follow the same pattern once the games view exists.
-        showToast(`Shared "${target.name}" with ${picked.length} department${picked.length !== 1 ? 's' : ''}`);
+        showToast(`Updated sharing for "${target.name}"`);
     }
     _currentShareTarget = null;
     showEmpty();
@@ -1580,6 +1578,17 @@ function shareTopicWithDepartments(companyKey, topicName, deptNames) {
     });
 }
 
+function unshareTopicFromDepartments(companyKey, topicName, deptNames) {
+    if (typeof TOPICS_BY_SCOPE === 'undefined') return;
+    deptNames.forEach(dn => {
+        const key = (companyKey || '') + '|' + dn;
+        const bucket = TOPICS_BY_SCOPE[key];
+        if (!bucket) return;
+        const idx = bucket.findIndex(t => t.name === topicName);
+        if (idx >= 0) bucket.splice(idx, 1);
+    });
+}
+
 function actionToggleDisabled(btn, evt) {
     evt.stopPropagation();
     closeAllTopicMenus();
@@ -1596,6 +1605,7 @@ function actionToggleDisabled(btn, evt) {
         topic.active = false;
         showToast(`"${name}" disabled`);
     }
+    persistTopicsScope();
     refreshTopics();
 }
 
@@ -1622,6 +1632,7 @@ function actionDeleteSubTopic(btn, evt) {
     const topicId = row.getAttribute('data-parent');
     row.remove();
     if (typeof updateTopicModuleCount === 'function') updateTopicModuleCount(topicId);
+    snapshotCurrentScope();
     showToast(`"${name.trim()}" deleted`);
     showEmpty();
 }
@@ -1636,6 +1647,7 @@ function actionDeleteTopic(btn, evt) {
     const topicId = row.dataset.topic;
     document.querySelectorAll(`tr[data-parent="${topicId}"]`).forEach(r => r.remove());
     row.remove();
+    snapshotCurrentScope();
     showToast(`"${name}" deleted`);
     showEmpty();
 }
@@ -1672,21 +1684,23 @@ function topicRowHtml(topic, id) {
     const sharedDepts = getSharedDepartments(_currentScope.companyKey, topic.name);
     const shareCount = sharedDepts.length;
     const shareChip = shareCount > 1
-        ? `<span class="chip chip-shares" title="Shared with: ${escapeAttr(sharedDepts.join(', '))}">${shareCount} shares</span>`
+        ? `<span class="chip chip-shares">
+               <i class="fas fa-share-nodes"></i> ${shareCount} shares
+               <span class="chip-tooltip">${sharedDepts.map(d => escapeAttr(d)).join(', ')}</span>
+           </span>`
         : '';
 
+    const topicCover = topic.cover || randomCover();
     return `
-        <tr class="${rowClass}" data-topic="${id}" data-categories="${escapeAttr(cats)}" data-description="${escapeAttr(topic.description || '')}" data-cover="" data-active="${isActive}" data-name="${nameAttr}" onclick="toggleTopic(${id})">
+        <tr class="${rowClass}" data-topic="${id}" data-categories="${escapeAttr(cats)}" data-description="${escapeAttr(topic.description || '')}" data-cover="${escapeAttr(topicCover)}" data-active="${isActive}" data-name="${nameAttr}" onclick="toggleTopic(${id})">
             <td class="col-name">
                 <div class="cell-row">
                     <span class="row-select"><input type="checkbox" class="row-checkbox" data-topic-name="${nameAttr}" onclick="onSelectCheckbox(event)"></span>
                     <span class="chevron"><i class="fas fa-chevron-right"></i></span>
+                    <img class="row-thumb" src="${escapeAttr(topicCover)}" alt="">
                     <span class="company-name">${escapeAttr(topic.name)}</span>
-                    ${topic.description ? `<span class="row-description">${escapeAttr(topic.description)}</span>` : ''}
-                    <span class="cell-pills">
-                        <span class="chip chip-modules"><i class="fas fa-book-open"></i> ${subCount} sub-topic${subCount !== 1 ? 's' : ''}</span>
-                        ${shareChip}
-                    </span>
+                    <span class="row-main-chip"><span class="chip chip-modules"><i class="fas fa-book-open"></i> ${subCount} sub-topic${subCount !== 1 ? 's' : ''}</span></span>
+                    <span class="cell-pills">${shareChip}</span>
                     <span class="row-status">${statusChip}</span>
                     <span class="row-actions">
                         <div class="action-menu">
@@ -1711,9 +1725,10 @@ function topicRowHtml(topic, id) {
 function subTopicRowHtml(sub, parentId, idx, total) {
     const meta = mediaMeta(sub.mediaType);
     const lastClass = idx === total - 1 ? ' last' : '';
+    const subCover = sub.cover || randomCover();
     return `
-        <tr class="row-dept hidden" data-parent="${parentId}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName || '')}" data-description="${escapeAttr(sub.description || '')}" data-cover="" onclick="selectRow(this)">
-            <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector${lastClass}"></span><span class="dept-name">${escapeAttr(sub.name)}</span>${sub.description ? `<span class="row-description">${escapeAttr(sub.description)}</span>` : ''}<span class="cell-pills"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="row-actions">
+        <tr class="row-dept hidden" data-parent="${parentId}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName || '')}" data-description="${escapeAttr(sub.description || '')}" data-cover="${escapeAttr(subCover)}" onclick="selectRow(this)">
+            <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector${lastClass}"></span><span class="dept-name">${escapeAttr(sub.name)}</span><span class="row-main-chip"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="cell-pills"></span><span class="row-actions">
                 <div class="action-menu">
                     <button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
                     <div class="action-menu-popup" role="menu">
@@ -1727,10 +1742,64 @@ function subTopicRowHtml(sub, parentId, idx, total) {
     `;
 }
 
+// ===== localStorage persistence =====
+var LS_TOPICS_KEY = 'gameon.topics.scope';
+
+function persistTopicsScope() {
+    try { localStorage.setItem(LS_TOPICS_KEY, JSON.stringify(TOPICS_BY_SCOPE)); } catch(e) {}
+}
+
+function loadTopicsScope() {
+    try {
+        var saved = localStorage.getItem(LS_TOPICS_KEY);
+        if (!saved) return;
+        var parsed = JSON.parse(saved);
+        Object.keys(parsed).forEach(function(k) { TOPICS_BY_SCOPE[k] = parsed[k]; });
+    } catch(e) {}
+}
+
+// Reads the current DOM state for the active scope and snapshots it into
+// TOPICS_BY_SCOPE, then persists to localStorage.
+function snapshotCurrentScope() {
+    var companyKey = _currentScope.companyKey;
+    var dept = _currentScope.dept;
+    if (!companyKey) return;
+    var key = (companyKey || '') + '|' + (dept || '');
+    var topics = [];
+    document.querySelectorAll('.data-table tbody tr[data-topic]').forEach(function(topicRow) {
+        var topicId = topicRow.dataset.topic;
+        var nameEl = topicRow.querySelector('.company-name');
+        var subTopics = [];
+        document.querySelectorAll('tr[data-parent="' + topicId + '"]').forEach(function(subRow) {
+            var subNameEl = subRow.querySelector('.dept-name');
+            subTopics.push({
+                name:         subNameEl ? subNameEl.textContent.trim() : '',
+                description:  subRow.dataset.description || '',
+                mediaType:    subRow.dataset.mediaType   || 'PDF',
+                mediaName:    subRow.dataset.mediaName   || '',
+                cover:        subRow.dataset.cover       || ''
+            });
+        });
+        topics.push({
+            name:        topicRow.dataset.name || (nameEl ? nameEl.textContent.trim() : ''),
+            description: topicRow.dataset.description || '',
+            cover:       topicRow.dataset.cover       || '',
+            categories:  (topicRow.dataset.categories || '').split(',').filter(Boolean),
+            active:      topicRow.dataset.active !== 'false',
+            subTopics:   subTopics
+        });
+    });
+    TOPICS_BY_SCOPE[key] = topics;
+    persistTopicsScope();
+}
+
 // Called by script-topics-sidebar-scope.js whenever a (company, department) pair is set.
 function onScopeReady(companyKey, dept) {
     renderTopicsForScope(companyKey, dept);
 }
+
+// Bootstrap: restore any previously saved scope data before the first render.
+loadTopicsScope();
 
 // ===== Active / Disabled (driven from the edit panel) =====
 function toggleCurrentTopicActive() {
@@ -1747,6 +1816,7 @@ function toggleCurrentTopicActive() {
         topic.active = false;
         showToast('"' + name + '" disabled');
     }
+    persistTopicsScope();
     refreshTopics();
 }
 

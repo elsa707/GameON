@@ -92,7 +92,7 @@
                 </div>
                 <div class="toolbar-right">
                     <button class="btn btn-outline toolbar-bulk-btn" onclick="toggleBulkSelect()" id="bulkSelectBtn" disabled><i class="fas fa-check-square"></i> Bulk Select</button>
-                    <button class="btn btn-primary toolbar-disable-btn" onclick="bulkDisableSelected()" id="bulkDisableBtn" hidden><i class="fas fa-ban"></i> Disable</button>
+                    <button class="btn-text-danger toolbar-disable-btn" onclick="bulkDisableSelected()" id="bulkDisableBtn" hidden><i class="fas fa-ban"></i> Disable</button>
                     <select class="status-filter" id="topicStatusFilter" onchange="filterByTopicStatus(this.value)">
                         <option value="active">Active</option>
                         <option value="disabled">Disabled</option>
@@ -176,8 +176,8 @@
         </aside>
     </div>
 
-    <script src="topics-data.js"></script>
-    <script src="script-topics.js"></script>
+    <script src="topics-data.js?v=2"></script>
+    <script src="script-topics.js?v=12"></script>
     <script src="scope-topics.js"></script>
     <script src="script-topics-sidebar-scope.js?v=3"></script>
     <script src="script-sidebar-scope.js"></script>

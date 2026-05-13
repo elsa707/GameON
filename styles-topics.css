@@ -229,25 +229,36 @@
     border-color: var(--accent, #3b82f6);
 }
 
-/* ===== Edit panel: text-style Disable / Activate button ===== */
+/* ===== Edit panel: outlined Disable / Activate button ===== */
 .btn-text-danger,
 .btn-text-success {
     background: transparent;
-    border: none;
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
-    padding: 7px 10px;
+    padding: 6px 12px;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.btn-text-danger { color: #dc2626; }
-.btn-text-success { color: #16a34a; }
-.btn-text-danger:hover { background: rgba(220, 38, 38, 0.08); }
-.btn-text-success:hover { background: rgba(22, 163, 74, 0.08); }
+.btn-text-danger {
+    color: #dc2626;
+    border: 1px solid #dc2626;
+}
+.btn-text-success {
+    color: #16a34a;
+    border: 1px solid #16a34a;
+}
+.btn-text-danger:hover {
+    background: #dc2626;
+    color: #fff;
+}
+.btn-text-success:hover {
+    background: #16a34a;
+    color: #fff;
+}
 
 /* ===== Topics: chip colours ===== */
 .chip-modules i { color: #3b82f6; }
@@ -338,16 +349,45 @@
     word-break: break-all;
 }
 
-/* Media upload stub — mirrors logo-upload-inline */
-.media-upload-inline {
+/* Drag-and-drop upload zone */
+.cp-dropzone {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+    padding: 10px 12px;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 58px;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
     margin-top: 6px;
 }
-.media-upload-inline input[type="file"] {
-    font-size: 0.85rem;
+.cp-dropzone:hover,
+.cp-dropzone.drag-over {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+.cp-dropzone i {
+    font-size: 14px;
+    color: #9ca3af;
+}
+.cp-dropzone.drag-over i { color: #3b82f6; }
+.cp-dropzone-hint {
+    font-size: 11px;
+    color: #6b7280;
+}
+.cp-dropzone-hint u { color: #3b82f6; }
+.cp-dropzone-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: #374151;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .media-filename {
     font-size: 0.8rem;
@@ -399,9 +439,44 @@
     border-color: #fed7aa;
     color: #c2410c;
     font-weight: 600;
-    cursor: help;
+    cursor: default;
+    position: relative;
 }
 .chip-shares i { color: #f97316; }
+
+/* Tooltip that opens above the share badge on hover */
+.chip-tooltip {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #f9fafb;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 200;
+    text-align: center;
+}
+/* Arrow pointing down */
+.chip-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+}
+.chip-shares:hover .chip-tooltip {
+    opacity: 1;
+}
 
 /* ===== Action kebab menu ===== */
 .action-menu {
@@ -540,6 +615,7 @@
     object-fit: cover;
     border-radius: 6px;
     flex-shrink: 0;
+    opacity: 0.45;
 }
 .topic-mini-text {
     flex: 1;
@@ -622,6 +698,7 @@
     object-fit: cover;
     border-radius: 6px;
     flex-shrink: 0;
+    filter: saturate(0.3) brightness(1.15);
 }
 .sub-list-index {
     flex-shrink: 0;
@@ -797,6 +874,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    filter: saturate(0.3) brightness(1.15);
 }
 .cover-check {
     position: absolute;
@@ -1056,7 +1134,67 @@ body.select-mode .row-actions { display: none; }
     margin-top: 14px;
 }
 
-/* Inline description shown next to topic / sub-topic name in the list */
+
+/* ===== Add Topic — two-tab layout ===== */
+.add-topic-tabs {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    margin: 0 -2px 16px;
+    gap: 0;
+}
+.add-topic-tab {
+    flex: 1;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.add-topic-tab:hover:not(:disabled) { color: #111827; }
+.add-topic-tab.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+.add-topic-tab:disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #2563eb;
+    color: #fff;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+.tab-badge.hidden { display: none; }
+.add-topic-pane.hidden { display: none; }
+
+/* ===== Thumbnails in topic and sub-topic table rows ===== */
+.row-thumb {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+    filter: saturate(0.3) brightness(1.15);
+}
+
 .row-description {
     font-size: 12px;
     color: #9ca3af;
