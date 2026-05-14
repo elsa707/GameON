@@ -10,13 +10,13 @@
     var MAX_RECENT = 5;
 
     var FALLBACK_COMPANIES = [
-        { id: 7, name: 'Naspers' },
-        { id: 6, name: 'Standard Bank' },
-        { id: 5, name: 'Anglo American' },
-        { id: 4, name: 'Sasol' },
-        { id: 3, name: 'MTN Group' },
-        { id: 2, name: 'Discovery' },
-        { id: 1, name: 'Shoprite' }
+        { id: 7, name: 'Naspers',        color: '#c8102e' },
+        { id: 6, name: 'Standard Bank',  color: '#005aff' },
+        { id: 5, name: 'Anglo American', color: '#c41230' },
+        { id: 4, name: 'Sasol',          color: '#f47920' },
+        { id: 3, name: 'MTN Group',      color: '#ffcc00' },
+        { id: 2, name: 'Discovery',      color: '#7b2d8b' },
+        { id: 1, name: 'Shoprite',       color: '#e31d1a' }
     ];
 
     var FALLBACK_DEPARTMENTS = [
@@ -161,6 +161,15 @@
                 var logoUrl = logoFor(company.name);
                 var initial = escapeHtml((company.name || '?').charAt(0).toUpperCase());
                 var safeName = escapeHtml(company.name || '');
+                var brandColor = company.color || '';
+                var textCol = isLightColor(brandColor) ? '#000' : '#fff';
+                if (brandColor) {
+                    $logo.style.background = brandColor;
+                    $logo.style.color = textCol;
+                } else {
+                    $logo.style.background = '';
+                    $logo.style.color = '';
+                }
                 if (logoUrl) {
                     $logo.classList.add('has-logo');
                     $logo.classList.remove('has-initial');
@@ -263,18 +272,29 @@
         });
     }
 
-    function avatarHtml(companyName, sizeClass) {
+    function isLightColor(hex) {
+        if (!hex) return false;
+        var h = hex.replace('#', '');
+        var r = parseInt(h.substr(0, 2), 16);
+        var g = parseInt(h.substr(2, 2), 16);
+        var b = parseInt(h.substr(4, 2), 16);
+        return (r * 299 + g * 587 + b * 114) / 1000 > 155;
+    }
+
+    function avatarHtml(companyName, sizeClass, color) {
         var initial = (companyName || '?').charAt(0).toUpperCase();
         var logo = logoFor(companyName);
         var cls = 'scope-item-avatar' + (sizeClass ? ' ' + sizeClass : '');
+        var textCol = isLightColor(color) ? '#000' : '#fff';
+        var bgStyle = color ? ' style="background:' + color + ';color:' + textCol + '"' : '';
         if (logo) {
-            return '<div class="' + cls + '">' +
+            return '<div class="' + cls + '"' + bgStyle + '>' +
                 '<img src="' + escapeHtml(logo) + '" alt="' + escapeHtml(companyName) + '" ' +
                 'onerror="this.style.display=\'none\';this.parentNode.dataset.fallback=\'1\';this.parentNode.textContent=\'' +
                 escapeHtml(initial) + '\';">' +
             '</div>';
         }
-        return '<div class="' + cls + '">' + escapeHtml(initial) + '</div>';
+        return '<div class="' + cls + '"' + bgStyle + '>' + escapeHtml(initial) + '</div>';
     }
 
     function buildCompanyItem(comp, isSelected) {
@@ -283,7 +303,7 @@
         }).length;
         return '<div class="scope-item' + (isSelected ? ' selected' : '') +
             '" data-company-id="' + comp.id + '">' +
-                avatarHtml(comp.name) +
+                avatarHtml(comp.name, null, comp.color) +
                 '<div class="scope-item-text">' +
                     '<div class="scope-item-company">' + escapeHtml(comp.name) + '</div>' +
                     '<div class="scope-item-dept">' + deptCount +

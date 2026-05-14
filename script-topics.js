@@ -307,7 +307,7 @@ function removeTopicContent() {
 // ===== Inline sub-topic list + editor (used inside Add Topic) =====
 function openSubEditor(mode, idx) {
     _editingSubIdx = mode === 'new' ? -1 : idx;
-    let defaults = { name: '', mediaType: 'PDF', mediaName: '', kind: 'upload', cover: '' };
+    let defaults = { name: '', mediaType: 'PDF', mediaName: '', kind: 'upload' };
     if (mode === 'edit') {
         const item = document.querySelectorAll('#subsList .sub-list-item')[idx];
         if (item) {
@@ -315,7 +315,6 @@ function openSubEditor(mode, idx) {
             defaults.mediaType = item.dataset.mediaType || 'PDF';
             defaults.mediaName = item.dataset.mediaName || '';
             defaults.kind = kindForMediaType(defaults.mediaType);
-            defaults.cover = item.dataset.cover || '';
         }
     }
     const subsCount = document.querySelectorAll('#subsList .sub-list-item').length;
@@ -326,10 +325,6 @@ function openSubEditor(mode, idx) {
     editor.innerHTML = `
         <div class="sub-editor-head">
             <span class="sub-editor-title"><i class="fas fa-puzzle-piece"></i> ${titleText}</span>
-        </div>
-        <div class="form-group">
-            <label>Cover image</label>
-            ${coverPickerHtml(defaults.cover, { embedded: true })}
         </div>
         <div class="form-group">
             <label>Sub-topic name</label>
@@ -367,23 +362,21 @@ function cancelSubEditor() {
     }
 }
 
-function commitSubEditor() {
+function commitSubEditor(skipReopen) {
     const editor = document.getElementById('subEditor');
     const nameInput = editor.querySelector('.sub-edit-name');
     const name = (nameInput.value || '').trim();
-    if (!name) { nameInput.focus(); return; }
+    if (!name) { nameInput.focus(); return false; }
     const picker = editor.querySelector('.content-picker');
     if (!validateContentPicker(picker)) {
         showToast('Add content for this sub-topic (file, video URL, or text)');
-        return;
+        return false;
     }
     const c = readContentPicker(picker);
-    const coverPicker = editor.querySelector('.cover-picker');
-    const cover = coverPicker ? (coverPicker.querySelector('.cover-hidden-input').value || '') : '';
     const wasNew = _editingSubIdx === -1;
 
     if (wasNew) {
-        appendSubItem({ name: name, mediaType: c.mediaType, mediaName: c.mediaName, cover });
+        appendSubItem({ name: name, mediaType: c.mediaType, mediaName: c.mediaName });
         document.getElementById('subsListSection').classList.remove('hidden');
     } else {
         const items = document.querySelectorAll('#subsList .sub-list-item');
@@ -392,33 +385,29 @@ function commitSubEditor() {
             item.dataset.name = name;
             item.dataset.mediaType = c.mediaType;
             item.dataset.mediaName = c.mediaName;
-            item.dataset.cover = cover;
             item.querySelector('.sub-list-name').textContent = name;
-            const thumb = item.querySelector('.sub-list-cover');
-            if (thumb) thumb.src = cover || DEFAULT_COVER_URL;
         }
     }
 
     updateSubsCount();
     _editingSubIdx = null;
 
-    if (wasNew) {
+    if (wasNew && !skipReopen) {
         // Stay in "add another sub-topic" mode — re-open a fresh editor.
         openSubEditor('new');
     } else {
-        // Editing an existing item closes the editor and shows the +Add button.
+        // Close the editor and restore the +Add button.
         editor.classList.add('hidden');
         editor.innerHTML = '';
         document.getElementById('addSubTopicBtnRow').classList.remove('hidden');
     }
+    return true;
 }
 
 function appendSubItem(sub) {
     const list = document.getElementById('subsList');
-    const cover = sub.cover || DEFAULT_COVER_URL;
     const html = `
-        <div class="sub-list-item" data-name="${escapeAttr(sub.name)}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName)}" data-cover="${escapeAttr(sub.cover || '')}">
-            <img class="sub-list-cover" src="${escapeAttr(cover)}" alt="">
+        <div class="sub-list-item" data-name="${escapeAttr(sub.name)}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName)}">
             <span class="sub-list-name">${escapeAttr(sub.name)}</span>
             <div class="sub-list-actions">
                 <button type="button" class="btn-icon" onclick="editSubItem(this)" title="Edit"><i class="fas fa-pen"></i></button>
@@ -470,6 +459,28 @@ function escapeAttr(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+var _SHARE_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function formatSharedDate(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    return d.getDate() + ' ' + _SHARE_MONTHS[d.getMonth()] + ' \'' + String(d.getFullYear()).slice(2);
+}
+
+function getSharedDate(companyKey, topicName, deptName) {
+    if (typeof TOPICS_BY_SCOPE === 'undefined') return '';
+    var key = (companyKey || '') + '|' + deptName;
+    var bucket = TOPICS_BY_SCOPE[key];
+    if (!bucket) return '';
+    var topic = bucket.find(function(t) { return t.name === topicName; });
+    if (!topic) return '';
+    if (!topic.sharedDate) {
+        // Back-fill for topics shared before date-stamping was introduced.
+        topic.sharedDate = new Date().toISOString();
+        persistTopicsScope();
+    }
+    return topic.sharedDate;
+}
+
 function getCategories(row) {
     return (row.dataset.categories || '').split(',').map(s => s.trim()).filter(Boolean);
 }
@@ -489,14 +500,6 @@ function getScopeSubtitle() {
 // ===== Toggle accordion =====
 function toggleTopic(topicId) {
     const topicRow = document.querySelector(`tr[data-topic="${topicId}"]`);
-    if (document.body.classList.contains('select-mode')) {
-        const cb = topicRow && topicRow.querySelector('.row-checkbox');
-        if (cb) {
-            cb.checked = !cb.checked;
-            updateSelection();
-        }
-        return;
-    }
     const moduleRows = document.querySelectorAll(`tr[data-parent="${topicId}"]`);
     const isExpanded = topicRow.classList.contains('expanded');
 
@@ -687,18 +690,12 @@ function openModuleEdit(row) {
     const description = row.dataset.description || '';
     const mediaType = row.dataset.mediaType || 'PDF';
     const mediaName = row.dataset.mediaName || '';
-    const cover = row.dataset.cover || '';
-
     document.getElementById('editTitle').textContent = 'Edit Sub-Topic';
     document.getElementById('editSubtitle').textContent = getScopeSubtitle();
     setPanelMode('edit');
     hideDisableButton();
 
     document.getElementById('editFields').innerHTML = `
-        <div class="form-group">
-            <label>Cover Image</label>
-            ${coverPickerHtml(cover)}
-        </div>
         <div class="form-group">
             <label>Sub-Topic Name</label>
             <input type="text" name="name" value="${escapeAttr(name)}" required>
@@ -772,13 +769,10 @@ function saveEdit(evt) {
         const content = picker
             ? readContentPicker(picker)
             : { mediaType: 'PDF', mediaName: '' };
-        const cover = data.get('cover') || '';
-
         row.querySelector('.dept-name').textContent = name;
         row.dataset.description = description;
         row.dataset.mediaType = content.mediaType;
         row.dataset.mediaName = content.mediaName;
-        row.dataset.cover = cover;
 
         updateModuleRowChips(row);
         snapshotCurrentScope();
@@ -804,7 +798,6 @@ function createSubTopicRow(parentTopicId, sub) {
     tr.dataset.description = sub.description || '';
     tr.dataset.mediaType = mediaType;
     tr.dataset.mediaName = mediaName;
-    tr.dataset.cover = sub.cover || '';
     tr.setAttribute('onclick', 'selectRow(this)');
     tr.innerHTML = `
         <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector"></span><span class="dept-name">${escapeAttr(sub.name)}</span><span class="row-main-chip"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="cell-pills"></span><span class="row-actions">
@@ -829,8 +822,7 @@ function readListedSubs() {
     return Array.from(document.querySelectorAll('#subsList .sub-list-item')).map(item => ({
         name: item.dataset.name || '',
         mediaType: item.dataset.mediaType || 'PDF',
-        mediaName: item.dataset.mediaName || '',
-        cover: item.dataset.cover || ''
+        mediaName: item.dataset.mediaName || ''
     }));
 }
 
@@ -844,8 +836,11 @@ function saveAdd(data) {
         const subEditor = document.getElementById('subEditor');
         if (subEditor && !subEditor.classList.contains('hidden')) {
             const draftName = (subEditor.querySelector('.sub-edit-name').value || '').trim();
-            if (draftName) commitSubEditor();
-            else cancelSubEditor();
+            if (draftName) {
+                if (!commitSubEditor(true)) return;
+            } else {
+                cancelSubEditor();
+            }
         }
 
         // Require the user to have picked "Add content" or added at least one sub-topic.
@@ -882,11 +877,12 @@ function saveAdd(data) {
         tr.innerHTML = `
             <td class="col-name">
                 <div class="cell-row">
+                    <span class="row-select"><input type="checkbox" class="row-checkbox" data-topic-name="${escapeAttr(name)}" onclick="onSelectCheckbox(event)"></span>
                     <span class="chevron"><i class="fas fa-chevron-down"></i></span>
+                    <img class="row-thumb" src="${escapeAttr(cover || randomCover())}" alt="">
                     <span class="company-name">${escapeAttr(name)}</span>
-                    <span class="cell-pills">
-                        <span class="chip chip-modules"><i class="fas fa-book-open"></i> 0 sub-topics</span>
-                    </span>
+                    <span class="row-main-chip"><span class="chip chip-modules"><i class="fas fa-book-open"></i> 0 sub-topics</span></span>
+                    <span class="cell-pills"></span>
                     <span class="row-status"><span class="chip chip-status chip-status-active">Active</span></span>
                     <span class="row-actions">
                         <div class="action-menu">
@@ -894,7 +890,7 @@ function saveAdd(data) {
                             <div class="action-menu-popup" role="menu">
                                 <button type="button" class="action-item" onclick="actionAddSubTopic(this, event)"><i class="fas fa-puzzle-piece"></i> Add sub-topic</button>
                                 <button type="button" class="action-item" onclick="actionEditTopic(this, event)"><i class="fas fa-pen"></i> Edit</button>
-                                <button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-share-nodes"></i> Share</button>
+                                <button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-people-group"></i> Share</button>
                                 <button type="button" class="action-item" onclick="actionToggleDisabled(this, event)"><i class="fas fa-ban"></i> Disable</button>
                                 <div class="action-sep"></div>
                                 <button type="button" class="action-item action-item-danger" onclick="actionDeleteTopic(this, event)"><i class="fas fa-trash"></i> Delete</button>
@@ -911,6 +907,7 @@ function saveAdd(data) {
         if (listed.length > 0) {
             // Topic acts as a container for sub-topics.
             listed.forEach(s => createSubTopicRow(newId, s));
+            updateTopicRowChips(tr);
         } else if (contentVisible) {
             // Single-content topic.
             const picker = contentSection.querySelector('.content-picker');
@@ -948,8 +945,7 @@ function saveAdd(data) {
             name: data.get('name') || 'Untitled Sub-Topic',
             description: data.get('description') || '',
             mediaType: content.mediaType,
-            mediaName: content.mediaName,
-            cover: data.get('cover') || ''
+            mediaName: content.mediaName
         });
 
         const subName = data.get('name') || 'Untitled Sub-Topic';
@@ -1156,10 +1152,6 @@ function addModule() {
             <select name="parentTopic">${topicOptions}</select>
         </div>
         <div class="form-group">
-            <label>Cover Image</label>
-            ${coverPickerHtml('')}
-        </div>
-        <div class="form-group">
             <label>Sub-Topic Name</label>
             <input type="text" name="name" value="" required placeholder="Sub-topic name">
         </div>
@@ -1282,47 +1274,11 @@ function updateTopicsCount(topics) {
     el.hidden = false;
     el.innerHTML = '<i class="fas fa-layer-group"></i> ' +
         tCount + ' topic' + (tCount !== 1 ? 's' : '');
-    const bulkBtn = document.getElementById('bulkSelectBtn');
-    if (bulkBtn) bulkBtn.disabled = tCount === 0;
 }
 
-// ===== Bulk select mode =====
 function toggleBulkSelect() {
-    const on = !document.body.classList.contains('select-mode');
-    const bulkBtn = document.getElementById('bulkSelectBtn');
-    const disableBtn = document.getElementById('bulkDisableBtn');
-    const filter = document.getElementById('topicStatusFilter');
-
-    if (on) {
-        document.body.classList.add('select-mode');
-        if (bulkBtn) bulkBtn.classList.add('active');
-        if (disableBtn) disableBtn.hidden = true;
-        // Show all items so the user can pick from active + disabled.
-        if (filter) {
-            filter.value = 'all';
-            topicStatusFilter = 'all';
-            refreshTopics();
-        }
-        // Collapse expanded rows for clean checkbox alignment.
-        document.querySelectorAll('tr.row-company.expanded').forEach(r => {
-            r.classList.remove('expanded');
-            const chev = r.querySelector('.chevron i');
-            if (chev) chev.className = 'fas fa-chevron-right';
-        });
-        document.querySelectorAll('tr.row-dept').forEach(r => r.classList.add('hidden'));
-        showEmpty();
-    } else {
-        document.body.classList.remove('select-mode');
-        if (bulkBtn) bulkBtn.classList.remove('active');
-        if (disableBtn) disableBtn.hidden = true;
-        document.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = false; });
-        document.querySelectorAll('tr.row-company.row-selected').forEach(r => r.classList.remove('row-selected'));
-        if (filter) {
-            filter.value = 'active';
-            topicStatusFilter = 'active';
-            refreshTopics();
-        }
-    }
+    document.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('tr.row-company.row-selected').forEach(r => r.classList.remove('row-selected'));
     updateSelection();
 }
 
@@ -1331,14 +1287,26 @@ function onSelectCheckbox(event) {
     updateSelection();
 }
 
+function toggleSelectAll(source) {
+    document.querySelectorAll('tr.row-company .row-checkbox').forEach(cb => {
+        cb.checked = source.checked;
+    });
+    updateSelection();
+}
+
 function updateSelection() {
-    const checked = document.querySelectorAll('.row-checkbox:checked');
-    document.querySelectorAll('tr.row-company').forEach(r => {
-        const cb = r.querySelector('.row-checkbox');
-        r.classList.toggle('row-selected', !!(cb && cb.checked));
+    const allBoxes = document.querySelectorAll('tr.row-company .row-checkbox');
+    const checked = Array.from(allBoxes).filter(cb => cb.checked);
+    allBoxes.forEach(cb => {
+        cb.closest('tr').classList.toggle('row-selected', cb.checked);
     });
     const btn = document.getElementById('bulkDisableBtn');
-    if (btn) btn.hidden = !document.body.classList.contains('select-mode') || checked.length === 0;
+    if (btn) btn.hidden = checked.length === 0;
+    const selectAll = document.getElementById('selectAllTopics');
+    if (selectAll) {
+        selectAll.checked = allBoxes.length > 0 && checked.length === allBoxes.length;
+        selectAll.indeterminate = checked.length > 0 && checked.length < allBoxes.length;
+    }
 }
 
 function bulkDisableSelected() {
@@ -1353,7 +1321,10 @@ function bulkDisableSelected() {
     });
     persistTopicsScope();
     showToast(names.length + ' topic' + (names.length !== 1 ? 's' : '') + ' disabled');
-    toggleBulkSelect();
+    document.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('tr.row-company.row-selected').forEach(r => r.classList.remove('row-selected'));
+    updateSelection();
+    refreshTopics();
 }
 
 function refreshTopics() {
@@ -1482,11 +1453,14 @@ function openShareInPanel(target) {
 
     const items = allDepts.map(d => {
         const already = sharedNow.has(d.name);
+        const dateLabel = already
+            ? formatSharedDate(getSharedDate(companyKey, target.name, d.name))
+            : '';
         return `
             <label class="share-dept-item">
                 <input type="checkbox" value="${escapeAttr(d.name)}"${already ? ' checked' : ''}>
                 <span class="share-dept-name">${escapeAttr(d.name)}</span>
-                ${already ? '<span class="share-dept-tag">Currently shared</span>' : ''}
+                ${already ? `<span class="share-dept-tag">${escapeAttr(dateLabel)}</span>` : ''}
             </label>
         `;
     }).join('') || '<div class="share-empty">This company has no departments to share with.</div>';
@@ -1495,10 +1469,7 @@ function openShareInPanel(target) {
     document.getElementById('shareTitle').textContent = `Share ${kindLabel}`;
     document.getElementById('shareSubtitle').textContent = getScopeSubtitle();
     document.getElementById('shareBody').innerHTML = `
-        <p class="share-panel-lead">
-            Share <strong>${escapeAttr(target.name)}</strong> with one or more departments of
-            <strong>${escapeAttr(company.name)}</strong>.
-        </p>
+        <p class="share-panel-lead"><strong>${escapeAttr(target.name)}</strong></p>
         <div class="share-dept-list" id="shareDeptList">${items}</div>
     `;
 
@@ -1573,7 +1544,9 @@ function shareTopicWithDepartments(companyKey, topicName, deptNames) {
             TOPICS_BY_SCOPE[key] = bucket;
         }
         if (!bucket.some(t => t.name === topicName)) {
-            bucket.push(JSON.parse(JSON.stringify(sourceTopic)));
+            var copy = JSON.parse(JSON.stringify(sourceTopic));
+            copy.sharedDate = new Date().toISOString();
+            bucket.push(copy);
         }
     });
 }
@@ -1684,8 +1657,8 @@ function topicRowHtml(topic, id) {
     const sharedDepts = getSharedDepartments(_currentScope.companyKey, topic.name);
     const shareCount = sharedDepts.length;
     const shareChip = shareCount > 1
-        ? `<span class="chip chip-shares">
-               <i class="fas fa-share-nodes"></i> ${shareCount} shares
+        ? `<span class="chip chip-shares" onclick="event.stopPropagation();openShareInPanel({kind:'topic',name:'${escapeAttr(topic.name)}'})">
+               <i class="fas fa-people-group"></i> ${shareCount} shares
                <span class="chip-tooltip">${sharedDepts.map(d => escapeAttr(d)).join(', ')}</span>
            </span>`
         : '';
@@ -1708,7 +1681,7 @@ function topicRowHtml(topic, id) {
                             <div class="action-menu-popup" role="menu">
                                 <button type="button" class="action-item" onclick="actionAddSubTopic(this, event)"><i class="fas fa-puzzle-piece"></i> Add sub-topic</button>
                                 <button type="button" class="action-item" onclick="actionEditTopic(this, event)"><i class="fas fa-pen"></i> Edit</button>
-                                <button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-share-nodes"></i> Share</button>
+                                <button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-people-group"></i> Share</button>
                                 <button type="button" class="action-item" onclick="actionToggleDisabled(this, event)"><i class="fas ${disableIcon}"></i> ${disableLabel}</button>
                                 <div class="action-sep"></div>
                                 <button type="button" class="action-item action-item-danger" onclick="actionDeleteTopic(this, event)"><i class="fas fa-trash"></i> Delete</button>
@@ -1725,9 +1698,8 @@ function topicRowHtml(topic, id) {
 function subTopicRowHtml(sub, parentId, idx, total) {
     const meta = mediaMeta(sub.mediaType);
     const lastClass = idx === total - 1 ? ' last' : '';
-    const subCover = sub.cover || randomCover();
     return `
-        <tr class="row-dept hidden" data-parent="${parentId}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName || '')}" data-description="${escapeAttr(sub.description || '')}" data-cover="${escapeAttr(subCover)}" onclick="selectRow(this)">
+        <tr class="row-dept hidden" data-parent="${parentId}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName || '')}" data-description="${escapeAttr(sub.description || '')}" onclick="selectRow(this)">
             <td class="col-name"><div class="cell-row"><span class="dept-indent"></span><span class="dept-connector${lastClass}"></span><span class="dept-name">${escapeAttr(sub.name)}</span><span class="row-main-chip"><span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span></span><span class="cell-pills"></span><span class="row-actions">
                 <div class="action-menu">
                     <button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
@@ -1776,8 +1748,7 @@ function snapshotCurrentScope() {
                 name:         subNameEl ? subNameEl.textContent.trim() : '',
                 description:  subRow.dataset.description || '',
                 mediaType:    subRow.dataset.mediaType   || 'PDF',
-                mediaName:    subRow.dataset.mediaName   || '',
-                cover:        subRow.dataset.cover       || ''
+                mediaName:    subRow.dataset.mediaName   || ''
             });
         });
         topics.push({

@@ -20,15 +20,15 @@ dx-license-trigger,
     --sidebar-width: 220px;
     --detail-width: 400px;
     --bg: #f4f6f9;
-    --sidebar-bg: #1e293b;
-    --sidebar-text: #94a3b8;
+    --sidebar-bg: #24272e;
+    --sidebar-text: #c0c6d4;
     --sidebar-active: #ffffff;
     --white: #ffffff;
     --border: #e2e8f0;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
-    --accent: #3b82f6;
-    --accent-light: #eff6ff;
+    --accent: #3b56bb;
+    --accent-light: #e8eef8;
     --success: #22c55e;
     --warning: #f59e0b;
     --muted: #cbd5e1;
@@ -49,16 +49,34 @@ body {
 }
 
 /* ===== Layout ===== */
+/* ===== Top accent banner ===== */
+body::before {
+    content: '';
+    display: block;
+    height: 6px;
+    background: linear-gradient(to right, #ab7197 0%, #f9604d 100%);
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    z-index: 9999;
+}
+
+body:has(.sidebar.collapsed)::before {
+    left: 60px;
+}
+
 .layout {
     display: flex;
     height: 100vh;
     overflow: hidden;
+    padding-top: 6px;
 }
 
 /* ===== Sidebar ===== */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--sidebar-bg);
+    background: linear-gradient(to bottom, #3b56bb 0%, #111937 100%);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -345,7 +363,7 @@ body {
 
 .scope-item.selected {
     background: var(--accent-light);
-    border-color: rgba(59, 130, 246, 0.35);
+    border-color: rgba(59, 86, 187, 0.35);
     border-radius: 6px;
     margin: 0 8px;
     padding: 8px 8px;
@@ -376,7 +394,7 @@ body {
 
 .scope-item.selected .scope-item-avatar {
     background: var(--white);
-    border: 1px solid rgba(59, 130, 246, 0.4);
+    border: 1px solid rgba(59, 86, 187, 0.4);
     color: var(--accent);
 }
 
@@ -441,12 +459,12 @@ body {
 }
 
 .nav-item.active {
-    background: rgba(59, 130, 246, 0.18);
+    background: #3c444a;
     color: var(--white);
 }
 
 .nav-item.active i {
-    color: var(--accent);
+    color: var(--white);
 }
 
 .nav-item i {
@@ -755,7 +773,7 @@ body {
 }
 
 .btn-primary:hover {
-    background: #2563eb;
+    background: #2e44a0;
 }
 
 .btn:disabled,
@@ -1232,14 +1250,8 @@ tr.selected .col-actions .btn-icon {
 }
 
 .row-actions .btn-icon {
-    opacity: 0;
-    transition: opacity 0.1s ease, background 0.15s ease, color 0.15s ease;
-}
-
-tr:hover .row-actions .btn-icon,
-tr.selected .row-actions .btn-icon,
-.row-company.selected .row-actions .btn-icon {
     opacity: 1;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 /* ===== Column widths ===== */

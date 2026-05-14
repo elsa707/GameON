@@ -433,16 +433,13 @@
     color: #b91c1c;
 }
 
-/* ===== Share count chip (orange) ===== */
+/* ===== Share count chip ===== */
 .chip-shares {
-    background: #fff7ed;
-    border-color: #fed7aa;
-    color: #c2410c;
     font-weight: 600;
-    cursor: default;
+    cursor: pointer;
     position: relative;
 }
-.chip-shares i { color: #f97316; }
+.chip-shares i { color: #6366f1; }
 
 /* Tooltip that opens above the share badge on hover */
 .chip-tooltip {
@@ -535,10 +532,10 @@
 
 /* ===== Share inside the detail panel ===== */
 .detail-share-badge {
-    background: #fff7ed;
-    color: #c2410c;
+    background: #eef2ff;
+    color: #3730a3;
 }
-.detail-share-badge i { color: #f97316; }
+.detail-share-badge i { color: #6366f1; }
 .share-panel-lead {
     font-size: 13px;
     color: #4b5563;
@@ -572,7 +569,7 @@
 .share-dept-item input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    accent-color: #f97316;
+    accent-color: #6366f1;
     margin: 0;
     cursor: pointer;
 }
@@ -585,9 +582,9 @@
 .share-dept-tag {
     font-size: 11px;
     font-weight: 600;
-    color: #c2410c;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
+    color: #3730a3;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
     padding: 2px 8px;
     border-radius: 10px;
 }
@@ -681,6 +678,8 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    max-height: 210px;
+    overflow-y: auto;
 }
 .sub-list-item {
     display: flex;
@@ -691,14 +690,6 @@
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     font-size: 13px;
-}
-.sub-list-cover {
-    width: 36px;
-    height: 36px;
-    object-fit: cover;
-    border-radius: 6px;
-    flex-shrink: 0;
-    filter: saturate(0.3) brightness(1.15);
 }
 .sub-list-index {
     flex-shrink: 0;
@@ -1090,21 +1081,22 @@
     font-size: 11px;
 }
 
-/* ===== Bulk select mode ===== */
+/* ===== Bulk select ===== */
 .row-select {
-    display: none;
+    display: inline-flex;
     align-items: center;
     margin-right: 4px;
 }
-body.select-mode .row-select { display: inline-flex; }
-body.select-mode tr.row-company .chevron { display: none; }
-body.select-mode .row-actions { display: none; }
 .row-checkbox {
     width: 16px;
     height: 16px;
     cursor: pointer;
     accent-color: var(--accent, #2563eb);
+    opacity: 0.2;
+    transition: opacity 0.15s ease;
 }
+tr.row-company:hover .row-checkbox { opacity: 0.5; }
+.row-checkbox:checked { opacity: 1; }
 .row-company.row-selected {
     background: #eff6ff;
 }

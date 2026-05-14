@@ -3,13 +3,13 @@
 // Scope is shared with other pages via localStorage key 'gameon.scope' (numeric ids).
 
 var SIDEBAR_COMPANIES = [
-    { id: 7, name: 'Naspers' },
-    { id: 6, name: 'Standard Bank' },
-    { id: 5, name: 'Anglo American' },
-    { id: 4, name: 'Sasol' },
-    { id: 3, name: 'MTN Group' },
-    { id: 2, name: 'Discovery' },
-    { id: 1, name: 'Shoprite' }
+    { id: 7, name: 'Naspers',        color: '#c8102e' },
+    { id: 6, name: 'Standard Bank',  color: '#005aff' },
+    { id: 5, name: 'Anglo American', color: '#c41230' },
+    { id: 4, name: 'Sasol',          color: '#f47920' },
+    { id: 3, name: 'MTN Group',      color: '#ffcc00' },
+    { id: 2, name: 'Discovery',      color: '#7b2d8b' },
+    { id: 1, name: 'Shoprite',       color: '#e31d1a' }
 ];
 
 var SIDEBAR_DEPARTMENTS = [

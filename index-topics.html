@@ -91,7 +91,6 @@
                     <input type="text" placeholder="Search..." id="tableSearch" oninput="filterTable(this.value)">
                 </div>
                 <div class="toolbar-right">
-                    <button class="btn btn-outline toolbar-bulk-btn" onclick="toggleBulkSelect()" id="bulkSelectBtn" disabled><i class="fas fa-check-square"></i> Bulk Select</button>
                     <button class="btn-text-danger toolbar-disable-btn" onclick="bulkDisableSelected()" id="bulkDisableBtn" hidden><i class="fas fa-ban"></i> Disable</button>
                     <select class="status-filter" id="topicStatusFilter" onchange="filterByTopicStatus(this.value)">
                         <option value="active">Active</option>
@@ -106,7 +105,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th class="col-name">Name</th>
+                            <th class="col-name"><input type="checkbox" id="selectAllTopics" class="row-checkbox" style="margin-right:6px;vertical-align:middle" onclick="toggleSelectAll(this)" title="Select all"><span>Name</span></th>
                         </tr>
                     </thead>
                     <tbody><!-- rows are rendered by renderTopicsForScope() once a department is selected --></tbody>
@@ -160,7 +159,7 @@
             <!-- Share mode -->
             <div class="detail-content hidden" id="detailShare">
                 <div class="detail-topbar">
-                    <span class="detail-edit-badge detail-share-badge"><i class="fas fa-share-nodes"></i> Sharing</span>
+                    <span class="detail-edit-badge detail-share-badge"><i class="fas fa-people-group"></i> Sharing</span>
                     <button class="btn-icon" onclick="cancelShare()" title="Close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="detail-header">
