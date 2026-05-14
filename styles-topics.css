@@ -778,6 +778,7 @@
     align-items: center;
     gap: 6px;
     border-style: dashed;
+    border-radius: 8px;
 }
 
 /* Add Content / Add sub-topic choice */
@@ -817,6 +818,7 @@
     text-align: center;
     background: #fff;
     cursor: pointer;
+    border-radius: 10px;
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 .btn-choice:hover {
@@ -1111,6 +1113,11 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     margin-left: auto;
 }
 .toolbar-disable-btn[hidden] { display: none; }
+
+#addTopicBtn {
+    padding: 9px 20px;
+    font-size: 13.5px;
+}
 .toolbar-bulk-btn.active {
     background: #1e293b;
     border-color: #1e293b;
