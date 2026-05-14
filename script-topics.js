@@ -38,7 +38,7 @@ function gradientCoverSvg(c1, c2) {
 const COVER_PRESETS = [
     gradientCoverSvg('#3b82f6', '#8b5cf6'), // blue → purple
     gradientCoverSvg('#f97316', '#ec4899'), // orange → pink
-    gradientCoverSvg('#14b8a6', '#22c55e')  // teal → green
+    gradientCoverSvg('#a855f7', '#7c3aed')  // purple → violet
 ];
 
 const DEFAULT_COVER_URL = COVER_PRESETS[0];
