@@ -145,7 +145,7 @@ function contentPickerHtml(idPrefix, defaults) {
         <div class="content-picker" data-id="${idPrefix}">
             <div class="content-kind-tabs" role="tablist">
                 <button type="button" class="content-kind-tab ${kind === 'upload' ? 'active' : ''}" data-kind="upload" onclick="setContentKind(this)"><i class="fas fa-upload"></i> Upload</button>
-                <button type="button" class="content-kind-tab ${kind === 'video' ? 'active' : ''}" data-kind="video" onclick="setContentKind(this)"><i class="fas fa-video"></i> Video URL</button>
+                <button type="button" class="content-kind-tab ${kind === 'video' ? 'active' : ''}" data-kind="video" onclick="setContentKind(this)"><i class="fas fa-link"></i> Web URL</button>
                 <button type="button" class="content-kind-tab ${kind === 'text' ? 'active' : ''}" data-kind="text" onclick="setContentKind(this)"><i class="fas fa-align-left"></i> Text</button>
             </div>
             <input type="hidden" class="cp-kind" value="${kind}">
@@ -164,7 +164,7 @@ function contentPickerHtml(idPrefix, defaults) {
                 <input type="hidden" class="cp-media-name" value="${kind === 'upload' ? escapeAttr(mediaName) : ''}">
             </div>
             <div class="content-pane${kind === 'video' ? '' : ' hidden'}" data-pane="video">
-                <input type="url" class="cp-video-url" value="${kind === 'video' ? escapeAttr(mediaName) : ''}" placeholder="https://youtube.com/watch?v=…">
+                <input type="url" class="cp-video-url" value="${kind === 'video' ? escapeAttr(mediaName) : ''}" placeholder="https://…">
             </div>
             <div class="content-pane${kind === 'text' ? '' : ' hidden'}" data-pane="text">
                 <textarea class="cp-text" rows="4" placeholder="Type the sub-topic content…">${kind === 'text' ? escapeAttr(mediaName) : ''}</textarea>
@@ -1026,6 +1026,9 @@ function previewCover(input) {
 function setPanelMode(mode) {
     const badge = document.getElementById('editBadge');
     const submitBtn = document.getElementById('editSubmitBtn');
+    const creditsEl = document.getElementById('aiCreditsDisplay');
+    badge.classList.remove('badge-ai');
+    if (creditsEl) creditsEl.hidden = true;
     if (mode === 'add') {
         isAddMode = true;
         badge.innerHTML = '<i class="fas fa-plus"></i> Adding';
@@ -1114,6 +1117,30 @@ function addTopic() {
 
     setPanelMode('add');
     showEdit();
+}
+
+function addTopicAI() {
+    addTopic();
+
+    // Override the badge to signal AI mode
+    var badge = document.getElementById('editBadge');
+    if (badge) {
+        badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Adding with AI';
+        badge.classList.add('badge-ai');
+    }
+
+    // Show AI credits
+    var creditsEl = document.getElementById('aiCreditsDisplay');
+    if (creditsEl) creditsEl.hidden = false;
+
+    // AI flow: no sub-topics option — hide the tab and its pane
+    var subsTabBtn = document.querySelector('#editFields .add-topic-tab[data-tab="subs"]');
+    if (subsTabBtn) subsTabBtn.hidden = true;
+    var subsPane = document.getElementById('tabPaneSubs');
+    if (subsPane) subsPane.hidden = true;
+
+    // Auto-activate the content section — skip the choice picker
+    chooseAddContent();
 }
 
 function switchAddTab(tab) {

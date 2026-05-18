@@ -69,6 +69,7 @@
                 </div>
                 <div class="page-actions">
                     <button class="btn btn-primary" onclick="addTopic()" id="addTopicBtn" disabled><i class="fas fa-layer-group"></i> Add Topic</button>
+                    <button class="btn btn-ai" onclick="addTopicAI()" id="addTopicAIBtn" disabled><i class="fas fa-wand-magic-sparkles"></i> Add with AI</button>
                 </div>
             </div>
 
@@ -139,6 +140,7 @@
             <div class="detail-content hidden" id="detailEdit">
                 <div class="detail-topbar">
                     <span class="detail-edit-badge" id="editBadge"><i class="fas fa-pen"></i> Editing</span>
+                    <span class="ai-credits-display" id="aiCreditsDisplay" hidden><i class="fas fa-coins"></i> <span id="aiCreditsCount">12</span> credits</span>
                     <button class="btn-icon" onclick="cancelEdit()" title="Close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="detail-header">

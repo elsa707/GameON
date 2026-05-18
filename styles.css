@@ -27,7 +27,7 @@ dx-license-trigger,
     --border: #e2e8f0;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
-    --accent: #3b56bb;
+    --accent: #244173;
     --accent-light: #e8eef8;
     --success: #22c55e;
     --warning: #f59e0b;
@@ -66,6 +66,7 @@ body:has(.sidebar.collapsed)::before {
     left: 60px;
 }
 
+
 .layout {
     display: flex;
     height: 100vh;
@@ -75,7 +76,7 @@ body:has(.sidebar.collapsed)::before {
 /* ===== Sidebar ===== */
 .sidebar {
     width: var(--sidebar-width);
-    background: linear-gradient(to bottom, #3b56bb 0%, #111937 100%);
+    background: linear-gradient(to bottom, #2e5795 0%, #111935 100%);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -362,7 +363,7 @@ body:has(.sidebar.collapsed)::before {
 
 .scope-item.selected {
     background: var(--accent-light);
-    border-color: rgba(59, 86, 187, 0.35);
+    border-color: rgba(36, 65, 115, 0.35);
     border-radius: 6px;
     margin: 0 8px;
     padding: 8px 8px;
@@ -393,7 +394,7 @@ body:has(.sidebar.collapsed)::before {
 
 .scope-item.selected .scope-item-avatar {
     background: var(--white);
-    border: 1px solid rgba(59, 86, 187, 0.4);
+    border: 1px solid rgba(36, 65, 115, 0.4);
     color: var(--accent);
 }
 
@@ -458,7 +459,7 @@ body:has(.sidebar.collapsed)::before {
 }
 
 .nav-item.active {
-    background: #4055a9;
+    background: #456eab;
     color: var(--white);
 }
 
@@ -775,7 +776,7 @@ body:has(.sidebar.collapsed)::before {
 }
 
 .btn-primary:hover {
-    background: #2e44a0;
+    background: #1a3058;
 }
 
 .btn:disabled,

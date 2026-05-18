@@ -102,8 +102,10 @@ function applyTopicsScope(companyId, departmentId) {
 
     // Adding requires both company and department — the data model is dept-scoped.
     var addTopicBtn = document.getElementById('addTopicBtn');
+    var addTopicAIBtn = document.getElementById('addTopicAIBtn');
     var addModuleBtn = document.getElementById('addModuleBtn');
     if (addTopicBtn) addTopicBtn.disabled = !hasDept;
+    if (addTopicAIBtn) addTopicAIBtn.disabled = !hasDept;
     if (addModuleBtn) addModuleBtn.disabled = !hasDept;
 
     if (!ready) {
