@@ -184,6 +184,24 @@ function setContentKind(btn) {
     else if (kind === 'text') picker.querySelector('.cp-media-type').value = 'text';
     // For 'upload', mediaType is set when a file is chosen.
     picker.classList.remove('error');
+    updateAIGenerateBtn();
+}
+
+function updateAIGenerateBtn() {
+    var genBtn = document.getElementById('aiGenerateBtn');
+    if (!genBtn) return;
+    var picker = document.querySelector('#topicContentSection .content-picker');
+    if (!picker) return;
+    var kind = picker.querySelector('.cp-kind').value;
+    var hasContent = false;
+    if (kind === 'video') {
+        hasContent = !!picker.querySelector('.cp-video-url').value.trim();
+    } else if (kind === 'text') {
+        hasContent = !!picker.querySelector('.cp-text').value.trim();
+    } else {
+        hasContent = !!picker.querySelector('.cp-media-name').value;
+    }
+    genBtn.disabled = !hasContent;
 }
 
 function onContentFileChange(input) {
@@ -197,6 +215,7 @@ function onContentFileChange(input) {
     const nameEl = picker.querySelector('.cp-dropzone-name');
     if (nameEl) nameEl.textContent = file.name;
     picker.classList.remove('error');
+    updateAIGenerateBtn();
 }
 
 function onContentFileDrop(zone, event) {
@@ -212,6 +231,7 @@ function onContentFileDrop(zone, event) {
     const nameEl = picker.querySelector('.cp-dropzone-name');
     if (nameEl) nameEl.textContent = file.name;
     picker.classList.remove('error');
+    updateAIGenerateBtn();
 }
 
 // Returns true if the picker has a non-empty value matching the active kind.
@@ -280,7 +300,7 @@ function chooseAddSubTopic() {
     picker.classList.add('hidden');
     picker.classList.remove('error');
     const subsTab = document.getElementById('addTabSubs');
-    if (subsTab) subsTab.disabled = false;
+    if (subsTab) { subsTab.hidden = false; subsTab.disabled = false; }
     switchAddTab('subs');
     openSubEditor('new');
 }
@@ -356,7 +376,7 @@ function cancelSubEditor() {
     } else {
         // No subs — revert to Tab 1 and re-offer the two choices.
         const subsTab = document.getElementById('addTabSubs');
-        if (subsTab) subsTab.disabled = true;
+        if (subsTab) { subsTab.hidden = true; subsTab.disabled = true; }
         switchAddTab('topic');
         document.getElementById('choicePicker').classList.remove('hidden');
     }
@@ -436,7 +456,7 @@ function removeSubItem(btn) {
         if (editor.classList.contains('hidden')) {
             // Revert to Tab 1 and re-offer the two choices.
             const subsTab = document.getElementById('addTabSubs');
-            if (subsTab) subsTab.disabled = true;
+            if (subsTab) { subsTab.hidden = true; subsTab.disabled = true; }
             switchAddTab('topic');
             document.getElementById('choicePicker').classList.remove('hidden');
         }
@@ -501,6 +521,7 @@ function getScopeSubtitle() {
 function toggleTopic(topicId) {
     const topicRow = document.querySelector(`tr[data-topic="${topicId}"]`);
     const moduleRows = document.querySelectorAll(`tr[data-parent="${topicId}"]`);
+    if (!moduleRows.length) return;
     const isExpanded = topicRow.classList.contains('expanded');
 
     if (isExpanded) {
@@ -843,20 +864,40 @@ function saveAdd(data) {
             }
         }
 
-        // Require the user to have picked "Add content" or added at least one sub-topic.
-        const contentSection = document.getElementById('topicContentSection');
-        const contentVisible = contentSection && !contentSection.classList.contains('hidden');
-        const hasSubs = document.querySelectorAll('#subsList .sub-list-item').length > 0;
-        if (!contentVisible && !hasSubs) {
-            switchAddTab('topic');
-            const picker = document.getElementById('choicePicker');
-            if (picker) {
-                picker.classList.add('error');
-                picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const isAIFlow = !!document.getElementById('aiStep2Section');
+
+        if (isAIFlow) {
+            // AI flow: only require name and description to be non-empty.
+            const aiName = (data.get('name') || '').trim();
+            const aiDesc = (data.get('description') || '').trim();
+            if (!aiName || !aiDesc) {
+                switchAITab('ai-topic');
+                const emptyField = !aiName
+                    ? document.querySelector('#aiTabPaneTopic input[name="name"]')
+                    : document.querySelector('#aiTabPaneTopic input[name="description"]');
+                if (emptyField) emptyField.focus();
+                showToast(!aiName ? 'Please enter a topic name' : 'Please enter a description');
+                return;
             }
-            showToast('Please add content or a sub-topic before saving');
-            return;
+        } else {
+            // Normal flow: require content or at least one sub-topic.
+            const contentSection = document.getElementById('topicContentSection');
+            const contentVisible = contentSection && !contentSection.classList.contains('hidden');
+            const hasSubs = document.querySelectorAll('#subsList .sub-list-item').length > 0;
+            if (!contentVisible && !hasSubs) {
+                switchAddTab('topic');
+                const picker = document.getElementById('choicePicker');
+                if (picker) {
+                    picker.classList.add('error');
+                    picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                showToast('Please add content or a sub-topic before saving');
+                return;
+            }
         }
+
+        const contentSection = document.getElementById('topicContentSection');
+        const contentVisible = !isAIFlow && contentSection && !contentSection.classList.contains('hidden');
 
         const existingIds = [...document.querySelectorAll('tr[data-topic]')].map(r => parseInt(r.dataset.topic));
         const newId = Math.max(0, ...existingIds) + 1;
@@ -878,10 +919,10 @@ function saveAdd(data) {
             <td class="col-name">
                 <div class="cell-row">
                     <span class="row-select"><input type="checkbox" class="row-checkbox" data-topic-name="${escapeAttr(name)}" onclick="onSelectCheckbox(event)"></span>
-                    <span class="chevron"><i class="fas fa-chevron-down"></i></span>
+                    <span class="chevron" style="visibility:hidden"><i class="fas fa-chevron-down"></i></span>
                     <img class="row-thumb" src="${escapeAttr(cover || randomCover())}" alt="">
                     <span class="company-name">${escapeAttr(name)}</span>
-                    <span class="row-main-chip"><span class="chip chip-modules"><i class="fas fa-book-open"></i> 0 sub-topics</span></span>
+                    <span class="row-main-chip"></span>
                     <span class="cell-pills"></span>
                     <span class="row-status"><span class="chip chip-status chip-status-active">Active</span></span>
                     <span class="row-actions">
@@ -904,9 +945,23 @@ function saveAdd(data) {
 
         const listed = readListedSubs();
 
-        if (listed.length > 0) {
+        // In the AI flow, collect sub-topics from the generated accordion.
+        const aiSubs = isAIFlow
+            ? Array.from(document.querySelectorAll('#aiTabPaneSubs .ai-sub-item')).map(function(item) {
+                const nameEl = item.querySelector('.ai-sub-name');
+                return {
+                    name: (nameEl ? nameEl.textContent.trim() : '') || 'Untitled Sub-Topic',
+                    mediaType: 'text',
+                    mediaName: nameEl ? nameEl.textContent.trim() : ''
+                };
+            })
+            : [];
+
+        const allSubs = listed.concat(aiSubs);
+
+        if (allSubs.length > 0) {
             // Topic acts as a container for sub-topics.
-            listed.forEach(s => createSubTopicRow(newId, s));
+            allSubs.forEach(s => createSubTopicRow(newId, s));
             updateTopicRowChips(tr);
         } else if (contentVisible) {
             // Single-content topic.
@@ -923,12 +978,12 @@ function saveAdd(data) {
             updateTopicRowChips(tr);
         }
 
-        const subSummary = listed.length
-            ? ` with ${listed.length} sub-topic${listed.length !== 1 ? 's' : ''}`
+        const subSummary = allSubs.length
+            ? ` with ${allSubs.length} sub-topic${allSubs.length !== 1 ? 's' : ''}`
             : '';
         snapshotCurrentScope();
         showToast(`"${name}" added${subSummary}`);
-        showEmpty();
+        showAddShareStep(name);
 
     } else if (currentEditType === 'module') {
         const parentId = data.get('parentTopic');
@@ -966,9 +1021,13 @@ function updateTopicRowChips(row) {
     if (modCount === 0 && row.dataset.mediaType) {
         const meta = mediaMeta(row.dataset.mediaType);
         mainChip.innerHTML = `<span class="chip chip-media"><i class="${meta.icon}"></i> ${meta.label}</span>`;
-        return;
+    } else if (modCount > 0) {
+        mainChip.innerHTML = `<span class="chip chip-modules"><i class="fas fa-book-open"></i> ${modCount} sub-topic${modCount !== 1 ? 's' : ''}</span>`;
+    } else {
+        mainChip.innerHTML = '';
     }
-    mainChip.innerHTML = `<span class="chip chip-modules"><i class="fas fa-book-open"></i> ${modCount} sub-topic${modCount !== 1 ? 's' : ''}</span>`;
+    const chevronEl = row.querySelector('.chevron');
+    if (chevronEl) chevronEl.style.visibility = modCount > 0 ? '' : 'hidden';
 }
 
 function updateTopicModuleCount(topicId) {
@@ -1024,11 +1083,24 @@ function previewCover(input) {
 
 // ===== Panel mode =====
 function setPanelMode(mode) {
+    // The Share step replaces .edit-actions; restore it before doing anything else.
+    if (!document.getElementById('editSubmitBtn')) {
+        const actions = document.querySelector('#detailEdit .edit-actions');
+        if (actions) actions.innerHTML =
+            '<button type="button" class="btn-icon btn-delete-icon hidden" id="editDeleteBtn" onclick="deleteCurrent()" title="Delete"><i class="fas fa-trash"></i></button>' +
+            '<button type="button" class="btn btn-text-danger hidden" id="editDisableBtn" onclick="toggleCurrentTopicActive()"><i class="fas fa-ban"></i> Disable</button>' +
+            '<button type="button" class="btn btn-outline" onclick="cancelEdit()">Cancel</button>' +
+            '<button type="submit" class="btn btn-primary" id="editSubmitBtn">Save Changes</button>';
+    }
     const badge = document.getElementById('editBadge');
     const submitBtn = document.getElementById('editSubmitBtn');
     const creditsEl = document.getElementById('aiCreditsDisplay');
     badge.classList.remove('badge-ai');
     if (creditsEl) creditsEl.hidden = true;
+    submitBtn.hidden = false;
+    submitBtn.disabled = false;
+    var genBtn = document.getElementById('aiGenerateBtn');
+    if (genBtn) genBtn.remove();
     if (mode === 'add') {
         isAddMode = true;
         badge.innerHTML = '<i class="fas fa-plus"></i> Adding';
@@ -1058,7 +1130,8 @@ function addTopic() {
     document.getElementById('editFields').innerHTML = `
         <div class="add-topic-tabs">
             <button type="button" class="add-topic-tab active" data-tab="topic" onclick="switchAddTab('topic')"><i class="fas fa-layer-group"></i> Topic</button>
-            <button type="button" class="add-topic-tab" data-tab="subs" id="addTabSubs" onclick="switchAddTab('subs')" disabled>Sub-topics <span class="tab-badge hidden" id="addTabSubsBadge"></span></button>
+            <button type="button" class="add-topic-tab" data-tab="subs" id="addTabSubs" onclick="switchAddTab('subs')" hidden>Sub-topics <span class="tab-badge hidden" id="addTabSubsBadge"></span></button>
+            <button type="button" class="add-topic-tab" data-tab="share" id="addTabShare" onclick="switchAddTab('share')" disabled><i class="fas fa-people-group"></i> Share</button>
         </div>
 
         <div class="add-topic-pane" id="tabPaneTopic">
@@ -1113,6 +1186,10 @@ function addTopic() {
                 </button>
             </div>
         </div>
+
+        <div class="add-topic-pane hidden" id="tabPaneShare">
+            ${buildAddShareTabHtml()}
+        </div>
     `;
 
     setPanelMode('add');
@@ -1120,36 +1197,420 @@ function addTopic() {
 }
 
 function addTopicAI() {
-    addTopic();
+    clearSelection();
+    currentEditRow = null;
+    currentEditType = 'topic';
+    currentViewRow = null;
+    _editingSubIdx = null;
+    document.getElementById('editTitle').textContent = 'Add Topic';
+    document.getElementById('editSubtitle').textContent = getScopeSubtitle();
 
-    // Override the badge to signal AI mode
+    document.getElementById('editFields').innerHTML = `
+        <div class="form-group" id="topicContentSection">
+            ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
+        </div>
+        <div class="ai-subtopics-option">
+            <label class="ai-toggle-label">
+                <span class="ai-toggle-wrap">
+                    <input type="checkbox" id="aiIncludeSubtopics" class="ai-toggle-input">
+                    <span class="ai-toggle-track"></span>
+                </span>
+                <span class="ai-toggle-text">Generate with sub-topics</span>
+            </label>
+        </div>
+        <div class="form-group ai-model-group">
+            <label for="aiModelSelect">AI Model</label>
+            <select id="aiModelSelect" class="ai-model-select">
+                <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — Recommended</option>
+                <option value="claude-opus-4-7">Claude Opus 4.7 — Most capable</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
+                <option value="gpt-4o">GPT-4o</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+            </select>
+        </div>
+        <div class="hidden" id="aiStep2Section"></div>
+    `;
+
+    _aiGenerateIdx = 0;
+    setPanelMode('add');
+
     var badge = document.getElementById('editBadge');
     if (badge) {
         badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Adding with AI';
         badge.classList.add('badge-ai');
     }
-
-    // Show AI credits
+    var companyKey = (_currentScope && _currentScope.companyKey) || '';
+    var usedNow  = _companyCreditsUsed[companyKey] || 0;
+    var totalNow = getCompanyCreditsTotal(companyKey);
+    var countEl = document.getElementById('aiCreditsCount');
+    if (countEl) countEl.textContent = usedNow;
+    var totalEl = document.getElementById('aiCreditsTotal');
+    if (totalEl) totalEl.textContent = totalNow;
     var creditsEl = document.getElementById('aiCreditsDisplay');
     if (creditsEl) creditsEl.hidden = false;
 
-    // AI flow: no sub-topics option — hide the tab and its pane
-    var subsTabBtn = document.querySelector('#editFields .add-topic-tab[data-tab="subs"]');
-    if (subsTabBtn) subsTabBtn.hidden = true;
-    var subsPane = document.getElementById('tabPaneSubs');
-    if (subsPane) subsPane.hidden = true;
+    // Inject Generate button into .edit-actions so flex:1 gives it the same width as Save
+    var submitBtn = document.getElementById('editSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Save';
+        var genBtn = document.createElement('button');
+        genBtn.type = 'button';
+        genBtn.id = 'aiGenerateBtn';
+        genBtn.className = 'btn btn-ai';
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate';
+        genBtn.disabled = true;
+        genBtn.onclick = aiGenerateStep2;
+        submitBtn.parentNode.insertBefore(genBtn, submitBtn);
+    }
 
-    // Auto-activate the content section — skip the choice picker
-    chooseAddContent();
+    // Enable Generate reactively as the user types a URL or text
+    var picker = document.querySelector('#topicContentSection .content-picker');
+    if (picker) picker.addEventListener('input', updateAIGenerateBtn);
+
+    showEdit();
+}
+
+var _aiGenerateIdx = 0;
+var _companyCreditsUsed = {}; // keyed by companyKey; persists across AI panel openings
+
+// Large pool of name+description pairs — shuffled at runtime so each Generate is unique.
+var _AI_NAME_POOL = [
+    { name: 'Introduction to Digital Marketing',       description: 'Explore core concepts of digital marketing strategy and tools.' },
+    { name: 'Foundations of Brand Strategy',           description: 'Learn how to build and position a compelling brand identity.' },
+    { name: 'Customer Engagement in the Digital Age',  description: 'Discover techniques to attract, retain and delight customers online.' },
+    { name: 'Data-Driven Decision Making',             description: 'Use analytics and insights to guide smarter business decisions.' },
+    { name: 'Effective Business Communication',        description: 'Master written, verbal and visual communication in the workplace.' },
+    { name: 'Principles of Financial Literacy',        description: 'Understand budgeting, forecasting and financial reporting fundamentals.' },
+    { name: 'Leading High-Performance Teams',          description: 'Build the skills to motivate, coach and develop top-performing teams.' },
+    { name: 'Project Management Essentials',           description: 'Plan, execute and close projects on time and within budget.' },
+    { name: 'Innovation and Design Thinking',          description: 'Apply human-centred design to solve complex business problems.' },
+    { name: 'Cybersecurity Awareness for Everyone',    description: 'Recognise threats, protect data, and stay safe online.' },
+    { name: 'Diversity, Equity and Inclusion at Work', description: 'Create an inclusive culture where every employee can thrive.' },
+    { name: 'Sales Fundamentals',                      description: 'Master the end-to-end sales process from prospecting to closing.' },
+    { name: 'Negotiation Skills',                      description: 'Develop strategies to reach mutually beneficial agreements.' },
+    { name: 'Customer Service Excellence',             description: 'Deliver consistent, empathetic service that builds lasting loyalty.' },
+    { name: 'Supply Chain Management Basics',          description: 'Understand how goods and information flow from supplier to customer.' },
+    { name: 'Agile Ways of Working',                   description: 'Adopt iterative, collaborative practices to deliver value faster.' },
+    { name: 'Emotional Intelligence in the Workplace', description: 'Harness self-awareness and empathy to improve working relationships.' },
+    { name: 'Sustainability and ESG Fundamentals',     description: 'Explore environmental, social and governance principles for business.' },
+    { name: 'Change Management',                       description: 'Guide people and organisations through transformation successfully.' },
+    { name: 'Critical Thinking and Problem Solving',   description: 'Apply structured reasoning to analyse problems and make sound decisions.' },
+    { name: 'Presentation and Public Speaking',        description: 'Craft and deliver compelling presentations with confidence.' },
+    { name: 'Introduction to Artificial Intelligence', description: 'Understand AI concepts, applications and their impact on business.' },
+    { name: 'Time Management and Productivity',        description: 'Prioritise effectively and protect your focus to achieve more.' },
+    { name: 'Coaching and Mentoring Skills',           description: 'Support the growth of others through structured coaching conversations.' },
+    { name: 'Risk Management Fundamentals',            description: 'Identify, assess and mitigate operational and strategic risks.' },
+];
+
+// Shuffle a copy and store as the draw queue.
+var _aiNameQueue = (function() {
+    var arr = _AI_NAME_POOL.slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+}());
+var _aiNameQueueIdx = 0;
+
+function nextAISuggestion() {
+    if (_aiNameQueueIdx >= _aiNameQueue.length) {
+        // Re-shuffle when pool is exhausted.
+        _aiNameQueue = _AI_NAME_POOL.slice();
+        for (var i = _aiNameQueue.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = _aiNameQueue[i]; _aiNameQueue[i] = _aiNameQueue[j]; _aiNameQueue[j] = tmp;
+        }
+        _aiNameQueueIdx = 0;
+    }
+    return _aiNameQueue[_aiNameQueueIdx++];
+}
+
+// Rich subtopic content sets (cycled separately for WYSIWYG previews).
+var _AI_SUGGESTIONS = [
+    {
+        subtopics: [
+            { name: 'What is Digital Marketing?', content: '<h3>What is Digital Marketing?</h3><p>Digital marketing encompasses all marketing efforts that use the internet or an electronic device. Businesses leverage digital channels such as search engines, social media, email, and websites to connect with current and prospective customers.</p><ul><li>Search Engine Optimisation (SEO)</li><li>Pay-Per-Click Advertising (PPC)</li><li>Social Media Marketing</li><li>Email Campaigns</li></ul>' },
+            { name: 'Setting Up Your Digital Strategy', content: '<h3>Setting Up Your Digital Strategy</h3><p>A successful digital strategy starts with clear goals and a deep understanding of your audience. Define your target personas, map their journey, and choose the right channels to reach them at every stage.</p><ol><li>Define SMART goals</li><li>Identify your target audience</li><li>Audit existing channels</li><li>Allocate budget and resources</li></ol>' },
+            { name: 'Measuring Success', content: '<h3>Measuring Success</h3><p>Data is the backbone of digital marketing. Tracking the right KPIs ensures you know what is working and what needs adjustment.</p><ul><li><strong>CTR</strong> — measures ad relevance</li><li><strong>Conversion Rate</strong> — measures landing page effectiveness</li><li><strong>CAC</strong> — measures campaign efficiency</li><li><strong>CLV</strong> — measures long-term customer value</li></ul>' },
+        ]
+    },
+    {
+        subtopics: [
+            { name: 'Defining Your Brand', content: '<h3>Defining Your Brand</h3><p>Your brand is more than a logo — it is the promise you make to your customers. Start by articulating your <strong>mission</strong>, <strong>vision</strong>, and <strong>core values</strong>.</p><ul><li><strong>Mission</strong>: Why you exist</li><li><strong>Vision</strong>: Where you are going</li><li><strong>Values</strong>: How you behave along the way</li></ul>' },
+            { name: 'Brand Positioning', content: '<h3>Brand Positioning</h3><p>Positioning defines how your brand occupies a distinct place in the minds of your target customers. A strong positioning statement answers three questions:</p><ol><li>Who is your target customer?</li><li>What category does your brand belong to?</li><li>What is your unique benefit?</li></ol><p>Use a positioning matrix to map yourself against competitors on the dimensions that matter most to your audience.</p>' },
+            { name: 'Visual Identity', content: '<h3>Visual Identity</h3><p>Consistent visual identity builds recognition and trust over time. Your visual system includes:</p><ul><li><strong>Logo</strong> — primary mark and variations</li><li><strong>Colour palette</strong> — primary, secondary, and accent colours</li><li><strong>Typography</strong> — heading and body fonts</li><li><strong>Imagery style</strong> — photography guidelines and illustrations</li></ul><p>Document everything in a brand style guide so every touchpoint looks and feels cohesive.</p>' },
+            { name: 'Brand Voice & Tone', content: '<h3>Brand Voice &amp; Tone</h3><p>Your brand voice is constant — the personality behind everything you say. Tone adapts to context (a social post vs a legal notice should sound different, but both should be unmistakably <em>you</em>).</p><p>Create a voice chart with three to five descriptors, a "we are / we are not" comparison, and before/after copy examples.</p>' },
+        ]
+    },
+    {
+        subtopics: [
+            { name: 'Understanding the Modern Customer', content: '<h3>Understanding the Modern Customer</h3><p>Today\'s customers are informed, connected, and expect personalised experiences. They interact with brands across multiple touchpoints — sometimes simultaneously.</p><ul><li>73% of consumers use multiple channels during their journey</li><li>Customers who have a positive experience are 5× more likely to recommend your brand</li><li>Personalisation can reduce acquisition costs by up to 50%</li></ul>' },
+            { name: 'Community Building', content: '<h3>Community Building</h3><p>A brand community turns customers into advocates. Strong communities share three traits:</p><ol><li><strong>Shared identity</strong> — members feel they belong</li><li><strong>Rituals and traditions</strong> — regular events, challenges, or content</li><li><strong>Moral responsibility</strong> — members help each other</li></ol><p>Start small: a dedicated forum, a social group, or a monthly live Q&amp;A can be the seed of something much larger.</p>' },
+            { name: 'Retention Strategies', content: '<h3>Retention Strategies</h3><p>Acquiring a new customer costs five to seven times more than retaining an existing one. Focus on these high-impact retention levers:</p><ul><li><strong>Onboarding</strong> — guide new users to their first value moment quickly</li><li><strong>Loyalty programmes</strong> — reward repeat behaviour meaningfully</li><li><strong>Proactive support</strong> — reach out before problems escalate</li><li><strong>Win-back campaigns</strong> — re-engage lapsed customers with targeted offers</li></ul>' },
+        ]
+    },
+    {
+        subtopics: [
+            { name: 'Data Literacy Fundamentals', content: '<h3>Data Literacy Fundamentals</h3><p>Data literacy is the ability to read, understand, create, and communicate data as information. It is a critical skill at every level of an organisation.</p><ul><li><strong>Descriptive analytics</strong> — what happened?</li><li><strong>Diagnostic analytics</strong> — why did it happen?</li><li><strong>Predictive analytics</strong> — what is likely to happen?</li><li><strong>Prescriptive analytics</strong> — what should we do?</li></ul>' },
+            { name: 'Building a Data Culture', content: '<h3>Building a Data Culture</h3><p>A data culture means decisions at every level are informed by evidence, not just intuition. Key pillars:</p><ol><li>Leadership buy-in and modelling of data-driven behaviour</li><li>Access to clean, trusted data for every team</li><li>Training and upskilling so all staff can interpret reports</li><li>Clear processes for turning insight into action</li></ol>' },
+            { name: 'Communicating Insights', content: '<h3>Communicating Insights</h3><p>Even the best analysis fails if the audience does not understand it. Effective data communication follows the <strong>SCR framework</strong>:</p><ul><li><strong>Situation</strong> — the context your audience cares about</li><li><strong>Complication</strong> — what has changed or what problem exists</li><li><strong>Resolution</strong> — your recommendation and the data backing it</li></ul>' },
+            { name: 'Ethical Use of Data', content: '<h3>Ethical Use of Data</h3><p>With great data comes great responsibility. Ethical data practices protect your customers and your organisation.</p><ul><li><strong>Consent</strong> — only collect data users have agreed to share</li><li><strong>Minimisation</strong> — collect only what you need</li><li><strong>Transparency</strong> — be clear about how data is used</li><li><strong>Security</strong> — protect data from unauthorised access</li><li><strong>Fairness</strong> — avoid algorithmic bias in automated decisions</li></ul>' },
+        ]
+    },
+];
+
+function aiGenerateStep2() {
+    var namePair   = nextAISuggestion();
+    var suggestion = _AI_SUGGESTIONS[_aiGenerateIdx % _AI_SUGGESTIONS.length];
+    suggestion = Object.assign({}, suggestion, { name: namePair.name, description: namePair.description });
+    _aiGenerateIdx++;
+
+    var step2 = document.getElementById('aiStep2Section');
+    if (!step2) return;
+
+    var coverUrl = COVER_PRESETS[(_aiGenerateIdx - 1) % COVER_PRESETS.length];
+    var includeSubtopics = !!(document.getElementById('aiIncludeSubtopics') &&
+                              document.getElementById('aiIncludeSubtopics').checked);
+
+    if (includeSubtopics && suggestion.subtopics && suggestion.subtopics.length) {
+        var subs = suggestion.subtopics;
+        var subCount = subs.length;
+
+        var previewItems = subs.map(function(s) {
+            return '<li>' + escapeAttr(s.name) + '</li>';
+        }).join('');
+
+        var accordionItems = subs.map(function(s, i) {
+            return '<div class="ai-sub-item">' +
+                '<div class="ai-sub-header">' +
+                    '<button type="button" class="ai-sub-toggle" onclick="toggleAISub(this)" title="Expand">' +
+                        '<i class="fas fa-chevron-right ai-sub-chevron"></i>' +
+                    '</button>' +
+                    '<span class="ai-sub-name" contenteditable="true">' + escapeAttr(s.name) + '</span>' +
+                '</div>' +
+                '<div class="ai-sub-body hidden">' +
+                    '<div class="ai-wysiwyg" contenteditable="true">' + s.content + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        step2.innerHTML =
+            '<div class="add-topic-tabs">' +
+                '<button type="button" class="add-topic-tab active" data-tab="ai-topic" onclick="switchAITab(\'ai-topic\')">Topic</button>' +
+                '<button type="button" class="add-topic-tab" data-tab="ai-subs" onclick="switchAITab(\'ai-subs\')">' +
+                    'Sub-topics <span class="tab-badge">' + subCount + '</span>' +
+                '</button>' +
+                '<button type="button" class="add-topic-tab" data-tab="ai-share" id="aiTabShare" onclick="switchAITab(\'ai-share\')" disabled><i class="fas fa-people-group"></i> Share</button>' +
+            '</div>' +
+            '<div class="add-topic-pane" id="aiTabPaneTopic">' +
+                '<div class="form-group"><label>Cover Image</label>' + coverPickerHtml(coverUrl) + '</div>' +
+                '<div class="form-group"><label>Topic Name</label>' +
+                    '<input type="text" name="name" value="' + escapeAttr(suggestion.name) + '" placeholder="Topic name">' +
+                '</div>' +
+                '<div class="form-group"><label>Description</label>' +
+                    '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
+                '</div>' +
+                '<div class="ai-subs-preview">' +
+                    '<div class="ai-subs-preview-header">' +
+                        '<span>' + subCount + ' sub-topic' + (subCount !== 1 ? 's' : '') + ' suggested</span>' +
+                        '<button type="button" class="ai-subs-view-btn" onclick="switchAITab(\'ai-subs\')">View Sub-topics <i class="fas fa-arrow-right"></i></button>' +
+                    '</div>' +
+                    '<ul class="ai-subs-preview-list">' + previewItems + '</ul>' +
+                '</div>' +
+            '</div>' +
+            '<div class="add-topic-pane hidden" id="aiTabPaneSubs">' +
+                '<div class="ai-sub-list">' + accordionItems + '</div>' +
+            '</div>' +
+            '<div class="add-topic-pane hidden" id="aiTabPaneShare">' + buildAddShareTabHtml() + '</div>';
+    } else {
+        step2.innerHTML =
+            '<div class="add-topic-tabs">' +
+                '<button type="button" class="add-topic-tab active" data-tab="ai-topic" onclick="switchAITab(\'ai-topic\')">Topic</button>' +
+                '<button type="button" class="add-topic-tab" data-tab="ai-share" id="aiTabShare" onclick="switchAITab(\'ai-share\')" disabled><i class="fas fa-people-group"></i> Share</button>' +
+            '</div>' +
+            '<div class="add-topic-pane" id="aiTabPaneTopic">' +
+                '<div class="form-group"><label>Cover Image</label>' + coverPickerHtml(coverUrl) + '</div>' +
+                '<div class="form-group"><label>Topic Name</label>' +
+                    '<input type="text" name="name" value="' + escapeAttr(suggestion.name) + '" placeholder="Topic name">' +
+                '</div>' +
+                '<div class="form-group"><label>Description</label>' +
+                    '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
+                '</div>' +
+            '</div>' +
+            '<div class="add-topic-pane hidden" id="aiTabPaneShare">' + buildAddShareTabHtml() + '</div>';
+    }
+
+    step2.classList.remove('hidden');
+
+    // Collapse the content/toggle/model sections on first Generate only
+    if (!document.getElementById('aiStep1Collapsed')) collapseAIStep1();
+
+    var genBtn = document.getElementById('aiGenerateBtn');
+    if (genBtn) genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+
+    var submitBtn = document.getElementById('editSubmitBtn');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save'; }
+
+    var ck = (_currentScope && _currentScope.companyKey) || '';
+    _companyCreditsUsed[ck] = (_companyCreditsUsed[ck] || 0) + 1;
+    var countEl = document.getElementById('aiCreditsCount');
+    if (countEl) countEl.textContent = _companyCreditsUsed[ck];
+    updateScopeCreditsDisplay();
+}
+
+function collapseAIStep1() {
+    var contentSection = document.getElementById('topicContentSection');
+    var toggleSection  = document.querySelector('.ai-subtopics-option');
+    var modelSection   = document.querySelector('.ai-model-group');
+    if (!contentSection) return;
+
+    // Build summary text from the picker state
+    var picker = contentSection.querySelector('.content-picker');
+    var summaryText = 'Content provided';
+    if (picker) {
+        var c = readContentPicker(picker);
+        if (c.mediaType === 'video' || c.mediaType === 'text') {
+            summaryText = c.mediaName.length > 45 ? c.mediaName.substring(0, 45) + '…' : c.mediaName;
+        } else {
+            summaryText = c.mediaName || 'Document uploaded';
+        }
+    }
+    var includeSubtopics = !!(document.getElementById('aiIncludeSubtopics') && document.getElementById('aiIncludeSubtopics').checked);
+    var modelSelect = document.getElementById('aiModelSelect');
+    var modelLabel  = modelSelect ? modelSelect.options[modelSelect.selectedIndex].text.split(' — ')[0] : 'Claude Sonnet 4.6';
+
+    // Hide step-1 sections
+    if (contentSection) contentSection.classList.add('hidden');
+    if (toggleSection)  toggleSection.classList.add('hidden');
+    if (modelSection)   modelSection.classList.add('hidden');
+
+    // Inject collapsed summary bar
+    var bar = document.createElement('div');
+    bar.className = 'ai-step1-collapsed';
+    bar.id = 'aiStep1Collapsed';
+    bar.innerHTML =
+        '<div class="ai-step1-summary">' +
+            '<i class="fas fa-file-lines ai-step1-icon"></i>' +
+            '<span class="ai-step1-text">' + escapeAttr(summaryText) + '</span>' +
+            (includeSubtopics ? '<span class="ai-step1-pill">Sub-topics</span>' : '') +
+            '<span class="ai-step1-pill">' + escapeAttr(modelLabel) + '</span>' +
+        '</div>' +
+        '<button type="button" class="ai-step1-expand" onclick="expandAIStep1()" title="Edit content"><i class="fas fa-chevron-down"></i></button>';
+
+    var step2 = document.getElementById('aiStep2Section');
+    if (step2) step2.parentNode.insertBefore(bar, step2);
+}
+
+function expandAIStep1() {
+    var bar = document.getElementById('aiStep1Collapsed');
+    if (bar) bar.remove();
+    var contentSection = document.getElementById('topicContentSection');
+    var toggleSection  = document.querySelector('.ai-subtopics-option');
+    var modelSection   = document.querySelector('.ai-model-group');
+    if (contentSection) contentSection.classList.remove('hidden');
+    if (toggleSection)  toggleSection.classList.remove('hidden');
+    if (modelSection)   modelSection.classList.remove('hidden');
+}
+
+function switchAITab(tab) {
+    document.querySelectorAll('#aiStep2Section .add-topic-tab').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    var topicPane = document.getElementById('aiTabPaneTopic');
+    var subsPane  = document.getElementById('aiTabPaneSubs');
+    var sharePane = document.getElementById('aiTabPaneShare');
+    if (topicPane)  topicPane.classList.toggle('hidden',  tab !== 'ai-topic');
+    if (subsPane)   subsPane.classList.toggle('hidden',   tab !== 'ai-subs');
+    if (sharePane)  sharePane.classList.toggle('hidden',  tab !== 'ai-share');
+}
+
+function toggleAISub(btn) {
+    var item = btn.closest('.ai-sub-item');
+    var body = item.querySelector('.ai-sub-body');
+    var chevron = btn.querySelector('.ai-sub-chevron');
+    var isOpen = !body.classList.contains('hidden');
+
+    // Collapse all
+    document.querySelectorAll('#aiTabPaneSubs .ai-sub-item').forEach(function(el) {
+        el.querySelector('.ai-sub-body').classList.add('hidden');
+        el.querySelector('.ai-sub-chevron').style.transform = '';
+    });
+
+    if (!isOpen) {
+        body.classList.remove('hidden');
+        chevron.style.transform = 'rotate(90deg)';
+    }
 }
 
 function switchAddTab(tab) {
     document.querySelectorAll('#editFields .add-topic-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     const topicPane = document.getElementById('tabPaneTopic');
     const subsPane  = document.getElementById('tabPaneSubs');
-    if (topicPane) topicPane.classList.toggle('hidden', tab !== 'topic');
-    if (subsPane)  subsPane.classList.toggle('hidden',  tab !== 'subs');
+    const sharePane = document.getElementById('tabPaneShare');
+    if (topicPane)  topicPane.classList.toggle('hidden',  tab !== 'topic');
+    if (subsPane)   subsPane.classList.toggle('hidden',   tab !== 'subs');
+    if (sharePane)  sharePane.classList.toggle('hidden',  tab !== 'share');
+}
 
+function buildAddShareTabHtml() {
+    var companyKey = _currentScope.companyKey;
+    if (!companyKey) return '<p class="share-empty">Select a company scope first.</p>';
+    var companies   = (typeof SIDEBAR_COMPANIES   !== 'undefined') ? SIDEBAR_COMPANIES   : [];
+    var departments = (typeof SIDEBAR_DEPARTMENTS !== 'undefined') ? SIDEBAR_DEPARTMENTS : [];
+    var company = companies.find(function(c) { return c.name.toLowerCase() === companyKey; });
+    if (!company) return '<p class="share-empty">Company not found.</p>';
+    var allDepts = departments.filter(function(d) { return d.companyId === company.id; });
+    if (!allDepts.length) return '<p class="share-empty">No departments to share with.</p>';
+    var items = allDepts.map(function(d) {
+        return '<label class="share-dept-item">' +
+            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '">' +
+            '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
+        '</label>';
+    }).join('');
+    return '<p class="share-panel-lead">Share this topic with departments in <strong>' +
+        escapeAttr(company.name) + '</strong> when saving.</p>' +
+        '<div class="share-dept-list">' + items + '</div>';
+}
+
+// ===== Add flow — Share step (shown after topic is saved) =====
+var _pendingShareTopicName = null;
+
+function showAddShareStep(savedTopicName) {
+    _pendingShareTopicName = savedTopicName;
+
+    var isAI = !!document.getElementById('aiTabPaneShare');
+
+    // Enable the Share tab that was greyed out during editing
+    var shareTabBtn = document.getElementById(isAI ? 'aiTabShare' : 'addTabShare');
+    if (shareTabBtn) shareTabBtn.disabled = false;
+
+    if (isAI) { switchAITab('ai-share'); } else { switchAddTab('share'); }
+
+    // Replace edit-actions with Skip / Share
+    var actions = document.querySelector('#detailEdit .edit-actions');
+    if (actions) {
+        actions.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="showEmpty()">Skip</button>' +
+            '<button type="button" class="btn btn-primary" onclick="applyAddShare()">Share</button>';
+    }
+}
+
+function applyAddShare() {
+    var topicName = _pendingShareTopicName;
+    _pendingShareTopicName = null;
+    var deptNames = Array.from(document.querySelectorAll('input[name="shareDept"]:checked'))
+        .map(function(i) { return i.value; });
+    if (deptNames.length) {
+        shareTopicWithDepartments(_currentScope.companyKey, topicName, deptNames);
+        persistTopicsScope();
+        showToast('"' + topicName + '" shared to ' + deptNames.length +
+            ' dept' + (deptNames.length !== 1 ? 's' : ''));
+        refreshTopics();
+    } else {
+        showEmpty();
+    }
 }
 
 // ===== Add Sub-Topic =====
@@ -1655,15 +2116,18 @@ function actionDeleteTopic(btn, evt) {
 // Returns the departments (of the current company scope) that contain a topic
 // with this name. Used to derive the "shares" badge + tooltip.
 function getSharedDepartments(companyKey, topicName) {
-    if (!companyKey || !topicName) return [];
-    if (typeof getTopicsForScope !== 'function') return [];
-    const companies = (typeof SIDEBAR_COMPANIES !== 'undefined') ? SIDEBAR_COMPANIES : [];
+    if (!companyKey || !topicName || typeof TOPICS_BY_SCOPE === 'undefined') return [];
+    const companies   = (typeof SIDEBAR_COMPANIES   !== 'undefined') ? SIDEBAR_COMPANIES   : [];
     const departments = (typeof SIDEBAR_DEPARTMENTS !== 'undefined') ? SIDEBAR_DEPARTMENTS : [];
     const company = companies.find(c => c.name.toLowerCase() === companyKey);
     if (!company) return [];
+    const currentDept = (_currentScope && _currentScope.dept) || '';
     return departments
-        .filter(d => d.companyId === company.id)
-        .filter(d => (getTopicsForScope(companyKey, d.name) || []).some(t => t.name === topicName))
+        .filter(d => d.companyId === company.id && d.name !== currentDept)
+        .filter(d => {
+            const bucket = TOPICS_BY_SCOPE[companyKey + '|' + d.name];
+            return bucket && bucket.some(t => t.name === topicName && t.sharedDate);
+        })
         .map(d => d.name);
 }
 
@@ -1683,9 +2147,9 @@ function topicRowHtml(topic, id) {
 
     const sharedDepts = getSharedDepartments(_currentScope.companyKey, topic.name);
     const shareCount = sharedDepts.length;
-    const shareChip = shareCount > 1
+    const shareChip = shareCount >= 1
         ? `<span class="chip chip-shares" onclick="event.stopPropagation();openShareInPanel({kind:'topic',name:'${escapeAttr(topic.name)}'})">
-               <i class="fas fa-people-group"></i> ${shareCount} shares
+               <i class="fas fa-people-group"></i> ${shareCount} share${shareCount !== 1 ? 's' : ''}
                <span class="chip-tooltip">${sharedDepts.map(d => escapeAttr(d)).join(', ')}</span>
            </span>`
         : '';
@@ -1696,10 +2160,10 @@ function topicRowHtml(topic, id) {
             <td class="col-name">
                 <div class="cell-row">
                     <span class="row-select"><input type="checkbox" class="row-checkbox" data-topic-name="${nameAttr}" onclick="onSelectCheckbox(event)"></span>
-                    <span class="chevron"><i class="fas fa-chevron-right"></i></span>
+                    <span class="chevron"${subCount === 0 ? ' style="visibility:hidden"' : ''}><i class="fas fa-chevron-right"></i></span>
                     <img class="row-thumb" src="${escapeAttr(topicCover)}" alt="">
                     <span class="company-name">${escapeAttr(topic.name)}</span>
-                    <span class="row-main-chip"><span class="chip chip-modules"><i class="fas fa-book-open"></i> ${subCount} sub-topic${subCount !== 1 ? 's' : ''}</span></span>
+                    <span class="row-main-chip">${subCount > 0 ? `<span class="chip chip-modules"><i class="fas fa-book-open"></i> ${subCount} sub-topic${subCount !== 1 ? 's' : ''}</span>` : ''}</span>
                     <span class="cell-pills">${shareChip}</span>
                     <span class="row-status">${statusChip}</span>
                     <span class="row-actions">
@@ -1792,8 +2256,26 @@ function snapshotCurrentScope() {
 }
 
 // Called by script-topics-sidebar-scope.js whenever a (company, department) pair is set.
+function getCompanyCreditsTotal(companyKey) {
+    if (typeof SIDEBAR_COMPANIES === 'undefined' || !companyKey) return 200;
+    var co = SIDEBAR_COMPANIES.find(function(c) { return c.name.toLowerCase() === companyKey; });
+    return (co && co.credits) ? co.credits : 200;
+}
+
+function updateScopeCreditsDisplay() {
+    var el = document.getElementById('scopeCredits');
+    if (!el) return;
+    var key = _currentScope && _currentScope.companyKey;
+    if (!key) { el.hidden = true; return; }
+    var used  = _companyCreditsUsed[key] || 0;
+    var total = getCompanyCreditsTotal(key);
+    el.hidden = false;
+    el.innerHTML = '<i class="fas fa-coins"></i> ' + used + ' / ' + total + ' AI credits used';
+}
+
 function onScopeReady(companyKey, dept) {
     renderTopicsForScope(companyKey, dept);
+    updateScopeCreditsDisplay();
 }
 
 // Bootstrap: restore any previously saved scope data before the first render.

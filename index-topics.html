@@ -28,6 +28,7 @@
                 <div class="scope-card-text">
                     <div class="scope-card-company" id="scopePickerCompany">Select company</div>
                     <div class="scope-card-dept" id="scopePickerDept"></div>
+                    <div class="scope-card-credits" id="scopeCredits" hidden></div>
                 </div>
                 <div class="scope-card-arrows">
                     <i class="fas fa-angle-up"></i>
@@ -140,7 +141,7 @@
             <div class="detail-content hidden" id="detailEdit">
                 <div class="detail-topbar">
                     <span class="detail-edit-badge" id="editBadge"><i class="fas fa-pen"></i> Editing</span>
-                    <span class="ai-credits-display" id="aiCreditsDisplay" hidden><i class="fas fa-coins"></i> <span id="aiCreditsCount">12</span> credits</span>
+                    <span class="ai-credits-display" id="aiCreditsDisplay" hidden><i class="fas fa-coins"></i> <span id="aiCreditsCount">0</span> / <span id="aiCreditsTotal">200</span> used</span>
                     <button class="btn-icon" onclick="cancelEdit()" title="Close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="detail-header">
@@ -178,7 +179,7 @@
     </div>
 
     <script src="topics-data.js?v=2"></script>
-    <script src="script-topics.js?v=12"></script>
+    <script src="script-topics.js?v=21"></script>
     <script src="scope-topics.js"></script>
     <script src="script-topics-sidebar-scope.js?v=3"></script>
     <script src="script-sidebar-scope.js"></script>

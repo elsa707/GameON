@@ -206,6 +206,19 @@ body:has(.sidebar.collapsed)::before {
     line-height: 1.2;
 }
 
+.scope-card-credits {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.scope-card-credits i {
+    margin-right: 3px;
+}
+
 .scope-card-arrows {
     display: flex;
     flex-direction: column;
