@@ -1101,7 +1101,7 @@ body:has(.sidebar.collapsed)::before {
 .detail-panel.open {
     width: var(--detail-width);
     border-left-color: var(--border);
-    overflow-y: hidden;
+    overflow-y: auto;
 }
 
 .detail-empty {
@@ -1127,6 +1127,8 @@ body:has(.sidebar.collapsed)::before {
 
 .detail-content {
     position: relative;
+    padding: 16px 20px;
+    box-sizing: border-box;
 }
 
 .detail-content.hidden {

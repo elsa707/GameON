@@ -33,6 +33,27 @@ Project contact: elsadr@agilebridge.co.za
 ### Changed
 - **Add with AI — sub-topics accordion in second tab**: when "Generate with sub-topics" is toggled on, `aiGenerateStep2()` now builds a two-tab layout inside `#aiStep2Section`. The Topic tab shows the cover picker, editable name and description, and a preview list of suggested sub-topic names with a "View Sub-topics" button. The Sub-topics tab shows an accordion: clicking the chevron expands the row (collapsing any other open row) to reveal a scrollable `contenteditable` WYSIWYG pre-populated with rich HTML. The sub-topic name in the header is also `contenteditable` so both name and content are directly editable. Each `_AI_SUGGESTIONS` entry now carries a `subtopics` array (3–4 items each) with name and HTML body. `switchAITab()` and `toggleAISub()` added to `script-topics.js`; accordion and WYSIWYG CSS added to `styles-topics.css`.
 
+## [2026-05-18] — Games styling consistency
+
+### Fixed
+- **Games page — tree row spacing too tight**: added `padding-top/bottom` to `.row-game td` (12 px), `.row-cat td` (9 px), and `.row-q td` (7 px) in `styles-games.css`, matching the `.row-company td` rhythm used on the topics page.
+- **Games page — category count badge purple**: removed the custom purple `background`/`color` overrides from `.chip-cats`; only the icon colour remains, changed to `#3b82f6` (blue) to match the `.chip-modules` icon on the topics page.
+- **Games page — Active badge shows coloured background**: added `.row-game .chip, .row-cat .chip, .row-q .chip { background: var(--white) }` to `styles-games.css`, mirroring the `.row-company .chip` rule in `styles.css` that strips the green fill on active chips in topics rows.
+- **Detail panel — no padding and content not scrollable**: added `padding: 16px 20px` and `box-sizing: border-box` to `.detail-content` in `styles.css` (applies to all pages). Changed `.detail-panel.open` from `overflow-y: hidden` to `overflow-y: auto` so the panel scrolls when content is taller than the viewport.
+- **Games page — cover picker shows 5 tiles instead of 3**: `GAME_COVER_PRESETS` in `script-games.js` reduced from 5 entries to 3 (blue→purple, pink→red, blue→cyan), matching the 3-tile pattern used in the topics cover picker.
+- **Games page — cover thumbnail in row**: `gameCoverHtml()` now returns `<div class="row-thumb row-thumb-game" style="background:…">` instead of a fully-inline-styled div. Picks up `.row-thumb` sizing/border-radius from `styles-topics.css`; `.row-thumb-game` in `styles-games.css` overrides `filter:none` so gradient covers display at full saturation.
+- **Games page — extra left margin on game name**: removed `style="margin-left:8px"` inline style from the `company-name` span in `gameRowHtml()`; spacing is handled by `.cell-row`'s `gap: 8px`.
+- **Games page — category row chevron visibility**: `catRowHtml()` had two `style` attributes on the chevron span (only the last was honoured by browsers), so `visibility:hidden` was silently ignored. Merged into a single `style="visibility:hidden"` attribute; the CSS `padding-left: 56px` on `.row-cat .cell-row` already handles indentation.
+
+## [2026-05-18] — Games page
+
+### Added
+- **Games page (`index-games.html`)**: new page with a 3-level tree (Game → Category → Question), manual add flow (4 tabs: Game, Categories, Share, Schedule), and AI add flow with generated categories and questions shown in a reviewable accordion. Share step matches the topics pattern. Schedule step adds a date/time picker with "publish immediately" or "schedule for a date" options. `games-data.js`, `script-games.js`, `script-games-sidebar-scope.js`, and `styles-games.css` added.
+- **`games-data.js`**: seed data for `_default` (2 games), `sales` (1 game), `human resources` (1 game), and `marketing` (1 game). Each game has 2 categories with 2–3 questions. Realistic corporate learning content (leadership, compliance, sales, digital marketing, HR). `GAMES_BY_SCOPE` runtime override object also exported.
+- **`script-games-sidebar-scope.js`**: scope adapter following the exact `script-topics-sidebar-scope.js` pattern. Variables prefixed `GAMES_` to avoid conflicts. Calls `onGamesScope(companyKey, deptName)` on scope change; disables `#addGameBtn` and `#addGameAIBtn` until both company and department are selected.
+- **`styles-games.css`**: game-specific CSS only — `.detail-schedule-badge` (green/teal), `.row-cat` / `.row-q` tree indentation, `.chip-cats` / `.chip-questions` / `.chip-scheduled` chips, staged category and question editor styles (`.game-cat-item`, `.q-editor`, `.q-opts-grid`), schedule form styles, AI accordion styles (`.ai-game-cat-item`, `.ai-game-q-item`).
+- **Games nav link**: `index-topics.html`, `index-users-dept-grid.html`, and `companies.html` updated from `href="#"` to `href="index-games.html"` for the Games nav item.
+
 ## [Unreleased]
 
 ### Fixed

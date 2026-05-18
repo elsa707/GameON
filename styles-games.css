@@ -1,0 +1,492 @@
+/* ===== Games page — game-specific styles only =====
+   All shared classes (.add-topic-tab, .add-topic-pane, .detail-edit-badge,
+   .badge-ai, .chip, .chip-status-*, .share-dept-*, .ai-sub-*, etc.) live in
+   styles-topics.css which is also loaded on the games page. Only NEW rules go here.
+*/
+
+/* ===== Cover thumbnail for game rows (gradient div — don't desaturate like photo thumbs) ===== */
+.row-thumb-game {
+    display: inline-block;
+    filter: none;
+}
+
+/* ===== Schedule badge (green/teal — mirrors detail-share-badge in topics CSS) ===== */
+.detail-schedule-badge {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.detail-schedule-badge i {
+    color: #16a34a;
+}
+
+/* ===== Row vertical spacing (mirrors .row-company td in styles.css) ===== */
+.row-game td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+.row-cat td {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+.row-q td {
+    padding-top: 7px;
+    padding-bottom: 7px;
+}
+
+/* ===== Chip background reset for game rows (mirrors .row-company .chip in styles.css) ===== */
+.row-game .chip,
+.row-cat .chip,
+.row-q .chip {
+    background: var(--white);
+}
+
+/* ===== Category row (level 2 in game tree) ===== */
+.row-cat td.col-name {
+    padding-left: 0;
+}
+.row-cat .cell-row {
+    padding-left: 56px;
+}
+.row-cat .company-name {
+    font-size: 0.88rem;
+    color: #374151;
+}
+
+/* ===== Question row (level 3 in game tree) ===== */
+.row-q td.col-name {
+    padding-left: 0;
+}
+.row-q .cell-row {
+    padding-left: 88px;
+}
+.row-q .company-name {
+    font-size: 12.5px;
+    color: #6b7280;
+}
+.row-q .q-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 6px;
+}
+
+/* ===== Category and question count chips ===== */
+.chip-cats i { color: #3b82f6; }
+
+.chip-questions {
+    background: #fef3c7;
+    color: #92400e;
+}
+.chip-questions i { color: #d97706; }
+
+.chip-scheduled {
+    background: #eef2ff;
+    color: #3730a3;
+    cursor: default;
+}
+.chip-scheduled i { color: #6366f1; }
+
+/* ===== Staged category list in Add Game > Categories tab ===== */
+.game-cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.game-cat-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.game-cat-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    user-select: none;
+}
+.game-cat-item-header:hover {
+    background: #f9fafb;
+}
+
+.game-cat-toggle {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+}
+.game-cat-item.expanded .game-cat-toggle {
+    transform: rotate(90deg);
+}
+
+.game-cat-name {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.game-cat-q-badge {
+    font-size: 0.75rem;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 999px;
+    padding: 1px 8px;
+    flex-shrink: 0;
+}
+
+.game-cat-del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.game-cat-del-btn:hover { color: #ef4444; background: #fee2e2; }
+
+/* ===== Questions section inside expanded category ===== */
+.game-cat-questions {
+    display: none;
+    padding: 0 10px 10px 10px;
+    border-top: 1px solid #f3f4f6;
+}
+.game-cat-item.expanded .game-cat-questions {
+    display: block;
+}
+
+.q-staged-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.q-staged-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #f9fafb;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #374151;
+}
+
+.q-staged-num {
+    width: 20px;
+    height: 20px;
+    background: #e5e7eb;
+    color: #6b7280;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.q-staged-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.q-staged-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 2px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.q-staged-del:hover { color: #ef4444; }
+
+/* ===== Inline new-category form ===== */
+.game-new-cat-form {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+.game-new-cat-form input {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+.game-new-cat-form input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #dbeafe;
+}
+
+/* ===== Inline question editor card ===== */
+.q-editor {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 8px;
+}
+
+.q-editor label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 4px;
+    margin-top: 10px;
+}
+.q-editor label:first-of-type { margin-top: 0; }
+
+.q-editor textarea.q-text {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 0.85rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    resize: vertical;
+    font-family: inherit;
+}
+.q-editor textarea.q-text:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #dbeafe;
+}
+
+.q-opts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.q-opt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #f9fafb;
+    cursor: pointer;
+}
+.q-opt:has(input[type=radio]:checked) {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+
+.q-opt-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    flex-shrink: 0;
+    width: 16px;
+}
+.q-opt input[type=text] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.82rem;
+    color: #111827;
+    padding: 0;
+    outline: none;
+}
+
+.q-points-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+.q-points-row label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #374151;
+}
+.q-points-row input[type=number] {
+    width: 60px;
+    padding: 5px 8px;
+    font-size: 0.85rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    text-align: center;
+}
+.q-points-row input[type=number]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #dbeafe;
+}
+.q-add-btn {
+    margin-left: auto;
+}
+
+/* ===== Schedule form ===== */
+.schedule-form {
+    padding: 4px 0 8px;
+}
+
+.schedule-lead {
+    font-size: 0.88rem;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.schedule-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: #111827;
+    transition: background 0.1s;
+}
+.schedule-option:hover { background: #f9fafb; }
+.schedule-option input[type=radio] { flex-shrink: 0; }
+
+.schedule-date-group {
+    padding: 8px 0 4px 24px;
+}
+.schedule-date-group.hidden { display: none; }
+
+.schedule-datetime-input {
+    padding: 7px 10px;
+    font-size: 0.85rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    width: 100%;
+    font-family: inherit;
+}
+.schedule-datetime-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #dbeafe;
+}
+
+/* ===== AI flow — game category accordion ===== */
+.ai-game-cat-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.ai-game-cat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    cursor: pointer;
+    user-select: none;
+}
+.ai-game-cat-header:hover { background: #f9fafb; }
+
+.ai-game-cat-body {
+    padding: 0 12px 10px 12px;
+    border-top: 1px solid #f3f4f6;
+}
+.ai-game-cat-body.hidden { display: none; }
+
+.ai-game-q-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.ai-game-q-item:last-child { border-bottom: none; }
+
+.ai-game-q-text {
+    font-size: 0.85rem;
+    color: #111827;
+    font-weight: 500;
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    min-height: 28px;
+    line-height: 1.4;
+}
+.ai-game-q-text:focus {
+    outline: none;
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.ai-game-q-opts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+.ai-game-q-opt {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #f9fafb;
+    color: #374151;
+    border: 1px solid transparent;
+    cursor: text;
+}
+.ai-game-q-opt.correct {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+    font-weight: 500;
+}
+.ai-game-q-opt[contenteditable=true]:focus {
+    outline: none;
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+/* ===== Add-question trigger button inside category ===== */
+.btn-add-question {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    padding: 5px 10px;
+    font-size: 0.82rem;
+    background: none;
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    color: #3b82f6;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+}
+.btn-add-question:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+}
