@@ -732,6 +732,19 @@
     font-weight: 600;
 }
 .sub-list-game i { font-size: 10px; color: #ca8a04; }
+.sub-drag-handle {
+    display: flex;
+    align-items: center;
+    padding: 0 6px 0 0;
+    color: #d1d5db;
+    cursor: grab;
+    flex-shrink: 0;
+    font-size: 13px;
+}
+.sub-drag-handle:hover { color: #9ca3af; }
+.sub-list-item.dragging { opacity: 0.35; }
+.sub-list-item.drag-over-top    { border-top: 2px solid #3b82f6; }
+.sub-list-item.drag-over-bottom { border-bottom: 2px solid #3b82f6; }
 .sub-list-actions {
     display: inline-flex;
     gap: 2px;
@@ -1229,6 +1242,68 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     margin-top: 12px;
 }
 
+/* AI form step 1 — multi-input sections */
+.form-label-hint {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #9ca3af;
+    margin-left: 4px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.ai-upload-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: center;
+}
+.ai-upload-zone:hover,
+.ai-upload-zone.drag-over {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+.ai-upload-zone.has-file {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+.ai-upload-icon {
+    font-size: 1.3rem;
+    color: #9ca3af;
+}
+.ai-upload-zone.has-file .ai-upload-icon { color: #22c55e; }
+.ai-upload-prompt {
+    font-size: 0.82rem;
+    color: #6b7280;
+}
+.ai-upload-zone.has-file .ai-upload-prompt {
+    color: #15803d;
+    font-weight: 500;
+}
+
+.ai-text-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    resize: vertical;
+    line-height: 1.45;
+}
+.ai-text-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #dbeafe;
+}
+
 /* AI flow — step 1 collapsed summary bar (shown after Generate) */
 .ai-step1-collapsed {
     display: flex;
@@ -1538,3 +1613,14 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     max-width: 260px;
     flex-shrink: 1;
 }
+
+/* ===== AI generate block (instructions + button, always visible below tabs) ===== */
+.ai-generate-block {
+    margin-top: 14px;
+    padding: 14px 16px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+.ai-generate-block .form-group { margin-bottom: 10px; }
+.ai-generate-block .btn-full { width: 100%; }

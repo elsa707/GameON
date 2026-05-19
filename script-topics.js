@@ -189,19 +189,7 @@ function setContentKind(btn) {
 
 function updateAIGenerateBtn() {
     var genBtn = document.getElementById('aiGenerateBtn');
-    if (!genBtn) return;
-    var picker = document.querySelector('#topicContentSection .content-picker');
-    if (!picker) return;
-    var kind = picker.querySelector('.cp-kind').value;
-    var hasContent = false;
-    if (kind === 'video') {
-        hasContent = !!picker.querySelector('.cp-video-url').value.trim();
-    } else if (kind === 'text') {
-        hasContent = !!picker.querySelector('.cp-text').value.trim();
-    } else {
-        hasContent = !!picker.querySelector('.cp-media-name').value;
-    }
-    genBtn.disabled = !hasContent;
+    if (genBtn) genBtn.disabled = false;
 }
 
 function onContentFileChange(input) {
@@ -325,9 +313,34 @@ function removeTopicContent() {
 }
 
 // ===== Inline sub-topic list + editor (used inside Add Topic) =====
+function htmlToMarkdown(html) {
+    var md = html;
+    md = md.replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, function(_, t) {
+        return '### ' + t.replace(/<[^>]+>/g, '').trim() + '\n\n';
+    });
+    md = md.replace(/<strong>([\s\S]*?)<\/strong>/gi, '**$1**');
+    md = md.replace(/<em>([\s\S]*?)<\/em>/gi, '_$1_');
+    md = md.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, function(_, inner) {
+        var i = 0;
+        return inner.replace(/<li>([\s\S]*?)<\/li>/gi, function(_, t) {
+            return (++i) + '. ' + t.replace(/<[^>]+>/g, '').trim() + '\n';
+        }) + '\n';
+    });
+    md = md.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, function(_, inner) {
+        return inner.replace(/<li>([\s\S]*?)<\/li>/gi, function(_, t) {
+            return '- ' + t.replace(/<[^>]+>/g, '').trim() + '\n';
+        }) + '\n';
+    });
+    md = md.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, function(_, t) { return t.trim() + '\n\n'; });
+    md = md.replace(/<br\s*\/?>/gi, '\n');
+    md = md.replace(/<[^>]+>/g, '');
+    md = md.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
+    return md.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function openSubEditor(mode, idx) {
     _editingSubIdx = mode === 'new' ? -1 : idx;
-    let defaults = { name: '', mediaType: 'PDF', mediaName: '', kind: 'upload' };
+    let defaults = { name: '', mediaType: 'PDF', mediaName: '', kind: 'upload', content: '' };
     if (mode === 'edit') {
         const item = document.querySelectorAll('#subsList .sub-list-item')[idx];
         if (item) {
@@ -335,6 +348,7 @@ function openSubEditor(mode, idx) {
             defaults.mediaType = item.dataset.mediaType || 'PDF';
             defaults.mediaName = item.dataset.mediaName || '';
             defaults.kind = kindForMediaType(defaults.mediaType);
+            defaults.content = item.dataset.content || '';
         }
     }
     const subsCount = document.querySelectorAll('#subsList .sub-list-item').length;
@@ -342,6 +356,15 @@ function openSubEditor(mode, idx) {
         ? 'Edit sub-topic'
         : (subsCount > 0 ? `Add sub-topic ${subsCount + 1}` : 'New sub-topic');
     const editor = document.getElementById('subEditor');
+    const contentSection = defaults.content
+        ? `<div class="form-group">
+            <label>Content</label>
+            <textarea class="sub-edit-content ai-text-input" rows="10" placeholder="Markdown content…">${escapeAttr(defaults.content)}</textarea>
+           </div>`
+        : `<div class="form-group">
+            <label>Content</label>
+            ${contentPickerHtml('sub-editor', defaults)}
+           </div>`;
     editor.innerHTML = `
         <div class="sub-editor-head">
             <span class="sub-editor-title"><i class="fas fa-puzzle-piece"></i> ${titleText}</span>
@@ -350,10 +373,7 @@ function openSubEditor(mode, idx) {
             <label>Sub-topic name</label>
             <input type="text" class="sub-edit-name" value="${escapeAttr(defaults.name)}" placeholder="Sub-topic name">
         </div>
-        <div class="form-group">
-            <label>Content</label>
-            ${contentPickerHtml('sub-editor', defaults)}
-        </div>
+        ${contentSection}
         <div class="sub-editor-actions">
             <button type="button" class="btn btn-outline" onclick="cancelSubEditor()">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="commitSubEditor()">${mode === 'edit' ? 'Save sub-topic' : 'Add sub-topic'}</button>
@@ -387,16 +407,18 @@ function commitSubEditor(skipReopen) {
     const nameInput = editor.querySelector('.sub-edit-name');
     const name = (nameInput.value || '').trim();
     if (!name) { nameInput.focus(); return false; }
-    const picker = editor.querySelector('.content-picker');
-    if (!validateContentPicker(picker)) {
+    const contentArea = editor.querySelector('.sub-edit-content');
+    const picker = contentArea ? null : editor.querySelector('.content-picker');
+    if (!contentArea && !validateContentPicker(picker)) {
         showToast('Add content for this sub-topic (file, video URL, or text)');
         return false;
     }
-    const c = readContentPicker(picker);
+    const c = contentArea ? { mediaType: 'PDF', mediaName: '' } : readContentPicker(picker);
+    const mdContent = contentArea ? contentArea.value : '';
     const wasNew = _editingSubIdx === -1;
 
     if (wasNew) {
-        appendSubItem({ name: name, mediaType: c.mediaType, mediaName: c.mediaName });
+        appendSubItem({ name: name, mediaType: c.mediaType, mediaName: c.mediaName, content: mdContent });
         document.getElementById('subsListSection').classList.remove('hidden');
     } else {
         const items = document.querySelectorAll('#subsList .sub-list-item');
@@ -405,6 +427,7 @@ function commitSubEditor(skipReopen) {
             item.dataset.name = name;
             item.dataset.mediaType = c.mediaType;
             item.dataset.mediaName = c.mediaName;
+            if (contentArea) item.dataset.content = mdContent;
             item.querySelector('.sub-list-name').textContent = name;
         }
     }
@@ -424,18 +447,73 @@ function commitSubEditor(skipReopen) {
     return true;
 }
 
+function subListItemHtml(name, mediaType, mediaName, content) {
+    var contentAttr = content ? ' data-content="' + escapeAttr(content) + '"' : '';
+    return '<div class="sub-list-item" draggable="true"' +
+        ' data-name="' + escapeAttr(name) + '"' +
+        ' data-media-type="' + escapeAttr(mediaType) + '"' +
+        ' data-media-name="' + escapeAttr(mediaName) + '"' +
+        contentAttr +
+        ' ondragstart="subDragStart(event,this)"' +
+        ' ondragover="subDragOver(event,this)"' +
+        ' ondragleave="subDragLeave(event,this)"' +
+        ' ondrop="subDrop(event,this)"' +
+        ' ondragend="subDragEnd(event,this)">' +
+        '<span class="sub-drag-handle"><i class="fas fa-grip-vertical"></i></span>' +
+        '<span class="sub-list-name">' + escapeAttr(name) + '</span>' +
+        '<div class="sub-list-actions">' +
+            '<button type="button" class="btn-icon" onclick="editSubItem(this)" title="Edit"><i class="fas fa-pen"></i></button>' +
+            '<button type="button" class="btn-icon" onclick="removeSubItem(this)" title="Remove"><i class="fas fa-trash"></i></button>' +
+        '</div>' +
+    '</div>';
+}
+
 function appendSubItem(sub) {
     const list = document.getElementById('subsList');
-    const html = `
-        <div class="sub-list-item" data-name="${escapeAttr(sub.name)}" data-media-type="${escapeAttr(sub.mediaType)}" data-media-name="${escapeAttr(sub.mediaName)}">
-            <span class="sub-list-name">${escapeAttr(sub.name)}</span>
-            <div class="sub-list-actions">
-                <button type="button" class="btn-icon" onclick="editSubItem(this)" title="Edit"><i class="fas fa-pen"></i></button>
-                <button type="button" class="btn-icon" onclick="removeSubItem(this)" title="Remove"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>
-    `;
-    list.insertAdjacentHTML('beforeend', html);
+    list.insertAdjacentHTML('beforeend', subListItemHtml(sub.name, sub.mediaType, sub.mediaName, sub.content || ''));
+}
+
+var _subDragSrc = null;
+
+function subDragStart(e, el) {
+    _subDragSrc = el;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    setTimeout(function() { el.classList.add('dragging'); }, 0);
+}
+
+function subDragOver(e, el) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (el === _subDragSrc) return;
+    el.classList.remove('drag-over-top', 'drag-over-bottom');
+    var midY = el.getBoundingClientRect().top + el.offsetHeight / 2;
+    el.classList.add(e.clientY < midY ? 'drag-over-top' : 'drag-over-bottom');
+}
+
+function subDragLeave(e, el) {
+    el.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+
+function subDrop(e, el) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!_subDragSrc || _subDragSrc === el) return;
+    var midY = el.getBoundingClientRect().top + el.offsetHeight / 2;
+    if (e.clientY < midY) {
+        el.parentNode.insertBefore(_subDragSrc, el);
+    } else {
+        el.parentNode.insertBefore(_subDragSrc, el.nextSibling);
+    }
+    el.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+
+function subDragEnd(e, el) {
+    el.classList.remove('dragging');
+    document.querySelectorAll('.sub-list-item').forEach(function(item) {
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    _subDragSrc = null;
 }
 
 function editSubItem(btn) {
@@ -984,7 +1062,14 @@ function saveAdd(data) {
             : '';
         snapshotCurrentScope();
         showToast(`"${name}" added${subSummary}`);
-        showAddShareStep(name);
+        const gameToggle = document.getElementById('createGameToggle');
+        _pendingCreateGame = !!(gameToggle && gameToggle.checked);
+        const coverEl = document.querySelector('#editFields .cover-hidden-input');
+        _pendingTopicCover = coverEl ? coverEl.value : '';
+        const descEl = document.querySelector('#editFields input[name="description"]') ||
+                       document.querySelector('#editFields textarea[name="description"]');
+        _pendingTopicDesc = descEl ? (descEl.value || '') : '';
+        openShareInPanel({ kind: 'topic', name: name, isNew: true });
 
     } else if (currentEditType === 'module') {
         const parentId = data.get('parentTopic');
@@ -1084,7 +1169,6 @@ function previewCover(input) {
 
 // ===== Panel mode =====
 function setPanelMode(mode) {
-    _inShareStep = false;
     // The Share step replaces .edit-actions; restore it before doing anything else.
     if (!document.getElementById('editSubmitBtn')) {
         const actions = document.querySelector('#detailEdit .edit-actions');
@@ -1132,8 +1216,7 @@ function addTopic() {
     document.getElementById('editFields').innerHTML = `
         <div class="add-topic-tabs">
             <button type="button" class="add-topic-tab active" data-tab="topic" onclick="switchAddTab('topic')"><i class="fas fa-layer-group"></i> Topic</button>
-            <button type="button" class="add-topic-tab" data-tab="subs" id="addTabSubs" onclick="switchAddTab('subs')" hidden>Sub-topics <span class="tab-badge hidden" id="addTabSubsBadge"></span></button>
-            <button type="button" class="add-topic-tab" data-tab="share" id="addTabShare" onclick="switchAddTab('share')" disabled><i class="fas fa-people-group"></i> Share</button>
+            <button type="button" class="add-topic-tab" data-tab="subs" id="addTabSubs" onclick="switchAddTab('subs')" hidden><i class="fas fa-list-ol"></i> Sub-topics <span class="tab-badge hidden" id="addTabSubsBadge"></span></button>
         </div>
 
         <div class="add-topic-pane" id="tabPaneTopic">
@@ -1190,9 +1273,6 @@ function addTopic() {
             </div>
         </div>
 
-        <div class="add-topic-pane hidden" id="tabPaneShare">
-            ${buildAddShareTabHtml()}
-        </div>
     `;
 
     setPanelMode('add');
@@ -1205,41 +1285,80 @@ function addTopicAI() {
     currentEditType = 'topic';
     currentViewRow = null;
     _editingSubIdx = null;
-    document.getElementById('editTitle').textContent = 'Add Topic';
+    document.getElementById('editTitle').textContent = 'Generate Topic';
     document.getElementById('editSubtitle').textContent = getScopeSubtitle();
 
-    document.getElementById('editFields').innerHTML = `
-        <div class="form-group" id="topicContentSection">
-            ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
-        </div>
-        <div class="ai-subtopics-option">
-            <label class="ai-toggle-label">
-                <span class="ai-toggle-wrap">
-                    <input type="checkbox" id="aiIncludeSubtopics" class="ai-toggle-input">
-                    <span class="ai-toggle-track"></span>
-                </span>
-                <span class="ai-toggle-text">Generate with sub-topics</span>
-            </label>
-        </div>
-        <div class="form-group ai-model-group">
-            <label for="aiModelSelect">AI Model</label>
-            <select id="aiModelSelect" class="ai-model-select">
-                <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — Recommended</option>
-                <option value="claude-opus-4-7">Claude Opus 4.7 — Most capable</option>
-                <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-            </select>
-        </div>
-        <div class="hidden" id="aiStep2Section"></div>
-    `;
-
     _aiGenerateIdx = 0;
+    _aiHasGenerated = false;
     setPanelMode('add');
+
+    document.getElementById('editFields').innerHTML = `
+        <div class="add-topic-tabs" id="aiTabBar">
+            <button type="button" class="add-topic-tab active" data-tab="ai-content" onclick="switchAITab('ai-content')">Content</button>
+            <button type="button" class="add-topic-tab" data-tab="ai-topic" id="aiTopicTab" onclick="switchAITab('ai-topic')" disabled>Topics</button>
+            <button type="button" class="add-topic-tab hidden" data-tab="ai-subs" id="aiSubsTab" onclick="switchAITab('ai-subs')" disabled>
+                <i class="fas fa-list-ol"></i> Sub-topics
+            </button>
+        </div>
+        <div class="add-topic-pane" id="aiTabPaneContent">
+            <div class="form-group ai-model-group">
+                <label for="aiModelSelect">AI Model</label>
+                <select id="aiModelSelect" class="ai-model-select">
+                    <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — Recommended</option>
+                    <option value="claude-opus-4-7">Claude Opus 4.7 — Most capable</option>
+                    <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                </select>
+            </div>
+            <div class="form-group" id="aiUploadSection">
+                <label>Upload</label>
+                <div class="ai-upload-zone" id="aiUploadZone"
+                     onclick="document.getElementById('aiFileInput').click()"
+                     ondragover="event.preventDefault();this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="onAIFileDrop(this,event)">
+                    <input type="file" id="aiFileInput" hidden onchange="onAIFileChange(this)">
+                    <i class="fas fa-cloud-upload-alt ai-upload-icon"></i>
+                    <span class="ai-upload-prompt" id="aiUploadPrompt">Drop a file or click to upload</span>
+                </div>
+            </div>
+            <div class="form-group" id="aiUrlSection">
+                <label>URL</label>
+                <input type="url" id="aiUrlInput" class="ai-text-input"
+                       placeholder="https://…" oninput="updateAIGenerateBtn()">
+            </div>
+            <div class="form-group" id="aiTextSection">
+                <label>Text</label>
+                <textarea id="aiTextInput" class="ai-text-input" rows="4"
+                          placeholder="Paste text, notes, or reference material…" oninput="updateAIGenerateBtn()"></textarea>
+            </div>
+            <div class="ai-subtopics-option">
+                <label class="ai-toggle-label">
+                    <span class="ai-toggle-wrap">
+                        <input type="checkbox" id="aiIncludeSubtopics" class="ai-toggle-input">
+                        <span class="ai-toggle-track"></span>
+                    </span>
+                    <span class="ai-toggle-text">Create sub-topics</span>
+                </label>
+            </div>
+        </div>
+        <div class="add-topic-pane hidden" id="aiTabPaneTopic"></div>
+        <div class="add-topic-pane hidden" id="aiTabPaneSubs"></div>
+        <div class="ai-generate-block">
+            <div class="form-group">
+                <textarea class="ai-text-input" id="aiPromptText" rows="3"
+                          placeholder="What learning content would you like to create today?"></textarea>
+            </div>
+            <button type="button" class="btn btn-ai btn-full" id="aiGenerateBtn" onclick="triggerAIGenerate()">
+                <i class="fas fa-wand-magic-sparkles"></i> Generate Topic
+            </button>
+        </div>
+    `;
 
     var badge = document.getElementById('editBadge');
     if (badge) {
-        badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Adding with AI';
+        badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generating with AI';
         badge.classList.add('badge-ai');
     }
     var companyKey = (_currentScope && _currentScope.companyKey) || '';
@@ -1252,29 +1371,15 @@ function addTopicAI() {
     var creditsEl = document.getElementById('aiCreditsDisplay');
     if (creditsEl) creditsEl.hidden = false;
 
-    // Inject Generate button into .edit-actions so flex:1 gives it the same width as Save
+    // Save stays disabled until Generate has run at least once
     var submitBtn = document.getElementById('editSubmitBtn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Save';
-        var genBtn = document.createElement('button');
-        genBtn.type = 'button';
-        genBtn.id = 'aiGenerateBtn';
-        genBtn.className = 'btn btn-ai';
-        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate';
-        genBtn.disabled = true;
-        genBtn.onclick = aiGenerateStep2;
-        submitBtn.parentNode.insertBefore(genBtn, submitBtn);
-    }
-
-    // Enable Generate reactively as the user types a URL or text
-    var picker = document.querySelector('#topicContentSection .content-picker');
-    if (picker) picker.addEventListener('input', updateAIGenerateBtn);
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Save'; }
 
     showEdit();
 }
 
 var _aiGenerateIdx = 0;
+var _aiHasGenerated = false;
 var _companyCreditsUsed = {}; // keyed by companyKey; persists across AI panel openings
 (function() {
     try {
@@ -1370,96 +1475,112 @@ var _AI_SUGGESTIONS = [
     },
 ];
 
-function aiGenerateStep2() {
+function triggerAIGenerate() {
+    var action;
+    if (!_aiHasGenerated) {
+        action = 'generate';
+    } else {
+        var activeTab = document.querySelector('#aiTabBar .add-topic-tab.active');
+        var tab = activeTab ? activeTab.dataset.tab : 'ai-content';
+        if (tab === 'ai-topic') action = 'regen-topic';
+        else if (tab === 'ai-subs') action = 'regen-subs';
+        else action = 'regen-all';
+    }
+    doAIGenerate(action);
+}
+
+function buildAISubsPaneHtml(subs) {
+    var subItems = subs.map(function(s) {
+        return subListItemHtml(s.name, 'PDF', '', htmlToMarkdown(s.content || ''));
+    }).join('');
+    return '<div class="sub-list-section" id="subsListSection">' +
+        '<div class="sub-list-head">' +
+            '<label>Sub-topics</label>' +
+            '<span class="sub-list-count-wrap"><span id="subsListCount">' + subs.length + '</span> in this topic</span>' +
+        '</div>' +
+        '<div id="subsList" class="sub-list">' + subItems + '</div>' +
+    '</div>' +
+    '<div id="subEditor" class="sub-editor hidden"></div>' +
+    '<div class="add-sub-row" id="addSubTopicBtnRow">' +
+        '<button type="button" class="btn btn-outline btn-add-sub" id="addSubTopicBtn" onclick="openSubEditor(\'new\')">' +
+            '<i class="fas fa-plus"></i> Add another sub-topic' +
+        '</button>' +
+    '</div>';
+}
+
+function doAIGenerate(action) {
     var namePair   = nextAISuggestion();
     var suggestion = _AI_SUGGESTIONS[_aiGenerateIdx % _AI_SUGGESTIONS.length];
     suggestion = Object.assign({}, suggestion, { name: namePair.name, description: namePair.description });
     _aiGenerateIdx++;
 
-    var step2 = document.getElementById('aiStep2Section');
-    if (!step2) return;
+    var topicPane = document.getElementById('aiTabPaneTopic');
+    var subsPane  = document.getElementById('aiTabPaneSubs');
+    if (!topicPane) return;
 
     var coverUrl = COVER_PRESETS[(_aiGenerateIdx - 1) % COVER_PRESETS.length];
     var includeSubtopics = !!(document.getElementById('aiIncludeSubtopics') &&
                               document.getElementById('aiIncludeSubtopics').checked);
 
-    if (includeSubtopics && suggestion.subtopics && suggestion.subtopics.length) {
-        var subs = suggestion.subtopics;
-        var subCount = subs.length;
-
-        var previewItems = subs.map(function(s) {
-            return '<li>' + escapeAttr(s.name) + '</li>';
-        }).join('');
-
-        var accordionItems = subs.map(function(s, i) {
-            return '<div class="ai-sub-item">' +
-                '<div class="ai-sub-header">' +
-                    '<button type="button" class="ai-sub-toggle" onclick="toggleAISub(this)" title="Expand">' +
-                        '<i class="fas fa-chevron-right ai-sub-chevron"></i>' +
-                    '</button>' +
-                    '<span class="ai-sub-name" contenteditable="true">' + escapeAttr(s.name) + '</span>' +
-                '</div>' +
-                '<div class="ai-sub-body hidden">' +
-                    '<div class="ai-wysiwyg" contenteditable="true">' + s.content + '</div>' +
-                '</div>' +
-            '</div>';
-        }).join('');
-
-        step2.innerHTML =
-            '<div class="add-topic-tabs">' +
-                '<button type="button" class="add-topic-tab active" data-tab="ai-topic" onclick="switchAITab(\'ai-topic\')">Topic</button>' +
-                '<button type="button" class="add-topic-tab" data-tab="ai-subs" onclick="switchAITab(\'ai-subs\')">' +
-                    'Sub-topics <span class="tab-badge">' + subCount + '</span>' +
-                '</button>' +
-                '<button type="button" class="add-topic-tab" data-tab="ai-share" id="aiTabShare" onclick="switchAITab(\'ai-share\')" disabled><i class="fas fa-people-group"></i> Share</button>' +
-            '</div>' +
-            '<div class="add-topic-pane" id="aiTabPaneTopic">' +
-                '<div class="form-group"><label>Cover Image</label>' + coverPickerHtml(coverUrl) + '</div>' +
-                '<div class="form-group"><label>Topic Name</label>' +
-                    '<input type="text" name="name" value="' + escapeAttr(suggestion.name) + '" placeholder="Topic name">' +
-                '</div>' +
-                '<div class="form-group"><label>Description</label>' +
-                    '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
-                '</div>' +
-                '<div class="ai-subs-preview">' +
-                    '<div class="ai-subs-preview-header">' +
-                        '<span>' + subCount + ' sub-topic' + (subCount !== 1 ? 's' : '') + ' suggested</span>' +
-                        '<button type="button" class="ai-subs-view-btn" onclick="switchAITab(\'ai-subs\')">View Sub-topics <i class="fas fa-arrow-right"></i></button>' +
-                    '</div>' +
-                    '<ul class="ai-subs-preview-list">' + previewItems + '</ul>' +
-                '</div>' +
-                createGameToggleHtml() +
-            '</div>' +
-            '<div class="add-topic-pane hidden" id="aiTabPaneSubs">' +
-                '<div class="ai-sub-list">' + accordionItems + '</div>' +
-            '</div>' +
-            '<div class="add-topic-pane hidden" id="aiTabPaneShare">' + buildAddShareTabHtml() + '</div>';
-    } else {
-        step2.innerHTML =
-            '<div class="add-topic-tabs">' +
-                '<button type="button" class="add-topic-tab active" data-tab="ai-topic" onclick="switchAITab(\'ai-topic\')">Topic</button>' +
-                '<button type="button" class="add-topic-tab" data-tab="ai-share" id="aiTabShare" onclick="switchAITab(\'ai-share\')" disabled><i class="fas fa-people-group"></i> Share</button>' +
-            '</div>' +
-            '<div class="add-topic-pane" id="aiTabPaneTopic">' +
-                '<div class="form-group"><label>Cover Image</label>' + coverPickerHtml(coverUrl) + '</div>' +
-                '<div class="form-group"><label>Topic Name</label>' +
-                    '<input type="text" name="name" value="' + escapeAttr(suggestion.name) + '" placeholder="Topic name">' +
-                '</div>' +
-                '<div class="form-group"><label>Description</label>' +
-                    '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
-                '</div>' +
-                createGameToggleHtml() +
-            '</div>' +
-            '<div class="add-topic-pane hidden" id="aiTabPaneShare">' + buildAddShareTabHtml() + '</div>';
+    // Preserve the "Create with game" toggle state before any innerHTML replacement
+    var gameToggleOn = false;
+    if (action !== 'regen-subs') {
+        var existingGameToggle = document.getElementById('createGameToggle');
+        if (existingGameToggle) gameToggleOn = existingGameToggle.checked;
     }
 
-    step2.classList.remove('hidden');
+    if (action === 'regen-subs') {
+        // Only rebuild the sub-topics pane; leave the topic pane untouched
+        var subs = (suggestion.subtopics && suggestion.subtopics.length) ? suggestion.subtopics : [];
+        if (subsPane && subs.length) {
+            subsPane.innerHTML = buildAISubsPaneHtml(subs);
+            var subsTab = document.getElementById('aiSubsTab');
+            if (subsTab) subsTab.innerHTML = '<i class="fas fa-list-ol"></i> Sub-topics <span class="tab-badge">' + subs.length + '</span>';
+        }
+    } else {
+        // Rebuild the topic pane (for 'generate', 'regen-all', 'regen-topic')
+        topicPane.innerHTML =
+            '<div class="form-group"><label>Cover Image</label>' + coverPickerHtml(coverUrl) + '</div>' +
+            '<div class="form-group"><label>Topic Name</label>' +
+                '<input type="text" name="name" value="' + escapeAttr(suggestion.name) + '" placeholder="Topic name">' +
+            '</div>' +
+            '<div class="form-group"><label>Description</label>' +
+                '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
+            '</div>' +
+            createGameToggleHtml();
 
-    // Collapse the content/toggle/model sections on first Generate only
-    if (!document.getElementById('aiStep1Collapsed')) collapseAIStep1();
+        // Restore game toggle
+        if (gameToggleOn) {
+            var restoredToggle = document.getElementById('createGameToggle');
+            if (restoredToggle) restoredToggle.checked = true;
+        }
 
-    var genBtn = document.getElementById('aiGenerateBtn');
-    if (genBtn) genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+        if (action !== 'regen-topic') {
+            // Also rebuild sub-topics pane for 'generate' and 'regen-all'
+            if (includeSubtopics && suggestion.subtopics && suggestion.subtopics.length) {
+                var subs = suggestion.subtopics;
+                if (subsPane) { subsPane.innerHTML = buildAISubsPaneHtml(subs); subsPane.classList.add('hidden'); }
+                var subsTab = document.getElementById('aiSubsTab');
+                if (subsTab) {
+                    subsTab.classList.remove('hidden');
+                    subsTab.disabled = false;
+                    subsTab.innerHTML = '<i class="fas fa-list-ol"></i> Sub-topics <span class="tab-badge">' + subs.length + '</span>';
+                }
+            } else {
+                if (subsPane) { subsPane.innerHTML = ''; subsPane.classList.add('hidden'); }
+                var subsTab = document.getElementById('aiSubsTab');
+                if (subsTab) { subsTab.classList.add('hidden'); subsTab.disabled = true; }
+            }
+        }
+
+        // Enable Topics tab; switch to it only on first generate
+        var topicTab = document.getElementById('aiTopicTab');
+        if (topicTab) topicTab.disabled = false;
+        if (!_aiHasGenerated) switchAITab('ai-topic');
+    }
+
+    _aiHasGenerated = true;
+    updateAIGenBtnLabel();
 
     var submitBtn = document.getElementById('editSubmitBtn');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save'; }
@@ -1476,71 +1597,62 @@ function aiGenerateStep2() {
     updateScopeCreditsDisplay();
 }
 
-function collapseAIStep1() {
-    var contentSection = document.getElementById('topicContentSection');
-    var toggleSection  = document.querySelector('.ai-subtopics-option');
-    var modelSection   = document.querySelector('.ai-model-group');
-    if (!contentSection) return;
-
-    // Build summary text from the picker state
-    var picker = contentSection.querySelector('.content-picker');
-    var summaryText = 'Content provided';
-    if (picker) {
-        var c = readContentPicker(picker);
-        if (c.mediaType === 'video' || c.mediaType === 'text') {
-            summaryText = c.mediaName.length > 45 ? c.mediaName.substring(0, 45) + '…' : c.mediaName;
-        } else {
-            summaryText = c.mediaName || 'Document uploaded';
-        }
+function updateAIGenBtnLabel() {
+    var genBtn   = document.getElementById('aiGenerateBtn');
+    var promptEl = document.getElementById('aiPromptText');
+    if (!genBtn) return;
+    if (!_aiHasGenerated) {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate Topic';
+        if (promptEl) promptEl.placeholder = 'What learning content would you like to create today?';
+        return;
     }
-    var includeSubtopics = !!(document.getElementById('aiIncludeSubtopics') && document.getElementById('aiIncludeSubtopics').checked);
-    var modelSelect = document.getElementById('aiModelSelect');
-    var modelLabel  = modelSelect ? modelSelect.options[modelSelect.selectedIndex].text.split(' — ')[0] : 'Claude Sonnet 4.6';
-
-    // Hide step-1 sections
-    if (contentSection) contentSection.classList.add('hidden');
-    if (toggleSection)  toggleSection.classList.add('hidden');
-    if (modelSection)   modelSection.classList.add('hidden');
-
-    // Inject collapsed summary bar
-    var bar = document.createElement('div');
-    bar.className = 'ai-step1-collapsed';
-    bar.id = 'aiStep1Collapsed';
-    bar.innerHTML =
-        '<div class="ai-step1-summary">' +
-            '<i class="fas fa-file-lines ai-step1-icon"></i>' +
-            '<span class="ai-step1-text">' + escapeAttr(summaryText) + '</span>' +
-            (includeSubtopics ? '<span class="ai-step1-pill">Sub-topics</span>' : '') +
-            '<span class="ai-step1-pill">' + escapeAttr(modelLabel) + '</span>' +
-        '</div>' +
-        '<button type="button" class="ai-step1-expand" onclick="expandAIStep1()" title="Edit content"><i class="fas fa-chevron-down"></i></button>';
-
-    var step2 = document.getElementById('aiStep2Section');
-    if (step2) step2.parentNode.insertBefore(bar, step2);
+    var activeTab = document.querySelector('#aiTabBar .add-topic-tab.active');
+    var tab = activeTab ? activeTab.dataset.tab : 'ai-content';
+    if (tab === 'ai-topic') {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate Topic';
+        if (promptEl) { promptEl.placeholder = 'What would you like to change?'; promptEl.value = ''; }
+    } else if (tab === 'ai-subs') {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate Sub-topics';
+        if (promptEl) { promptEl.placeholder = 'What would you like to change?'; promptEl.value = ''; }
+    } else {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+        if (promptEl) promptEl.placeholder = 'What learning content would you like to create today?';
+    }
 }
 
-function expandAIStep1() {
-    var bar = document.getElementById('aiStep1Collapsed');
-    if (bar) bar.remove();
-    var contentSection = document.getElementById('topicContentSection');
-    var toggleSection  = document.querySelector('.ai-subtopics-option');
-    var modelSection   = document.querySelector('.ai-model-group');
-    if (contentSection) contentSection.classList.remove('hidden');
-    if (toggleSection)  toggleSection.classList.remove('hidden');
-    if (modelSection)   modelSection.classList.remove('hidden');
+function onAIFileChange(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var prompt = document.getElementById('aiUploadPrompt');
+    if (prompt) prompt.textContent = file.name;
+    var zone = document.getElementById('aiUploadZone');
+    if (zone) zone.classList.add('has-file');
+    updateAIGenerateBtn();
 }
+
+function onAIFileDrop(zone, event) {
+    event.preventDefault();
+    zone.classList.remove('drag-over');
+    var file = event.dataTransfer.files[0];
+    if (!file) return;
+    var prompt = document.getElementById('aiUploadPrompt');
+    if (prompt) prompt.textContent = file.name;
+    zone.classList.add('has-file');
+    updateAIGenerateBtn();
+}
+
 
 function switchAITab(tab) {
-    document.querySelectorAll('#aiStep2Section .add-topic-tab').forEach(function(t) {
+    document.querySelectorAll('#aiTabBar .add-topic-tab').forEach(function(t) {
         t.classList.toggle('active', t.dataset.tab === tab);
     });
-    var topicPane = document.getElementById('aiTabPaneTopic');
-    var subsPane  = document.getElementById('aiTabPaneSubs');
-    var sharePane = document.getElementById('aiTabPaneShare');
-    if (topicPane)  topicPane.classList.toggle('hidden',  tab !== 'ai-topic');
-    if (subsPane)   subsPane.classList.toggle('hidden',   tab !== 'ai-subs');
-    if (sharePane)  sharePane.classList.toggle('hidden',  tab !== 'ai-share');
-    _syncAddShareButtons(tab === 'ai-share');
+    var contentPane = document.getElementById('aiTabPaneContent');
+    var topicPane   = document.getElementById('aiTabPaneTopic');
+    var subsPane    = document.getElementById('aiTabPaneSubs');
+    if (contentPane) contentPane.classList.toggle('hidden', tab !== 'ai-content');
+    if (topicPane)   topicPane.classList.toggle('hidden',   tab !== 'ai-topic');
+    if (subsPane)    subsPane.classList.toggle('hidden',    tab !== 'ai-subs');
+    updateAIGenBtnLabel();
 }
 
 function toggleAISub(btn) {
@@ -1565,38 +1677,11 @@ function switchAddTab(tab) {
     document.querySelectorAll('#editFields .add-topic-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     const topicPane = document.getElementById('tabPaneTopic');
     const subsPane  = document.getElementById('tabPaneSubs');
-    const sharePane = document.getElementById('tabPaneShare');
-    if (topicPane)  topicPane.classList.toggle('hidden',  tab !== 'topic');
-    if (subsPane)   subsPane.classList.toggle('hidden',   tab !== 'subs');
-    if (sharePane)  sharePane.classList.toggle('hidden',  tab !== 'share');
-    _syncAddShareButtons(tab === 'share');
-}
-
-function buildAddShareTabHtml() {
-    var companyKey = _currentScope.companyKey;
-    if (!companyKey) return '<p class="share-empty">Select a company scope first.</p>';
-    var companies   = (typeof SIDEBAR_COMPANIES   !== 'undefined') ? SIDEBAR_COMPANIES   : [];
-    var departments = (typeof SIDEBAR_DEPARTMENTS !== 'undefined') ? SIDEBAR_DEPARTMENTS : [];
-    var company = companies.find(function(c) { return c.name.toLowerCase() === companyKey; });
-    if (!company) return '<p class="share-empty">Company not found.</p>';
-    var allDepts = departments.filter(function(d) { return d.companyId === company.id; });
-    if (!allDepts.length) return '<p class="share-empty">No departments to share with.</p>';
-    var currentDept = (_currentScope && _currentScope.dept) || '';
-    var items = allDepts.map(function(d) {
-        var checked = d.name === currentDept ? ' checked' : '';
-        return '<label class="share-dept-item">' +
-            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '"' + checked + '>' +
-            '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
-        '</label>';
-    }).join('');
-    return '<p class="share-panel-lead">Share this topic with departments in <strong>' +
-        escapeAttr(company.name) + '</strong> when saving.</p>' +
-        '<div class="share-dept-list">' + items + '</div>';
+    if (topicPane) topicPane.classList.toggle('hidden', tab !== 'topic');
+    if (subsPane)  subsPane.classList.toggle('hidden',  tab !== 'subs');
 }
 
 // ===== Add flow — Share step (shown after topic is saved) =====
-var _inShareStep = false;        // true once Save is clicked and share tab is shown
-var _pendingShareTopicName = null;
 var _pendingCreateGame = false;  // captured at Save time from #createGameToggle
 var _pendingTopicCover = '';
 var _pendingTopicDesc  = '';
@@ -1624,78 +1709,6 @@ function _launchCreateGame(topicName) {
         }));
     } catch(e) {}
     window.location.href = 'index-games.html';
-}
-
-function skipAddShareStep() {
-    _inShareStep = false;
-    var topicName = _pendingShareTopicName;
-    _pendingShareTopicName = null;
-    var createGame = _pendingCreateGame;
-    _pendingCreateGame = false;
-    if (createGame) { _launchCreateGame(topicName); return; }
-    showEmpty();
-}
-
-function _syncAddShareButtons(onShareTab) {
-    if (!_inShareStep) return;
-    var actions = document.querySelector('#detailEdit .edit-actions');
-    if (!actions) return;
-    if (onShareTab) {
-        actions.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="skipAddShareStep()">Skip</button>' +
-            '<button type="button" class="btn btn-primary" onclick="applyAddShare()">Share</button>';
-    } else {
-        actions.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="cancelEdit()">Cancel</button>' +
-            '<button type="submit" class="btn btn-primary" id="editSubmitBtn">Save</button>';
-    }
-}
-
-function showAddShareStep(savedTopicName) {
-    _inShareStep = true;
-    _pendingShareTopicName = savedTopicName;
-    var toggle = document.getElementById('createGameToggle');
-    _pendingCreateGame = !!(toggle && toggle.checked);
-    var coverEl = document.querySelector('#editFields .cover-hidden-input');
-    _pendingTopicCover = coverEl ? coverEl.value : '';
-    var descEl = document.querySelector('#editFields input[name="description"]') ||
-                 document.querySelector('#editFields textarea[name="description"]');
-    _pendingTopicDesc = descEl ? (descEl.value || '') : '';
-
-    var isAI = !!document.getElementById('aiTabPaneShare');
-
-    // Enable the Share tab that was greyed out during editing
-    var shareTabBtn = document.getElementById(isAI ? 'aiTabShare' : 'addTabShare');
-    if (shareTabBtn) shareTabBtn.disabled = false;
-
-    if (isAI) { switchAITab('ai-share'); } else { switchAddTab('share'); }
-
-    // Replace edit-actions with Skip / Share
-    var actions = document.querySelector('#detailEdit .edit-actions');
-    if (actions) {
-        actions.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="skipAddShareStep()">Skip</button>' +
-            '<button type="button" class="btn btn-primary" onclick="applyAddShare()">Share</button>';
-    }
-}
-
-function applyAddShare() {
-    _inShareStep = false;
-    var topicName = _pendingShareTopicName;
-    _pendingShareTopicName = null;
-    var createGame = _pendingCreateGame;
-    _pendingCreateGame = false;
-    var deptNames = Array.from(document.querySelectorAll('input[name="shareDept"]:checked'))
-        .map(function(i) { return i.value; });
-    if (deptNames.length) {
-        shareTopicWithDepartments(_currentScope.companyKey, topicName, deptNames);
-        persistTopicsScope();
-        refreshTopics();
-        if (!createGame) showToast('"' + topicName + '" shared to ' + deptNames.length +
-            ' dept' + (deptNames.length !== 1 ? 's' : ''));
-    }
-    if (createGame) { _launchCreateGame(topicName); return; }
-    showEmpty();
 }
 
 // ===== Add Sub-Topic =====
@@ -2030,14 +2043,16 @@ function openShareInPanel(target) {
     );
     _currentShareTarget = Object.assign({}, target, { sharedDepts: Array.from(sharedNow) });
 
+    const currentDept = (_currentScope && _currentScope.dept) || '';
     const items = allDepts.map(d => {
         const already = sharedNow.has(d.name);
+        const precheck = already || (target.isNew && d.name === currentDept);
         const dateLabel = already
             ? formatSharedDate(getSharedDate(companyKey, target.name, d.name))
             : '';
         return `
             <label class="share-dept-item">
-                <input type="checkbox" value="${escapeAttr(d.name)}"${already ? ' checked' : ''}>
+                <input type="checkbox" value="${escapeAttr(d.name)}"${precheck ? ' checked' : ''}>
                 <span class="share-dept-name">${escapeAttr(d.name)}</span>
                 ${already ? `<span class="share-dept-tag">${escapeAttr(dateLabel)}</span>` : ''}
             </label>
@@ -2062,6 +2077,11 @@ function syncShareConfirmButton() {
     const btn = document.getElementById('shareConfirmBtn');
     const list = document.getElementById('shareDeptList');
     if (!btn || !list) return;
+    if (_currentShareTarget && _currentShareTarget.isNew) {
+        btn.disabled = false;
+        btn.textContent = 'Share';
+        return;
+    }
     const initial = new Set((_currentShareTarget && _currentShareTarget.sharedDepts) || []);
     const current = new Set(Array.from(list.querySelectorAll('input:checked')).map(c => c.value));
     const hasChanges = current.size !== initial.size
@@ -2072,7 +2092,11 @@ function syncShareConfirmButton() {
 }
 
 function cancelShare() {
+    const target = _currentShareTarget;
     _currentShareTarget = null;
+    const createGame = _pendingCreateGame;
+    _pendingCreateGame = false;
+    if (createGame && target) { _launchCreateGame(target.name); return; }
     showEmpty();
 }
 
@@ -2103,6 +2127,10 @@ function confirmShare() {
         showToast(`Updated sharing for "${target.name}"`);
     }
     _currentShareTarget = null;
+    const createGame = _pendingCreateGame;
+    const sharedTopicName = target ? target.name : '';
+    _pendingCreateGame = false;
+    if (createGame && sharedTopicName) { _launchCreateGame(sharedTopicName); return; }
     showEmpty();
 }
 
