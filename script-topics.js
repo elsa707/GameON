@@ -38,7 +38,7 @@ function gradientCoverSvg(c1, c2) {
 const COVER_PRESETS = [
     gradientCoverSvg('#3b82f6', '#8b5cf6'), // blue → purple
     gradientCoverSvg('#f97316', '#ec4899'), // orange → pink
-    gradientCoverSvg('#a855f7', '#7c3aed')  // purple → violet
+    gradientCoverSvg('#22c55e', '#10b981')  // green → teal
 ];
 
 const DEFAULT_COVER_URL = COVER_PRESETS[0];
@@ -930,6 +930,7 @@ function saveAdd(data) {
                             <button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
                             <div class="action-menu-popup" role="menu">
                                 <button type="button" class="action-item" onclick="actionAddSubTopic(this, event)"><i class="fas fa-puzzle-piece"></i> Add sub-topic</button>
+                                <button type="button" class="action-item" onclick="actionAddGameForTopic(this, event)"><i class="fas fa-trophy"></i> Add game</button>
                                 <button type="button" class="action-item" onclick="actionEditTopic(this, event)"><i class="fas fa-pen"></i> Edit</button>
                                 <button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-people-group"></i> Share</button>
                                 <button type="button" class="action-item" onclick="actionToggleDisabled(this, event)"><i class="fas fa-ban"></i> Disable</button>
@@ -1169,6 +1170,7 @@ function addTopic() {
                     </button>
                 </div>
             </div>
+            ${createGameToggleHtml()}
         </div>
 
         <div class="add-topic-pane hidden" id="tabPaneSubs">
@@ -1273,6 +1275,12 @@ function addTopicAI() {
 
 var _aiGenerateIdx = 0;
 var _companyCreditsUsed = {}; // keyed by companyKey; persists across AI panel openings
+(function() {
+    try {
+        var s = JSON.parse(localStorage.getItem('gameon.aiCredits') || '{}');
+        Object.keys(s).forEach(function(k) { _companyCreditsUsed[k] = s[k]; });
+    } catch(e) {}
+})();
 
 // Large pool of name+description pairs — shuffled at runtime so each Generate is unique.
 var _AI_NAME_POOL = [
@@ -1419,6 +1427,7 @@ function aiGenerateStep2() {
                     '</div>' +
                     '<ul class="ai-subs-preview-list">' + previewItems + '</ul>' +
                 '</div>' +
+                createGameToggleHtml() +
             '</div>' +
             '<div class="add-topic-pane hidden" id="aiTabPaneSubs">' +
                 '<div class="ai-sub-list">' + accordionItems + '</div>' +
@@ -1438,6 +1447,7 @@ function aiGenerateStep2() {
                 '<div class="form-group"><label>Description</label>' +
                     '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
                 '</div>' +
+                createGameToggleHtml() +
             '</div>' +
             '<div class="add-topic-pane hidden" id="aiTabPaneShare">' + buildAddShareTabHtml() + '</div>';
     }
@@ -1455,6 +1465,11 @@ function aiGenerateStep2() {
 
     var ck = (_currentScope && _currentScope.companyKey) || '';
     _companyCreditsUsed[ck] = (_companyCreditsUsed[ck] || 0) + 1;
+    try {
+        var _sc = JSON.parse(localStorage.getItem('gameon.aiCredits') || '{}');
+        _sc[ck] = _companyCreditsUsed[ck];
+        localStorage.setItem('gameon.aiCredits', JSON.stringify(_sc));
+    } catch(e) {}
     var countEl = document.getElementById('aiCreditsCount');
     if (countEl) countEl.textContent = _companyCreditsUsed[ck];
     updateScopeCreditsDisplay();
@@ -1576,9 +1591,53 @@ function buildAddShareTabHtml() {
 
 // ===== Add flow — Share step (shown after topic is saved) =====
 var _pendingShareTopicName = null;
+var _pendingCreateGame = false;  // captured at Save time from #createGameToggle
+var _pendingTopicCover = '';
+var _pendingTopicDesc  = '';
+
+function createGameToggleHtml() {
+    return '<div class="form-group create-game-toggle-row">' +
+        '<label class="ai-toggle-label create-game-toggle-label">' +
+            '<span class="ai-toggle-wrap">' +
+                '<input type="checkbox" id="createGameToggle" class="ai-toggle-input">' +
+                '<span class="ai-toggle-track"></span>' +
+            '</span>' +
+            '<span class="ai-toggle-text">Create with game</span>' +
+        '</label>' +
+    '</div>';
+}
+
+function _launchCreateGame(topicName) {
+    try {
+        localStorage.setItem('gameon.pendingGame', JSON.stringify({
+            topicName: topicName || '',
+            topicCover: _pendingTopicCover || '',
+            topicDesc:  _pendingTopicDesc  || '',
+            companyKey: (_currentScope && _currentScope.companyKey) || '',
+            dept: (_currentScope && _currentScope.dept) || ''
+        }));
+    } catch(e) {}
+    window.location.href = 'index-games.html';
+}
+
+function skipAddShareStep() {
+    var topicName = _pendingShareTopicName;
+    _pendingShareTopicName = null;
+    var createGame = _pendingCreateGame;
+    _pendingCreateGame = false;
+    if (createGame) { _launchCreateGame(topicName); return; }
+    showEmpty();
+}
 
 function showAddShareStep(savedTopicName) {
     _pendingShareTopicName = savedTopicName;
+    var toggle = document.getElementById('createGameToggle');
+    _pendingCreateGame = !!(toggle && toggle.checked);
+    var coverEl = document.querySelector('#editFields .cover-hidden-input');
+    _pendingTopicCover = coverEl ? coverEl.value : '';
+    var descEl = document.querySelector('#editFields input[name="description"]') ||
+                 document.querySelector('#editFields textarea[name="description"]');
+    _pendingTopicDesc = descEl ? (descEl.value || '') : '';
 
     var isAI = !!document.getElementById('aiTabPaneShare');
 
@@ -1592,7 +1651,7 @@ function showAddShareStep(savedTopicName) {
     var actions = document.querySelector('#detailEdit .edit-actions');
     if (actions) {
         actions.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="showEmpty()">Skip</button>' +
+            '<button type="button" class="btn btn-outline" onclick="skipAddShareStep()">Skip</button>' +
             '<button type="button" class="btn btn-primary" onclick="applyAddShare()">Share</button>';
     }
 }
@@ -1600,17 +1659,19 @@ function showAddShareStep(savedTopicName) {
 function applyAddShare() {
     var topicName = _pendingShareTopicName;
     _pendingShareTopicName = null;
+    var createGame = _pendingCreateGame;
+    _pendingCreateGame = false;
     var deptNames = Array.from(document.querySelectorAll('input[name="shareDept"]:checked'))
         .map(function(i) { return i.value; });
     if (deptNames.length) {
         shareTopicWithDepartments(_currentScope.companyKey, topicName, deptNames);
         persistTopicsScope();
-        showToast('"' + topicName + '" shared to ' + deptNames.length +
-            ' dept' + (deptNames.length !== 1 ? 's' : ''));
         refreshTopics();
-    } else {
-        showEmpty();
+        if (!createGame) showToast('"' + topicName + '" shared to ' + deptNames.length +
+            ' dept' + (deptNames.length !== 1 ? 's' : ''));
     }
+    if (createGame) { _launchCreateGame(topicName); return; }
+    if (!deptNames.length) showEmpty();
 }
 
 // ===== Add Sub-Topic =====
@@ -1887,6 +1948,12 @@ document.addEventListener('input', evt => {
         t.classList.remove('input-error');
     }
 });
+
+function actionAddGameForTopic(btn, evt) {
+    evt.stopPropagation();
+    closeAllTopicMenus();
+    window.location.href = 'index-games.html';
+}
 
 function actionAddSubTopic(btn, evt) {
     evt.stopPropagation();
@@ -2171,6 +2238,7 @@ function topicRowHtml(topic, id) {
                             <button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
                             <div class="action-menu-popup" role="menu">
                                 <button type="button" class="action-item" onclick="actionAddSubTopic(this, event)"><i class="fas fa-puzzle-piece"></i> Add sub-topic</button>
+                                <button type="button" class="action-item" onclick="actionAddGameForTopic(this, event)"><i class="fas fa-trophy"></i> Add game</button>
                                 <button type="button" class="action-item" onclick="actionEditTopic(this, event)"><i class="fas fa-pen"></i> Edit</button>
                                 <button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-people-group"></i> Share</button>
                                 <button type="button" class="action-item" onclick="actionToggleDisabled(this, event)"><i class="fas ${disableIcon}"></i> ${disableLabel}</button>

@@ -4,10 +4,12 @@
    styles-topics.css which is also loaded on the games page. Only NEW rules go here.
 */
 
-/* ===== Cover thumbnail for game rows (gradient div — don't desaturate like photo thumbs) ===== */
+/* ===== Cover thumbnail for game and category rows ===== */
 .row-thumb-game {
     display: inline-block;
-    filter: none;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
 }
 
 /* ===== Schedule badge (green/teal — mirrors detail-share-badge in topics CSS) ===== */

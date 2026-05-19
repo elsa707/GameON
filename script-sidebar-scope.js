@@ -7,16 +7,17 @@
 (function() {
     var SCOPE_KEY = 'gameon.scope';
     var RECENT_KEY = 'gameon.scope.recent';
+    var AI_CREDITS_KEY = 'gameon.aiCredits';
     var MAX_RECENT = 5;
 
     var FALLBACK_COMPANIES = [
-        { id: 7, name: 'Naspers',        color: '#c8102e' },
-        { id: 6, name: 'Standard Bank',  color: '#005aff' },
-        { id: 5, name: 'Anglo American', color: '#c41230' },
-        { id: 4, name: 'Sasol',          color: '#f47920' },
-        { id: 3, name: 'MTN Group',      color: '#ffcc00' },
-        { id: 2, name: 'Discovery',      color: '#7b2d8b' },
-        { id: 1, name: 'Shoprite',       color: '#e31d1a' }
+        { id: 7, name: 'Naspers',        color: '#c8102e', credits: 500 },
+        { id: 6, name: 'Standard Bank',  color: '#005aff', credits: 300 },
+        { id: 5, name: 'Anglo American', color: '#c41230', credits: 150 },
+        { id: 4, name: 'Sasol',          color: '#f47920', credits: 200 },
+        { id: 3, name: 'MTN Group',      color: '#ffcc00', credits: 400 },
+        { id: 2, name: 'Discovery',      color: '#7b2d8b', credits: 250 },
+        { id: 1, name: 'Shoprite',       color: '#e31d1a', credits: 100 }
     ];
 
     var FALLBACK_DEPARTMENTS = [
@@ -122,6 +123,24 @@
         } catch (e) {}
     }
 
+    function readAiCredits() {
+        try { return JSON.parse(localStorage.getItem(AI_CREDITS_KEY) || '{}'); }
+        catch (e) { return {}; }
+    }
+
+    function updateCreditsDisplay() {
+        var el = document.getElementById('scopeCredits');
+        if (!el) return;
+        var stored = readScope();
+        var company = findCompany(stored.companyId);
+        if (!company) { el.hidden = true; return; }
+        var key = company.name.toLowerCase();
+        var used = readAiCredits()[key] || 0;
+        var total = company.credits || 200;
+        el.hidden = false;
+        el.innerHTML = '<i class="fas fa-coins"></i> ' + used + ' / ' + total + ' AI credits used';
+    }
+
     function readRecent() {
         try {
             var raw = localStorage.getItem(RECENT_KEY);
@@ -194,6 +213,7 @@
             $company.textContent = 'Select company';
             $dept.textContent = '';
         }
+        updateCreditsDisplay();
     }
 
     // ---------- Popup ----------
@@ -475,13 +495,17 @@
         window.addEventListener('resize', function() {
             if (popup && !popup.hidden) positionPopup();
         });
-        // Sync card if scope changes on another tab
+        // Sync card if scope or AI credits change on another tab
         window.addEventListener('storage', function(e) {
-            if (e.key !== SCOPE_KEY) return;
-            renderCard();
-            var s = readScope();
-            refreshDeptPicker(s.companyId == null ? null : s.companyId,
-                              s.departmentId == null ? null : s.departmentId);
+            if (e.key === SCOPE_KEY) {
+                renderCard();
+                var s = readScope();
+                refreshDeptPicker(s.companyId == null ? null : s.companyId,
+                                  s.departmentId == null ? null : s.departmentId);
+            }
+            if (e.key === AI_CREDITS_KEY) {
+                updateCreditsDisplay();
+            }
         });
     }
 

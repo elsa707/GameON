@@ -47,10 +47,22 @@ function getGamesScopeSubtitle() {
 }
 
 // ===== Cover presets =====
+function gradientCoverSvg(c1, c2) {
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200' preserveAspectRatio='xMidYMid slice'>" +
+            "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>" +
+                "<stop offset='0' stop-color='" + c1 + "'/>" +
+                "<stop offset='1' stop-color='" + c2 + "'/>" +
+            "</linearGradient></defs>" +
+            "<rect width='320' height='200' fill='url(#g)'/>" +
+        "</svg>"
+    );
+}
+
 var GAME_COVER_PRESETS = [
-    'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',
-    'linear-gradient(135deg,#f093fb 0%,#f5576c 100%)',
-    'linear-gradient(135deg,#4facfe 0%,#00f2fe 100%)'
+    gradientCoverSvg('#3b82f6', '#8b5cf6'), // blue → purple
+    gradientCoverSvg('#f97316', '#ec4899'), // orange → pink
+    gradientCoverSvg('#22c55e', '#10b981')  // green → teal
 ];
 
 function randomGameCover() {
@@ -58,7 +70,11 @@ function randomGameCover() {
 }
 
 function gameCoverHtml(bg) {
-    return '<div class="row-thumb row-thumb-game" style="background:' + escapeAttr(bg) + '"></div>';
+    if (!bg) return '';
+    var bgCss = bg.indexOf('data:') === 0
+        ? 'url("' + bg + '")'
+        : bg;
+    return '<div class="row-thumb row-thumb-game" style="background:' + escapeAttr(bgCss) + '"></div>';
 }
 
 function gameCoverPickerHtml(currentCover) {
@@ -70,7 +86,8 @@ function gameCoverPickerHtml(currentCover) {
 
     var tiles = GAME_COVER_PRESETS.map(function(preset, idx) {
         var sel = isPreset && idx === presetIdx;
-        return '<button type="button" class="cover-tile' + (sel ? ' selected' : '') + '" data-cover="' + escapeAttr(preset) + '" onclick="selectGameCoverTile(this)" style="background:' + escapeAttr(preset) + '" aria-label="Preset cover ' + (idx + 1) + '">' +
+        return '<button type="button" class="cover-tile' + (sel ? ' selected' : '') + '" data-cover="' + escapeAttr(preset) + '" onclick="selectGameCoverTile(this)" aria-label="Preset cover ' + (idx + 1) + '">' +
+            '<img src="' + escapeAttr(preset) + '" alt="">' +
             (sel ? '<span class="cover-check"><i class="fas fa-check"></i></span>' : '') +
         '</button>';
     }).join('');
@@ -316,7 +333,7 @@ function gameRowHtml(game, id) {
     '</tr>';
 }
 
-function catRowHtml(cat, gameId) {
+function catRowHtml(cat, gameId, gameCover) {
     var qCount = (cat.questions || []).length;
     var qChip = qCount > 0
         ? '<span class="chip chip-questions"><i class="fas fa-question-circle"></i> ' + qCount + ' question' + (qCount !== 1 ? 's' : '') + '</span>'
@@ -330,6 +347,7 @@ function catRowHtml(cat, gameId) {
     return '<tr class="row-cat hidden" data-game="' + gameId + '" data-cat="' + cat.id + '" data-name="' + escapeAttr(cat.name) + '" data-description="' + escapeAttr(cat.description || '') + '" onclick="toggleCat(' + gameId + ',' + cat.id + ')">' +
         '<td class="col-name"><div class="cell-row">' +
             '<span class="chevron"' + (qCount === 0 ? ' style="visibility:hidden"' : '') + '><i class="fas fa-chevron-right"></i></span>' +
+            (gameCover ? gameCoverHtml(gameCover) : '') +
             '<span class="company-name">' + escapeAttr(cat.name) + '</span>' +
             '<span class="row-main-chip">' + qChip + '</span>' +
             '<span class="cell-pills"></span>' +
@@ -384,8 +402,9 @@ function renderGamesForScope(companyKey, dept) {
     visible.forEach(function(game, i) {
         var gid = game.id || (i + 1);
         html += gameRowHtml(game, gid);
+        var gameCover = game.cover || randomGameCover();
         (game.categories || []).forEach(function(cat) {
-            html += catRowHtml(cat, gid);
+            html += catRowHtml(cat, gid, gameCover);
             var qs = cat.questions || [];
             qs.forEach(function(q, qi) {
                 html += qRowHtml(q, gid, cat.id, qi + 1);
@@ -816,8 +835,9 @@ function saveGameAdd(event) {
         tbody.insertAdjacentHTML('beforeend', gameHtml);
         var gameRow = document.querySelector('tr.row-game[data-game="' + newId + '"]');
 
+        var newGameCover = gameRow ? (gameRow.dataset.cover || '') : '';
         _gameAddCats.forEach(function(cat) {
-            var catHtml = catRowHtml(cat, newId);
+            var catHtml = catRowHtml(cat, newId, newGameCover);
             tbody.insertAdjacentHTML('beforeend', catHtml);
             var catRow = document.querySelector('tr.row-cat[data-game="' + newId + '"][data-cat="' + cat.id + '"]');
             cat.questions.forEach(function(q, qi) {
@@ -878,8 +898,9 @@ function saveGameAdd(event) {
         tbody.insertAdjacentHTML('beforeend', gameHtml);
         var gameRow = document.querySelector('tr.row-game[data-game="' + newId + '"]');
 
+        var aiGameCover = gameRow ? (gameRow.dataset.cover || '') : '';
         cats.forEach(function(cat) {
-            tbody.insertAdjacentHTML('beforeend', catRowHtml(cat, newId));
+            tbody.insertAdjacentHTML('beforeend', catRowHtml(cat, newId, aiGameCover));
             var catRow = document.querySelector('tr.row-cat[data-game="' + newId + '"][data-cat="' + cat.id + '"]');
             cat.questions.forEach(function(q, qi) {
                 tbody.insertAdjacentHTML('beforeend', qRowHtml(q, newId, cat.id, qi + 1));
@@ -1340,7 +1361,8 @@ function actionAddCategory(btn, evt) {
     var lastCat = null;
     document.querySelectorAll('tr.row-cat[data-game="' + gameId + '"]').forEach(function(cr) { lastCat = cr; });
     var insertAfter = lastCat || row;
-    insertAfter.insertAdjacentHTML('afterend', catRowHtml(newCat, gameId));
+    var addCatCover = row.dataset.cover || '';
+    insertAfter.insertAdjacentHTML('afterend', catRowHtml(newCat, gameId, addCatCover));
     updateGameRowChips(row);
     persistGamesScope();
     showGameToast('Category "' + catName.trim() + '" added');
@@ -1555,6 +1577,12 @@ function filterByGameStatus(status) {
 
 // ===== AI flow =====
 var _gameAiCreditsUsed = {};
+(function() {
+    try {
+        var s = JSON.parse(localStorage.getItem('gameon.aiCredits') || '{}');
+        Object.keys(s).forEach(function(k) { _gameAiCreditsUsed[k] = s[k]; });
+    } catch(e) {}
+})();
 var _aiGameGenerateIdx = 0;
 
 var _GAME_AI_NAME_POOL = [
@@ -1817,6 +1845,17 @@ function getGameCompanyCreditsTotal(companyKey) {
     return 200;
 }
 
+function updateGameScopeCreditsDisplay() {
+    var el = document.getElementById('scopeCredits');
+    if (!el) return;
+    var key = _currentGameScope && _currentGameScope.companyKey;
+    if (!key) { el.hidden = true; return; }
+    var used  = _gameAiCreditsUsed[key] || 0;
+    var total = getGameCompanyCreditsTotal(key);
+    el.hidden = false;
+    el.innerHTML = '<i class="fas fa-coins"></i> ' + used + ' / ' + total + ' AI credits used';
+}
+
 function switchAIGameContentTab(btn, kind) {
     document.querySelectorAll('#aiGameStep1 .content-kind-tab').forEach(function(t) { t.classList.remove('active'); });
     btn.classList.add('active');
@@ -1920,8 +1959,14 @@ function aiGameGenerate() {
 
     var ck = (_currentGameScope && _currentGameScope.companyKey) || '';
     _gameAiCreditsUsed[ck] = (_gameAiCreditsUsed[ck] || 0) + 1;
+    try {
+        var _sc = JSON.parse(localStorage.getItem('gameon.aiCredits') || '{}');
+        _sc[ck] = _gameAiCreditsUsed[ck];
+        localStorage.setItem('gameon.aiCredits', JSON.stringify(_sc));
+    } catch(e) {}
     var countEl = document.getElementById('aiGameCreditsCount');
     if (countEl) countEl.textContent = _gameAiCreditsUsed[ck];
+    updateGameScopeCreditsDisplay();
 }
 
 function collapseAIGameStep1() {
@@ -1996,6 +2041,52 @@ function toggleAIGameCat(btn) {
 function onGamesScope(companyKey, deptName) {
     loadGamesScope();
     renderGamesForScope(companyKey, deptName);
+    updateGameScopeCreditsDisplay();
+    _checkPendingGame(companyKey, deptName);
+}
+
+function _checkPendingGame(companyKey, deptName) {
+    try {
+        var raw = localStorage.getItem('gameon.pendingGame');
+        if (!raw) return;
+        var pending = JSON.parse(raw);
+        localStorage.removeItem('gameon.pendingGame');
+        if (pending.companyKey !== companyKey || pending.dept !== deptName) return;
+        addGame();
+        setTimeout(function() {
+            var pane = document.getElementById('gameTabPaneGame');
+            if (!pane) return;
+
+            if (pending.topicName) {
+                var nameInput = pane.querySelector('input[name="name"]');
+                if (nameInput) nameInput.value = pending.topicName;
+            }
+
+            if (pending.topicDesc) {
+                var descInput = pane.querySelector('textarea[name="description"]');
+                if (descInput) descInput.value = pending.topicDesc;
+            }
+
+            if (pending.topicCover) {
+                var hidden = pane.querySelector('.cover-hidden-input');
+                if (hidden) {
+                    hidden.value = pending.topicCover;
+                    var picker = hidden.closest('.cover-picker');
+                    if (picker) {
+                        picker.querySelectorAll('.cover-tile').forEach(function(t) {
+                            t.classList.remove('selected');
+                            var chk = t.querySelector('.cover-check');
+                            if (chk) chk.remove();
+                            if (t.dataset.cover === pending.topicCover) {
+                                t.classList.add('selected');
+                                t.insertAdjacentHTML('beforeend', '<span class="cover-check"><i class="fas fa-check"></i></span>');
+                            }
+                        });
+                    }
+                }
+            }
+        }, 0);
+    } catch(e) {}
 }
 
 // ===== Init =====

@@ -113,6 +113,7 @@ body:has(.sidebar.collapsed)::before {
 .scope-card {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     width: 100%;
     padding: 14px 16px;
@@ -207,9 +208,10 @@ body:has(.sidebar.collapsed)::before {
 }
 
 .scope-card-credits {
+    flex-basis: 100%;
     font-size: 10px;
     color: rgba(255, 255, 255, 0.45);
-    margin-top: 4px;
+    margin-top: -4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

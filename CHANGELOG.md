@@ -33,6 +33,33 @@ Project contact: elsadr@agilebridge.co.za
 ### Changed
 - **Add with AI — sub-topics accordion in second tab**: when "Generate with sub-topics" is toggled on, `aiGenerateStep2()` now builds a two-tab layout inside `#aiStep2Section`. The Topic tab shows the cover picker, editable name and description, and a preview list of suggested sub-topic names with a "View Sub-topics" button. The Sub-topics tab shows an accordion: clicking the chevron expands the row (collapsing any other open row) to reveal a scrollable `contenteditable` WYSIWYG pre-populated with rich HTML. The sub-topic name in the header is also `contenteditable` so both name and content are directly editable. Each `_AI_SUGGESTIONS` entry now carries a `subtopics` array (3–4 items each) with name and HTML body. `switchAITab()` and `toggleAISub()` added to `script-topics.js`; accordion and WYSIWYG CSS added to `styles-topics.css`.
 
+## [2026-05-19]
+
+### Added
+- **Topics → Games handoff — "Create with game" toggle**: a toggle switch labelled "Create with game" (sentence case, no icon) appears at the bottom of the Topic tab in both the manual and AI add flows (all three `aiGenerateStep2` variants). When checked and the user clicks Save, the flag and the topic's cover, name, and description are captured at the Share step (`_pendingCreateGame`, `_pendingTopicCover`, `_pendingTopicDesc`). Clicking Share or Skip writes `{ topicName, topicCover, topicDesc, companyKey, dept }` to `localStorage['gameon.pendingGame']` and navigates to `index-games.html`. On arrival, `_checkPendingGame()` in `script-games.js` reads the flag, clears it, verifies the scope still matches, calls `addGame()`, and pre-fills the Game Name, Description, and cover picker (including tile visual selection) from the stored topic data. `script-topics.js` bumped to `?v=24`, `script-games.js` to `?v=4`.
+
+### Fixed
+- **Games — tree thumbnails now match topics**: removed `filter: none` from `.row-thumb-game` so the base `.row-thumb { filter: saturate(0.3) brightness(1.15) }` applies, giving game covers the same muted look as topic covers. Added the parent game's cover as a thumbnail on category rows — `catRowHtml()` now accepts an optional `gameCover` parameter and renders `gameCoverHtml(gameCover)` when supplied. All four call sites updated: `renderGamesForScope` passes `game.cover`, save/AI-save flows read `gameRow.dataset.cover`, and single-category add reads `row.dataset.cover`. `script-games.js` bumped to `?v=8`.
+- **Games — cover presets now match topics in hue and format**: `GAME_COVER_PRESETS` replaced from raw CSS gradient strings to SVG data URLs via a new `gradientCoverSvg()` helper (identical implementation to `script-topics.js`), using the same three color pairs — blue→purple (`#3b82f6`→`#8b5cf6`), orange→pink (`#f97316`→`#ec4899`), purple→violet (`#a855f7`→`#7c3aed`). Because the `data-cover` values are now identical across both pages, `_checkPendingGame()` can match the incoming topic cover string directly and highlight the correct tile. `script-games.js` bumped to `?v=5`.
+- **"Create with game" toggle — switch first, sentence-case label**: reverted HTML order to switch-first. Fixed uppercase text caused by `.form-group label { text-transform: uppercase }` overriding the toggle via higher specificity; corrected with `.create-game-toggle-row label` rule in `styles-topics.css` which also restores `display: inline-flex` and `gap: 10px` (both were being overridden by the `display: block` from `.form-group label`). `script-topics.js` bumped to `?v=27`.
+- **Games — cover images blank after SVG data URL switch**: `gameCoverHtml()` and `gameCoverPickerHtml()` were using `style="background: <data-url>"` (invalid CSS syntax for data URLs). Switched both to `<img src="...">` matching the topics approach. `script-games.js` bumped to `?v=6`.
+
+### Added
+- **AI credits persist across all pages**: credits are now written to `localStorage['gameon.aiCredits']` (object keyed by company name) whenever a Generate is triggered in `script-topics.js` or `script-games.js`, and read back on page load so the count is never lost on navigation. `script-sidebar-scope.js` now reads from this key in a new `updateCreditsDisplay()` function called from `renderCard()` on every scope change — so the `#scopeCredits` line appears on every page as soon as a company with prior AI usage is selected. Added `credits` quota field to `FALLBACK_COMPANIES` in `script-sidebar-scope.js` (matching `SIDEBAR_COMPANIES` values). Added `#scopeCredits` div to all six pages that were missing it: `index.html`, `all-users.html`, `companies.html`, `index-users-dept-grid.html`, `reports.html`, `settings.html`. `script-topics.js` bumped to `?v=28`, `script-games.js` to `?v=7`.
+- **Nav — "Calendar" renamed to "Game Calendar"**: updated label and `data-tooltip` on all eight pages.
+- **Games — cover images blank after SVG data URL switch**: `gameCoverHtml()` and `gameCoverPickerHtml()` were using `style="background: <data-url>"` which is invalid CSS syntax (needs `url(...)`). Switched both to render `<img src="...">` elements matching the topics approach. `script-games.js` bumped to `?v=6`.
+
+### Changed
+- **Scope card — AI credits on its own row**: moved `#scopeCredits` from inside `.scope-card-text` to a direct child of `.scope-card` in `index-topics.html` and `index-games.html`. Added `flex-wrap: wrap` and `flex-basis: 100%` to `.scope-card` / `.scope-card-credits` in `styles.css` so the credits line wraps below the logo + name + arrows row.
+
+### Added
+- **Topics — "Add game" kebab menu item**: added below "Add sub-topic" in the topic row action menu (both the `topicRowHtml` template and the newly-added row in `saveAdd`). Clicking it navigates to `index-games.html`. `script-topics.js` bumped to `?v=22`.
+
+
+
+### Fixed
+- **AI credits always visible below company name**: `updateGameScopeCreditsDisplay()` added to `script-games.js` (mirrors `updateScopeCreditsDisplay` in topics). Called from `onGamesScope()` so the credit line appears as soon as a company is selected (showing "0 / N AI credits used"), and again after each AI generation to keep the count live. `script-games.js` bumped to `?v=2`.
+
 ## [2026-05-18] — Games styling consistency
 
 ### Fixed
