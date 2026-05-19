@@ -1084,6 +1084,7 @@ function previewCover(input) {
 
 // ===== Panel mode =====
 function setPanelMode(mode) {
+    _inShareStep = false;
     // The Share step replaces .edit-actions; restore it before doing anything else.
     if (!document.getElementById('editSubmitBtn')) {
         const actions = document.querySelector('#detailEdit .edit-actions');
@@ -1539,6 +1540,7 @@ function switchAITab(tab) {
     if (topicPane)  topicPane.classList.toggle('hidden',  tab !== 'ai-topic');
     if (subsPane)   subsPane.classList.toggle('hidden',   tab !== 'ai-subs');
     if (sharePane)  sharePane.classList.toggle('hidden',  tab !== 'ai-share');
+    _syncAddShareButtons(tab === 'ai-share');
 }
 
 function toggleAISub(btn) {
@@ -1567,6 +1569,7 @@ function switchAddTab(tab) {
     if (topicPane)  topicPane.classList.toggle('hidden',  tab !== 'topic');
     if (subsPane)   subsPane.classList.toggle('hidden',   tab !== 'subs');
     if (sharePane)  sharePane.classList.toggle('hidden',  tab !== 'share');
+    _syncAddShareButtons(tab === 'share');
 }
 
 function buildAddShareTabHtml() {
@@ -1578,9 +1581,11 @@ function buildAddShareTabHtml() {
     if (!company) return '<p class="share-empty">Company not found.</p>';
     var allDepts = departments.filter(function(d) { return d.companyId === company.id; });
     if (!allDepts.length) return '<p class="share-empty">No departments to share with.</p>';
+    var currentDept = (_currentScope && _currentScope.dept) || '';
     var items = allDepts.map(function(d) {
+        var checked = d.name === currentDept ? ' checked' : '';
         return '<label class="share-dept-item">' +
-            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '">' +
+            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '"' + checked + '>' +
             '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
         '</label>';
     }).join('');
@@ -1590,6 +1595,7 @@ function buildAddShareTabHtml() {
 }
 
 // ===== Add flow — Share step (shown after topic is saved) =====
+var _inShareStep = false;        // true once Save is clicked and share tab is shown
 var _pendingShareTopicName = null;
 var _pendingCreateGame = false;  // captured at Save time from #createGameToggle
 var _pendingTopicCover = '';
@@ -1621,6 +1627,7 @@ function _launchCreateGame(topicName) {
 }
 
 function skipAddShareStep() {
+    _inShareStep = false;
     var topicName = _pendingShareTopicName;
     _pendingShareTopicName = null;
     var createGame = _pendingCreateGame;
@@ -1629,7 +1636,23 @@ function skipAddShareStep() {
     showEmpty();
 }
 
+function _syncAddShareButtons(onShareTab) {
+    if (!_inShareStep) return;
+    var actions = document.querySelector('#detailEdit .edit-actions');
+    if (!actions) return;
+    if (onShareTab) {
+        actions.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="skipAddShareStep()">Skip</button>' +
+            '<button type="button" class="btn btn-primary" onclick="applyAddShare()">Share</button>';
+    } else {
+        actions.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="cancelEdit()">Cancel</button>' +
+            '<button type="submit" class="btn btn-primary" id="editSubmitBtn">Save</button>';
+    }
+}
+
 function showAddShareStep(savedTopicName) {
+    _inShareStep = true;
     _pendingShareTopicName = savedTopicName;
     var toggle = document.getElementById('createGameToggle');
     _pendingCreateGame = !!(toggle && toggle.checked);
@@ -1657,6 +1680,7 @@ function showAddShareStep(savedTopicName) {
 }
 
 function applyAddShare() {
+    _inShareStep = false;
     var topicName = _pendingShareTopicName;
     _pendingShareTopicName = null;
     var createGame = _pendingCreateGame;
@@ -1671,7 +1695,7 @@ function applyAddShare() {
             ' dept' + (deptNames.length !== 1 ? 's' : ''));
     }
     if (createGame) { _launchCreateGame(topicName); return; }
-    if (!deptNames.length) showEmpty();
+    showEmpty();
 }
 
 // ===== Add Sub-Topic =====
@@ -2098,7 +2122,10 @@ function shareTopicWithDepartments(companyKey, topicName, deptNames) {
             bucket = seed.slice();
             TOPICS_BY_SCOPE[key] = bucket;
         }
-        if (!bucket.some(t => t.name === topicName)) {
+        const existing = bucket.find(t => t.name === topicName);
+        if (existing) {
+            if (!existing.sharedDate) existing.sharedDate = new Date().toISOString();
+        } else {
             var copy = JSON.parse(JSON.stringify(sourceTopic));
             copy.sharedDate = new Date().toISOString();
             bucket.push(copy);
@@ -2190,7 +2217,7 @@ function getSharedDepartments(companyKey, topicName) {
     if (!company) return [];
     const currentDept = (_currentScope && _currentScope.dept) || '';
     return departments
-        .filter(d => d.companyId === company.id && d.name !== currentDept)
+        .filter(d => d.companyId === company.id)
         .filter(d => {
             const bucket = TOPICS_BY_SCOPE[companyKey + '|' + d.name];
             return bucket && bucket.some(t => t.name === topicName && t.sharedDate);
