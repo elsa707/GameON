@@ -492,3 +492,304 @@
     background: #eff6ff;
     border-color: #93c5fd;
 }
+
+/* ===== Form helpers (used by both add flows) ===== */
+.form-label-optional {
+    font-weight: 400;
+    color: #9ca3af;
+    font-size: 0.8em;
+}
+.ai-content-skip-note {
+    font-style: italic;
+}
+.required-mark { color: #ef4444; }
+
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+/* ===== Number stepper (Max attempts) ===== */
+.number-stepper {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+    width: fit-content;
+}
+.stepper-btn {
+    width: 30px;
+    height: 32px;
+    background: #f9fafb;
+    border: none;
+    color: #374151;
+    cursor: pointer;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+}
+.stepper-btn:hover { background: #e5e7eb; }
+.number-stepper input[type=number] {
+    width: 46px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    height: 32px;
+    font-size: 0.9rem;
+    color: #111827;
+    -moz-appearance: textfield;
+}
+.number-stepper input[type=number]::-webkit-outer-spin-button,
+.number-stepper input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ===== AI flow — question types config ===== */
+.ai-q-types-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin-top: 6px;
+}
+.ai-q-type-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s, border-color 0.12s;
+}
+.ai-q-type-option:has(input:checked) {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+.ai-q-type-option.ai-q-type-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.ai-q-type-option input[type=checkbox] {
+    margin: 0;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+.ai-q-type-option i {
+    font-size: 0.78rem;
+    width: 13px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* ===== Max questions slider ===== */
+.ai-qcount-group { margin-bottom: 4px; }
+.ai-qcount-slider {
+    width: 100%;
+    margin: 6px 0 2px;
+    accent-color: #7c3aed;
+    cursor: pointer;
+    height: 4px;
+}
+.ai-qcount-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #9ca3af;
+    padding: 0 2px;
+}
+
+/* ===== Difficulty row ===== */
+.ai-difficulty-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0 8px;
+    flex-wrap: wrap;
+}
+.ai-difficulty-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+.ai-difficulty-badges {
+    display: flex;
+    gap: 4px;
+}
+.ai-diff-badge {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.35;
+    border: 1px solid transparent;
+}
+.ai-diff-badge.ai-diff-active { opacity: 1; }
+.ai-diff-easy   { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.ai-diff-medium { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+.ai-diff-hard   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.ai-difficulty-note {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* ===== Credits estimate pill ===== */
+.ai-credits-estimate {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: #5b21b6;
+    margin-bottom: 8px;
+}
+.ai-credits-estimate i { color: #7c3aed; }
+
+/* ===== Generation progress ===== */
+.ai-gen-progress-wrap {
+    padding: 18px 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin: 6px 0 10px;
+}
+.ai-gen-progress-bar {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+.ai-gen-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a855f7);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+.ai-gen-progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.ai-gen-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: #d1d5db;
+    padding: 3px 0;
+    transition: color 0.2s;
+}
+.ai-gen-step i { width: 15px; text-align: center; font-size: 0.78rem; flex-shrink: 0; }
+.ai-gen-step-active { color: #7c3aed; font-weight: 600; }
+.ai-gen-step-done   { color: #16a34a; }
+.ai-gen-step-done i { color: #16a34a; }
+
+/* ===== AI step-1 collapsed summary ===== */
+.ai-step1-collapsed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: #374151;
+    margin-bottom: 8px;
+}
+.ai-step1-summary {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #6b7280;
+}
+
+/* ===== File upload preview ===== */
+.ai-file-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+.ai-file-preview-thumb {
+    width: 56px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+.ai-file-preview-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.ai-file-preview-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+.ai-file-preview-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.ai-file-preview-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+.ai-file-preview-size {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+.ai-file-preview-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: #3b82f6;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+}
+.ai-file-preview-change:hover { background: #dbeafe; }
+
+/* ===== Questions-per-category note ===== */
+.ai-qcount-note {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-style: italic;
+    margin-top: 3px;
+}

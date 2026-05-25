@@ -5,6 +5,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-22] — fixes
+
+### Fixed
+- **Add cover image — toggle (off by default)**: cover image picker in both the manual Add Game form and the AI Game flow result tab is now collapsed behind an "Add cover image" toggle, matching the diagram. The toggle defaults to off (no cover = random assigned on save); if a topic is linked the toggle defaults to on with the topic cover pre-selected and labelled "(from topic)". Implemented via `gameCoverToggleHtml()` and `toggleGameCoverSection()` helpers.
+- **File upload preview**: uploading a file in the AI Game flow now shows a styled preview card — image thumbnail for image files, and a file-type icon (PDF, Word, etc.) + filename + file size for documents. A "Change" button lets the user re-pick. Replaces the previous plain-filename display.
+- **Questions per category — clearer label**: slider label changed from "Max questions per category" to "Questions per category (max 10)" with a sub-note "Questions per attempt is configured in the manual flow", matching the diagram note that per-attempt count lives in the manual flow.
+- `script-games.js` version bumped to `?v=12`.
+
+## [2026-05-22]
+
+### Added
+- **AI game flow — Topic link**: "Link to topic" selector (populated from `TOPICS_BY_SCOPE`/`TOPICS_BY_DEPT` via newly-loaded `topics-data.js`) added to the AI Add Game form. Selecting a topic pre-fills the optional content note, and after generation pre-fills game name, description and cover on the Game tab.
+- **AI game flow — Question types config**: checklist of question types (MCQ ✓, Word Rocket, Crossword, Fill in the Blank, Statement Blanking, Select on Image [disabled until image content]) added to the AI form setup panel. Each change recalculates the credit estimate.
+- **AI game flow — Max questions slider**: range input 1–10 (default 5) with scale labels added below question types. Drives the live credit estimate via `updateAIGameQCount`.
+- **AI game flow — Difficulty display**: read-only Easy/Medium/Hard badge row (Medium active by default) added to the AI form. Labelled "Auto-set · adjustable per attempt in manual flow" per spec.
+- **AI game flow — Credits estimate**: live credit estimate pill (`ai-credits-estimate`) shown throughout the AI setup form; updates when question types, slider, or categories toggle change.
+- **AI game flow — Generation progress animation**: clicking Generate now shows a 4-step animated progress bar (Analysing content → Identifying categories → Generating questions → Applying difficulty) before revealing the results. Logic extracted into `_renderAIGameResults()`.
+- **AI game flow — Max attempts & Questions per session**: generated Game tab now includes a Max attempts number-stepper and a Questions per session text input.
+- **Manual Add Game — Topic, Max attempts, Questions per session**: Topic dropdown, Max attempts stepper and Questions per session input added to the manual Add Game "Game" tab. Selecting a topic pre-fills name, description and cover.
+- **New helpers in `script-games.js`**: `getAIGameTopicOptions()`, `onAIGameTopicChange()`, `onManualGameTopicChange()`, `updateAIGameQCount()`, `updateAIGameCreditsEstimate()`, `stepGameAttempts()`.
+
+### Changed
+- `addGameAI()` title changed to "Add Game with AI".
+- AI Generate button now always enabled in prototype (previously required content first).
+- `topics-data.js` added to `index-games.html` (before `script-games.js`) so topic data is available for the link-to-topic selector.
+- `script-games.js` version bumped to `?v=11` in `index-games.html`.
+
 ## [2026-05-14]
 
 ### Changed
