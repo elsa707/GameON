@@ -595,30 +595,35 @@ function buildGameShareTabHtml() {
         '<div class="share-dept-list">' + items + '</div>';
 }
 
-// ===== Schedule HTML =====
+// ===== Schedule HTML (date range) =====
 function buildScheduleBodyHtml() {
     return '<div class="schedule-form">' +
-        '<p class="schedule-lead">When should this game go live?</p>' +
-        '<label class="schedule-option">' +
-            '<input type="radio" name="scheduleType" value="now" checked onchange="onScheduleTypeChange(this)"> Publish immediately' +
-        '</label>' +
-        '<label class="schedule-option">' +
-            '<input type="radio" name="scheduleType" value="date" onchange="onScheduleTypeChange(this)"> Schedule for a date' +
-        '</label>' +
-        '<div class="schedule-date-group hidden" id="scheduleDateGroup">' +
-            '<input type="datetime-local" id="scheduleDateTime" class="schedule-datetime-input">' +
+        '<div class="schedule-date-row">' +
+            '<div class="form-group">' +
+                '<label>Start date</label>' +
+                '<input type="date" id="scheduleStartDate" class="schedule-date-input">' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label>End date</label>' +
+                '<input type="date" id="scheduleEndDate" class="schedule-date-input">' +
+            '</div>' +
         '</div>' +
     '</div>';
 }
 
-function onScheduleTypeChange(radio) {
-    var group = document.getElementById('scheduleDateGroup');
-    if (!group) return;
-    if (radio.value === 'date') {
-        group.classList.remove('hidden');
-    } else {
-        group.classList.add('hidden');
-    }
+// ===== Combined Share + Schedule tab HTML =====
+function buildShareScheduleTabHtml() {
+    return '<div class="share-schedule-tab">' +
+        '<div class="share-schedule-section">' +
+            '<h4 class="share-schedule-heading"><i class="fas fa-people-group"></i> Share with departments</h4>' +
+            buildGameShareTabHtml() +
+        '</div>' +
+        '<div class="share-schedule-divider"></div>' +
+        '<div class="share-schedule-section">' +
+            '<h4 class="share-schedule-heading"><i class="fas fa-calendar-alt"></i> Schedule</h4>' +
+            buildScheduleBodyHtml() +
+        '</div>' +
+    '</div>';
 }
 
 // ===== Add Game (manual) =====
@@ -635,8 +640,7 @@ function addGame() {
         '<div class="add-topic-tabs" id="gameAddTabs">' +
             '<button type="button" class="add-topic-tab active" data-tab="game" onclick="switchGameTab(\'game\')"><i class="fas fa-trophy"></i> Game</button>' +
             '<button type="button" class="add-topic-tab" data-tab="cats" onclick="switchGameTab(\'cats\')"><i class="fas fa-list"></i> Categories</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="share" id="gameTabShare" disabled onclick="switchGameTab(\'share\')"><i class="fas fa-people-group"></i> Share</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="schedule" id="gameTabSchedule" disabled onclick="switchGameTab(\'schedule\')"><i class="fas fa-calendar-alt"></i> Schedule</button>' +
+            '<button type="button" class="add-topic-tab" data-tab="share-schedule" id="gameTabShareSchedule" disabled onclick="switchGameTab(\'share-schedule\')"><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="gameTabPaneGame">' +
             gameCoverToggleHtml('', 'gameAddCoverToggle', 'gameAddCoverBody', false) +
@@ -666,11 +670,8 @@ function addGame() {
         '<div class="add-topic-pane hidden" id="gameTabPaneCats">' +
             '<div id="gameCatsList"></div>' +
         '</div>' +
-        '<div class="add-topic-pane hidden" id="gameTabPaneShare">' +
-            buildGameShareTabHtml() +
-        '</div>' +
-        '<div class="add-topic-pane hidden" id="gameTabPaneSchedule">' +
-            buildScheduleBodyHtml() +
+        '<div class="add-topic-pane hidden" id="gameTabPaneShareSchedule">' +
+            buildShareScheduleTabHtml() +
         '</div>';
 
     renderGameCatList();
@@ -681,9 +682,9 @@ function addGame() {
 function switchGameTab(tab) {
     var tabs = document.querySelectorAll('#gameAddTabs .add-topic-tab');
     tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
-    var panes = ['game','cats','share','schedule'];
-    panes.forEach(function(p) {
-        var el = document.getElementById('gameTabPane' + p.charAt(0).toUpperCase() + p.slice(1));
+    var panes = { 'game': 'Game', 'cats': 'Cats', 'share-schedule': 'ShareSchedule' };
+    Object.keys(panes).forEach(function(p) {
+        var el = document.getElementById('gameTabPane' + panes[p]);
         if (el) el.classList.toggle('hidden', p !== tab);
     });
 }
@@ -1001,40 +1002,62 @@ function saveGameAdd(event) {
     }
 }
 
-// ===== Share step (after add) =====
+// ===== Combined Share + Schedule step (after add) =====
 function showAddGameShareStep(gameName) {
     _pendingGameName = gameName;
 
-    var isAI = !!document.getElementById('aiGameTabShare');
-    var shareTabBtn = document.getElementById(isAI ? 'aiGameTabShare' : 'gameTabShare');
-    if (shareTabBtn) shareTabBtn.disabled = false;
+    var isAI = !!document.getElementById('aiGameTabShareSchedule');
+    var tabBtn = document.getElementById(isAI ? 'aiGameTabShareSchedule' : 'gameTabShareSchedule');
+    if (tabBtn) tabBtn.disabled = false;
 
-    if (isAI) { switchGameAITab('ai-share'); } else { switchGameTab('share'); }
+    if (isAI) { switchGameAITab('ai-share-schedule'); } else { switchGameTab('share-schedule'); }
 
     var actions = document.querySelector('#detailEdit .edit-actions');
     if (actions) {
         actions.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="skipGameShare()">Skip</button>' +
-            '<button type="button" class="btn btn-primary" onclick="applyGameShare()">Share</button>';
+            '<button type="button" class="btn btn-outline" onclick="skipGameShareSchedule()">Skip</button>' +
+            '<button type="button" class="btn btn-primary" onclick="applyGameShareSchedule()">Confirm</button>';
     }
 }
 
-function applyGameShare() {
+function applyGameShareSchedule() {
     var gameName = _pendingGameName;
     _pendingGameName = null;
+
+    // Apply sharing
     var deptNames = Array.from(document.querySelectorAll('input[name="shareDept"]:checked'))
         .map(function(i) { return i.value; });
     if (deptNames.length) {
         shareGameWithDepts(_currentGameScope.companyKey, gameName, deptNames);
-        persistGamesScope();
         showGameToast('"' + gameName + '" shared to ' + deptNames.length + ' dept' + (deptNames.length !== 1 ? 's' : ''));
         refreshGames();
     }
-    showGameScheduleStep(gameName);
+
+    // Apply schedule (dates are optional)
+    var startVal = document.getElementById('scheduleStartDate') ? document.getElementById('scheduleStartDate').value : '';
+    var endVal   = document.getElementById('scheduleEndDate')   ? document.getElementById('scheduleEndDate').value   : '';
+    if (startVal) {
+        var gameRows = document.querySelectorAll('#gamesTable tbody tr.row-game');
+        var targetRow = _schedulingGameRow || (gameRows.length ? gameRows[gameRows.length - 1] : null);
+        if (targetRow) {
+            targetRow.dataset.scheduledDate = startVal;
+            if (endVal) targetRow.dataset.scheduledEndDate = endVal;
+            updateGameRowChips(targetRow);
+        }
+        if (!deptNames.length) {
+            showGameToast('Scheduled ' + startVal + (endVal ? ' → ' + endVal : ''));
+        }
+    } else if (!deptNames.length) {
+        showGameToast('Game saved');
+    }
+
+    persistGamesScope();
+    showGameEmpty();
 }
 
-function skipGameShare() {
-    showGameScheduleStep(_pendingGameName || '');
+function skipGameShareSchedule() {
+    persistGamesScope();
+    showGameEmpty();
 }
 
 function shareGameWithDepts(companyKey, gameName, deptNames) {
@@ -1058,52 +1081,19 @@ function shareGameWithDepts(companyKey, gameName, deptNames) {
     });
 }
 
-// ===== Schedule step =====
-function showGameScheduleStep(gameName) {
-    _pendingGameName = gameName || _pendingGameName;
-
-    var isAI = !!document.getElementById('aiGameTabSchedule');
-    var scheduleTabBtn = document.getElementById(isAI ? 'aiGameTabSchedule' : 'gameTabSchedule');
-    if (scheduleTabBtn) scheduleTabBtn.disabled = false;
-
-    if (isAI) { switchGameAITab('ai-schedule'); } else { switchGameTab('schedule'); }
-
-    // Ensure schedule body is populated
-    var schedulePane = document.getElementById(isAI ? 'aiGameTabPaneSchedule' : 'gameTabPaneSchedule');
-    if (schedulePane && !schedulePane.querySelector('.schedule-form')) {
-        schedulePane.innerHTML = buildScheduleBodyHtml();
-    }
-
-    var actions = document.querySelector('#detailEdit .edit-actions');
-    if (actions) {
-        actions.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="skipGameSchedule()">Skip</button>' +
-            '<button type="button" class="btn btn-primary" onclick="confirmGameSchedule()">Schedule</button>';
-    }
-
-    var titleEl = document.getElementById('scheduleTitle');
-    var subtitleEl = document.getElementById('scheduleSubtitle');
-    // In edit panel, show schedule title inline (panel not used in add flow)
-}
-
+// ===== Schedule panel confirm (kebab-menu flow for existing games) =====
 function confirmGameSchedule() {
-    var typeRadio = document.querySelector('input[name="scheduleType"]:checked');
-    var type = typeRadio ? typeRadio.value : 'now';
-    if (type === 'date') {
-        var dtInput = document.getElementById('scheduleDateTime');
-        var val = dtInput ? dtInput.value : '';
-        if (!val) { showGameToast('Please pick a date and time'); return; }
-        // Find the most recently added game row (last row-game in tbody)
-        var gameRows = document.querySelectorAll('#gamesTable tbody tr.row-game');
-        var targetRow = _schedulingGameRow || (gameRows.length ? gameRows[gameRows.length - 1] : null);
-        if (targetRow) {
-            targetRow.dataset.scheduledDate = val;
-            updateGameRowChips(targetRow);
-        }
-        showGameToast('Game scheduled for ' + val.replace('T', ' '));
-    } else {
-        showGameToast('Game published immediately');
+    var startVal = document.getElementById('scheduleStartDate') ? document.getElementById('scheduleStartDate').value : '';
+    var endVal   = document.getElementById('scheduleEndDate')   ? document.getElementById('scheduleEndDate').value   : '';
+    if (!startVal) { showGameToast('Please pick a start date'); return; }
+    var gameRows = document.querySelectorAll('#gamesTable tbody tr.row-game');
+    var targetRow = _schedulingGameRow || (gameRows.length ? gameRows[gameRows.length - 1] : null);
+    if (targetRow) {
+        targetRow.dataset.scheduledDate = startVal;
+        if (endVal) targetRow.dataset.scheduledEndDate = endVal;
+        updateGameRowChips(targetRow);
     }
+    showGameToast('Scheduled ' + startVal + (endVal ? ' → ' + endVal : ''));
     persistGamesScope();
     showGameEmpty();
 }
@@ -1999,17 +1989,6 @@ function addGameAI() {
                 '<div class="ai-qcount-note">Questions per attempt is configured in the manual flow</div>' +
             '</div>' +
 
-            // Difficulty (auto-set, display only)
-            '<div class="ai-difficulty-row" id="aiGameDifficultyRow">' +
-                '<span class="ai-difficulty-label"><i class="fas fa-sliders"></i> Difficulty</span>' +
-                '<div class="ai-difficulty-badges">' +
-                    '<span class="ai-diff-badge ai-diff-easy">Easy</span>' +
-                    '<span class="ai-diff-badge ai-diff-medium ai-diff-active">Medium</span>' +
-                    '<span class="ai-diff-badge ai-diff-hard">Hard</span>' +
-                '</div>' +
-                '<span class="ai-difficulty-note">Auto-set · adjustable per attempt in manual flow</span>' +
-            '</div>' +
-
             // Credits estimate
             '<div class="ai-credits-estimate" id="aiGameCreditsEstimate">' +
                 '<i class="fas fa-coins"></i> Estimated <strong><span id="aiGameCreditsEstimateVal">3</span> credits</strong> for this generation' +
@@ -2095,6 +2074,7 @@ function updateGameScopeCreditsDisplay() {
             pageEl.classList.toggle('page-ai-credit-balance--warn', used / total >= 0.8);
         }
     }
+
 }
 
 function switchAIGameContentTab(btn, kind) {
@@ -2292,19 +2272,32 @@ function _renderAIGameResults() {
         '</div>';
     }).join('');
 
-    var attemptsHtml =
-        '<div class="form-row-2">' +
-            '<div class="form-group">' +
-                '<label>Max attempts</label>' +
-                '<div class="number-stepper">' +
-                    '<button type="button" class="stepper-btn" onclick="stepGameAttempts(-1,\'aiGameMaxAttempts\')"><i class="fas fa-minus"></i></button>' +
-                    '<input type="number" name="maxAttempts" id="aiGameMaxAttempts" value="1" min="1" max="99">' +
-                    '<button type="button" class="stepper-btn" onclick="stepGameAttempts(1,\'aiGameMaxAttempts\')"><i class="fas fa-plus"></i></button>' +
-                '</div>' +
+    // Mock difficulty ratios — vary slightly per generation cycle
+    var _diffSets = [
+        { easy: 10, medium: 70, hard: 20 },
+        { easy: 20, medium: 65, hard: 15 },
+        { easy: 15, medium: 60, hard: 25 },
+        { easy: 25, medium: 55, hard: 20 }
+    ];
+    var diffRatio = _diffSets[(_aiGameGenerateIdx - 1) % _diffSets.length];
+
+    var diffRatioHtml =
+        '<div class="ai-diff-ratio">' +
+            '<span class="ai-diff-ratio-label"><i class="fas fa-sliders"></i> Difficulty mix</span>' +
+            '<div class="ai-diff-ratio-chips">' +
+                '<span class="ai-diff-chip ai-diff-easy">Easy ' + diffRatio.easy + '%</span>' +
+                '<span class="ai-diff-chip ai-diff-medium">Medium ' + diffRatio.medium + '%</span>' +
+                '<span class="ai-diff-chip ai-diff-hard">Hard ' + diffRatio.hard + '%</span>' +
             '</div>' +
-            '<div class="form-group">' +
-                '<label>Questions per session</label>' +
-                '<input type="text" name="questionsPerSession" placeholder="Server default">' +
+        '</div>';
+
+    var attemptsHtml =
+        '<div class="form-group">' +
+            '<label>Max attempts</label>' +
+            '<div class="number-stepper">' +
+                '<button type="button" class="stepper-btn" onclick="stepGameAttempts(-1,\'aiGameMaxAttempts\')"><i class="fas fa-minus"></i></button>' +
+                '<input type="number" name="maxAttempts" id="aiGameMaxAttempts" value="1" min="1" max="99">' +
+                '<button type="button" class="stepper-btn" onclick="stepGameAttempts(1,\'aiGameMaxAttempts\')"><i class="fas fa-plus"></i></button>' +
             '</div>' +
         '</div>';
 
@@ -2314,22 +2307,21 @@ function _renderAIGameResults() {
             '<button type="button" class="add-topic-tab" data-tab="ai-cats" onclick="switchGameAITab(\'ai-cats\')">' +
                 'Categories <span class="tab-badge">' + catCount + '</span>' +
             '</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="ai-share" id="aiGameTabShare" onclick="switchGameAITab(\'ai-share\')" disabled><i class="fas fa-people-group"></i> Share</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="ai-schedule" id="aiGameTabSchedule" onclick="switchGameAITab(\'ai-schedule\')" disabled><i class="fas fa-calendar-alt"></i> Schedule</button>' +
+            '<button type="button" class="add-topic-tab" data-tab="ai-share-schedule" id="aiGameTabShareSchedule" onclick="switchGameAITab(\'ai-share-schedule\')" disabled><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="aiGameTabPaneGame">' +
             gameCoverToggleHtml(topicCover, 'aiGameCoverToggle', 'aiGameCoverBody', !!topicCover) +
             '<div class="form-group"><label>Game Name</label><input type="text" name="name" value="' + escapeAttr(namePair.name) + '" placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description</label><textarea name="description" rows="3">' + escapeAttr(namePair.description) + '</textarea></div>' +
             attemptsHtml +
+            diffRatioHtml +
         '</div>' +
         '<div class="add-topic-pane hidden" id="aiGameTabPaneCats">' +
             (cats.length
                 ? '<div class="ai-sub-list">' + accordionItems + '</div>'
                 : '<p class="ai-qconfig-note" style="color:#6b7280;font-size:0.85rem;padding:12px 0">No categories generated — toggle "Generate with categories &amp; questions" to include them.</p>') +
         '</div>' +
-        '<div class="add-topic-pane hidden" id="aiGameTabPaneShare">' + buildGameShareTabHtml() + '</div>' +
-        '<div class="add-topic-pane hidden" id="aiGameTabPaneSchedule">' + buildScheduleBodyHtml() + '</div>';
+        '<div class="add-topic-pane hidden" id="aiGameTabPaneShareSchedule">' + buildShareScheduleTabHtml() + '</div>';
 
     var genBtn = document.getElementById('aiGameGenerateBtn');
     if (genBtn) { genBtn.disabled = false; genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate'; }
@@ -2404,10 +2396,9 @@ function switchAIGameSetupTab(tab) {
 function switchGameAITab(tab) {
     var tabBtns = document.querySelectorAll('#aiGameTabsBar .add-topic-tab');
     tabBtns.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
-    var panes = ['ai-game','ai-cats','ai-share','ai-schedule'];
-    panes.forEach(function(p) {
-        var idPart = p === 'ai-game' ? 'Game' : p === 'ai-cats' ? 'Cats' : p === 'ai-share' ? 'Share' : 'Schedule';
-        var el = document.getElementById('aiGameTabPane' + idPart);
+    var panes = { 'ai-game': 'Game', 'ai-cats': 'Cats', 'ai-share-schedule': 'ShareSchedule' };
+    Object.keys(panes).forEach(function(p) {
+        var el = document.getElementById('aiGameTabPane' + panes[p]);
         if (el) el.classList.toggle('hidden', p !== tab);
     });
 }

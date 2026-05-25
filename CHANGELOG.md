@@ -5,6 +5,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-25] — replace difficulty toggle with difficulty ratio in generated game preview
+
+### Changed
+- Removed the "Difficulty" Easy/Medium/Hard badge row from the AI Questions setup pane.
+- Added a **Difficulty mix** ratio row to the generated Game tab (results preview), showing coloured percentage chips — e.g. `Easy 10%` · `Medium 70%` · `Hard 20%`. Ratios cycle through four mock presets per generation.
+- Removed old `.ai-difficulty-row / .ai-difficulty-label / .ai-difficulty-badges / .ai-diff-badge / .ai-difficulty-note` CSS; replaced with `.ai-diff-ratio / .ai-diff-ratio-label / .ai-diff-ratio-chips / .ai-diff-chip` (colour vars `.ai-diff-easy/medium/hard` retained).
+- `script-games.js` version bumped to `?v=26`.
+
+## [2026-05-25] — remove "Publish immediately" radio from schedule
+
+### Removed
+- Removed the "Publish immediately" / "Schedule for a date range" radio toggle from the schedule form. The Start date and End date inputs are now always visible directly. Dates are optional in the add-game flow (skipped if blank). The `onScheduleTypeChange` function and `.schedule-option` CSS are also removed.
+- `script-games.js` version bumped to `?v=25`.
+
+## [2026-05-25] — combine Share and Schedule into one tab with date-range picker
+
+### Changed
+- **Share & Schedule tabs merged**: The separate "Share" and "Schedule" tabs in both the manual Add Game form and the AI-generated game results panel are replaced by a single "Share & Schedule" tab. The tab shows a "Share with departments" section (department checkboxes) followed by a divider and a "Schedule" section.
+- **Date range picker**: The old single `datetime-local` input is replaced by two `date` inputs (Start date / End date) shown in a two-column grid when "Schedule for a date range" radio is selected.
+- **Combined confirm action**: A single "Confirm" button (`applyGameShareSchedule()`) applies both the sharing and scheduling in one step. "Skip" closes the panel without either. The old separate `applyGameShare()`, `skipGameShare()`, and `showGameScheduleStep()` functions are removed.
+- **Kebab-menu schedule panel** (`openGameSchedulePanel`): also updated to the date-range picker via the updated `buildScheduleBodyHtml()` and `confirmGameSchedule()`.
+- `script-games.js` version bumped to `?v=24`.
+
+## [2026-05-25] — restore page-header AI credit balance badge; remove "Questions per session" field
+
+### Added
+- Restored the AI credit balance pill badge (`#pageAICreditBalance`) in the games page header (inside `.page-actions`). Shows `<used> / <total> AI credits used` with coin icon; turns amber when over 80% consumed. Restores the `updateGameScopeCreditsDisplay()` page-header block and `.page-ai-credit-balance` / `.page-ai-credit-balance--warn` CSS rules.
+
+### Removed
+- Removed the "Questions per session" input (placeholder "Server default") from the AI-generated game results panel. The two-column `form-row-2` layout for that row is replaced with just the single "Max attempts" stepper.
+- `script-games.js` version bumped to `?v=23`.
+
+## [2026-05-25] — question type cards: equal fixed height, no panel scroll
+
+### Fixed
+- **Question type cards — equal height**: replaced `min-height: 70px` with `height: 80px; box-sizing: border-box` so all six cards are exactly the same height regardless of content (the MCQ card's extra "No image questions" note no longer makes row 1 taller than rows 2–3). `gap` reduced from `8px` to `6px` and `padding` from `12px 10px` to `8px 10px` to keep content centred within the smaller fixed height.
+- **Questions pane — no vertical scrollbar**: tightened the grid gap (`5px` → `4px`), grid `margin-top` (`6px` → `4px`), and `.ai-game-qconfig` bottom margin (`16px` → `8px`) so the full Questions tab content (grid + slider + difficulty + credits estimate) fits the panel height without triggering a scrollbar.
+
 ## [2026-05-25] — revert add-question-type flow
 
 ### Removed

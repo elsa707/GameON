@@ -4,7 +4,7 @@
    styles-topics.css which is also loaded on the games page. Only NEW rules go here.
 */
 
-/* ===== Page-header AI credit balance ===== */
+/* ===== Page-header AI credit balance badge ===== */
 .page-ai-credit-balance {
     display: flex;
     align-items: center;
@@ -387,47 +387,54 @@
     margin-left: auto;
 }
 
+/* ===== Combined Share + Schedule tab ===== */
+.share-schedule-tab {
+    display: flex;
+    flex-direction: column;
+}
+.share-schedule-section {
+    padding: 10px 0 6px;
+}
+.share-schedule-heading {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.share-schedule-heading i {
+    font-size: 0.75rem;
+}
+.share-schedule-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 4px 0;
+}
+
 /* ===== Schedule form ===== */
 .schedule-form {
     padding: 4px 0 8px;
 }
 
-.schedule-lead {
-    font-size: 0.88rem;
-    color: #374151;
-    margin-bottom: 12px;
-}
-
-.schedule-option {
-    display: flex;
-    align-items: center;
+.schedule-date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 6px;
-    cursor: pointer;
-    font-size: 0.88rem;
-    color: #111827;
-    transition: background 0.1s;
 }
-.schedule-option:hover { background: #f9fafb; }
-.schedule-option input[type=radio] { flex-shrink: 0; }
-
-.schedule-date-group {
-    padding: 8px 0 4px 24px;
-}
-.schedule-date-group.hidden { display: none; }
-
-.schedule-datetime-input {
+.schedule-date-input {
     padding: 7px 10px;
     font-size: 0.85rem;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     width: 100%;
+    box-sizing: border-box;
     font-family: inherit;
 }
-.schedule-datetime-input:focus {
+.schedule-date-input:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px #dbeafe;
@@ -588,8 +595,12 @@
 .ai-q-types-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 5px;
-    margin-top: 6px;
+    gap: 4px;
+    margin-top: 4px;
+}
+/* Reduce bottom margin so the Questions pane fits without scrolling */
+.ai-game-qconfig.form-group {
+    margin-bottom: 8px;
 }
 /* Use 'label.ai-q-type-option' (specificity 0,1,1) to beat the
    .form-group label { display: block } rule in styles.css (also 0,1,1)
@@ -599,9 +610,10 @@ label.ai-q-type-option {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px 10px;
-    min-height: 70px;
+    gap: 6px;
+    padding: 8px 10px;
+    height: 80px;        /* fixed — all 6 cards identical height */
+    box-sizing: border-box;
     background: #f9fafb;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -666,44 +678,38 @@ label.ai-q-type-option:has(input:checked) {
     padding: 0 2px;
 }
 
-/* ===== Difficulty row ===== */
-.ai-difficulty-row {
+/* ===== Difficulty ratio (generated game preview) ===== */
+.ai-diff-ratio {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 0 8px;
+    padding: 8px 0 4px;
     flex-wrap: wrap;
 }
-.ai-difficulty-label {
-    font-size: 0.82rem;
+.ai-diff-ratio-label {
+    font-size: 0.8rem;
     font-weight: 600;
-    color: #374151;
+    color: #6b7280;
     display: flex;
     align-items: center;
     gap: 5px;
     white-space: nowrap;
 }
-.ai-difficulty-badges {
+.ai-diff-ratio-chips {
     display: flex;
-    gap: 4px;
+    gap: 5px;
+    flex-wrap: wrap;
 }
-.ai-diff-badge {
+.ai-diff-chip {
     padding: 2px 10px;
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 600;
-    opacity: 0.35;
     border: 1px solid transparent;
 }
-.ai-diff-badge.ai-diff-active { opacity: 1; }
 .ai-diff-easy   { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 .ai-diff-medium { background: #fffbeb; color: #92400e; border-color: #fde68a; }
 .ai-diff-hard   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-.ai-difficulty-note {
-    font-size: 0.72rem;
-    color: #9ca3af;
-    font-style: italic;
-}
 
 /* ===== Credits estimate pill ===== */
 .ai-credits-estimate {
