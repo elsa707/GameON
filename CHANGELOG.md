@@ -5,6 +5,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-25] — question type cards: column layout (text above, checkbox below)
+
+### Changed
+- **Question type cards — column layout**: switched from row (`justify-content: space-between`) to column (`flex-direction: column; align-items: center; justify-content: center`). Text label is now centred at the top of the card, checkbox centred below it — matching the design reference. Cards now `min-height: 70px` with `padding: 12px 10px` and `border-radius: 8px`.
+
+## [2026-05-25] — approved file types for AI game upload
+
+### Changed
+- **File upload — approved formats only**: both the initial upload zone and the "Change" button inside the file preview now restrict to the approved list: `.pdf`, `.docx`, `.xlsx`, `.png`, `.jpeg`, `.jpg`. Removed `.doc` and `.txt` (not approved).
+- Upload zone label updated to "Upload PDF, DOCX, XLSX, PNG or JPEG".
+- `onAIGameFileChange()` icon/colour logic updated: XLSX files show a green `fa-file-excel` icon; image detection now checks extension (`png`/`jpeg`/`jpg`) rather than MIME type so it stays consistent with the approved list.
+- `script-games.js` version bumped to `?v=17`.
+
+## [2026-05-25] — question type card: fix specificity so flex layout applies
+
+### Fixed
+- **Question type cards — text and checkbox now centre-aligned**: root cause was `.form-group label { display: block }` in `styles.css` (specificity `0,1,1`) overriding `.ai-q-type-option { display: flex }` (specificity `0,1,0`). Fixed by changing the selector to `label.ai-q-type-option` (also `0,1,1`) — since `styles-games.css` loads after `styles.css`, it wins the tie. The flex row layout (`flex-direction: row; align-items: center; justify-content: space-between`) now applies correctly, keeping icon+text centred on the left and checkbox centred on the right of each card.
+
+## [2026-05-25] — question type card: centred alignment
+
+### Fixed
+- **Question type cards — proper centre alignment**: icon + text are now wrapped in a `<span class="ai-q-type-label">` flex child so the label has exactly two flex items (`ai-q-type-label` on the left, checkbox on the right). `justify-content: space-between` on the card keeps them at opposite ends; `align-items: center` centres both vertically at the mid-point of the card. Previously the text node was an anonymous flex item that caused the checkbox to drift out of alignment. Added `min-height: 40px` so short labels (e.g. MCQ) still render a consistent card height.
+- `script-games.js` version bumped to `?v=16`.
+
+## [2026-05-25] — AI credit balance on games landing page
+
+### Added
+- **AI credit balance badge** in the page header, to the left of the Add Game / Add with AI buttons. Shows `🪙 used / total AI credits used` as a pill badge once a company scope is selected; hidden when no scope is active. Turns amber when ≥ 80 % of credits are consumed. Driven by `updateGameScopeCreditsDisplay()` which already fires on scope change and after each AI generation.
+- New CSS class `.page-ai-credit-balance` (yellow pill) and modifier `.page-ai-credit-balance--warn` (orange tint at ≥ 80 % usage).
+- `script-games.js` version bumped to `?v=15`.
+
+## [2026-05-25] — question type card alignment + enable Select on Image
+
+### Fixed
+- **Question type cards — checkbox alignment**: icon + text are now on the left of each card and the checkbox is pushed to the right with `margin-left: auto`, all vertically centred on the same row. Previously the checkbox rendered out of alignment with the label text. HTML reordered to `<i> text <input checkbox>` and `flex-direction: row; align-items: center` made explicit.
+- **Select on Image — enabled**: removed the `disabled` attribute and `ai-q-type-disabled` class; the option is now fully selectable like the other question types.
+- `script-games.js` version bumped to `?v=14`.
+
+## [2026-05-25] — remove horizontal scrollbar from side panel
+
+### Fixed
+- **Side panel — no horizontal scrollbar**: added `overflow-x: hidden` to `#gameEditFields` so only vertical scrolling is permitted inside the fields area. The horizontal scrollbar that appeared at the bottom of the panel is gone.
+
+## [2026-05-25] — AI game setup two-tab layout
+
+### Changed
+- **AI Add Game — two-tab setup panel**: the flat stacked layout of the AI game setup form has been restructured into two tabs matching the Topics AI panel pattern.
+  - **Content** tab: topic link selector, content input (Upload / URL / Text sub-tabs), categories toggle, AI model selector.
+  - **Questions** tab: question types checklist, max questions slider (with scale + note), difficulty display, credits estimate.
+  - Tab bar uses the existing `add-topic-tabs` / `add-topic-tab` classes; active tab highlights with the same style as the Topics panel.
+  - New `switchAIGameSetupTab()` function handles tab switching.
+  - `collapseAIGameStep1()` / `expandAIGameStep1()` updated to hide/restore the tab bar and both panes (rather than individual section IDs).
+  - Generate button remains pinned in `.edit-actions` (outside the tabs), unaffected.
+- `script-games.js` version bumped to `?v=13`.
+
+## [2026-05-22] — panel no-scroll fix
+
+### Fixed
+- **Detail panel — no outer scroll**: the side panel no longer scrolls as a whole. `overflow-y: auto` moved off `.detail-panel.open` (now `overflow: hidden`). `.detail-content` made a flex column that fills the panel height (`flex: 1; min-height: 0`). `.detail-topbar`, `.detail-header`, and `.edit-actions` are `flex-shrink: 0` so they stay pinned. `#gameEditFields` (the form fields area) is the only element that scrolls (`overflow-y: auto; flex: 1`), meaning the badge + close button stay at the top and Save/Cancel stay at the bottom at all times — including after Generate produces a long result.
+
 ## [2026-05-22] — fixes
 
 ### Fixed

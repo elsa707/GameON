@@ -68,6 +68,10 @@
                     <p class="page-subtitle">Create and manage learning games</p>
                 </div>
                 <div class="page-actions">
+                    <div class="page-ai-credit-balance" id="pageAICreditBalance" hidden>
+                        <i class="fas fa-coins"></i>
+                        <span><span id="pageCreditsUsed">0</span> / <span id="pageCreditsTotal">200</span> AI credits used</span>
+                    </div>
                     <button class="btn btn-primary" onclick="addGame()" id="addGameBtn" disabled><i class="fas fa-trophy"></i> Add Game</button>
                     <button class="btn btn-ai" onclick="addGameAI()" id="addGameAIBtn" disabled><i class="fas fa-wand-magic-sparkles"></i> Add with AI</button>
                 </div>
@@ -188,7 +192,7 @@
 
     <script src="games-data.js?v=1"></script>
     <script src="topics-data.js?v=1"></script>
-    <script src="script-games.js?v=12"></script>
+    <script src="script-games.js?v=17"></script>
     <script src="script-games-sidebar-scope.js?v=1"></script>
     <script src="script-sidebar-scope.js"></script>
 </body>

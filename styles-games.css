@@ -4,6 +4,42 @@
    styles-topics.css which is also loaded on the games page. Only NEW rules go here.
 */
 
+/* ===== Page-header AI credit balance ===== */
+.page-ai-credit-balance {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #92400e;
+    white-space: nowrap;
+}
+.page-ai-credit-balance i {
+    color: #f59e0b;
+    font-size: 0.8rem;
+}
+.page-ai-credit-balance--warn {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #9a3412;
+}
+.page-ai-credit-balance--warn i {
+    color: #ea580c;
+}
+
+/* ===== Scrollable fields area — topbar + actions stay pinned ===== */
+#gameEditFields {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 4px;
+}
+
 /* ===== Cover thumbnail for game and category rows ===== */
 .row-thumb-game {
     display: inline-block;
@@ -555,39 +591,50 @@
     gap: 5px;
     margin-top: 6px;
 }
-.ai-q-type-option {
+/* Use 'label.ai-q-type-option' (specificity 0,1,1) to beat the
+   .form-group label { display: block } rule in styles.css (also 0,1,1)
+   — styles-games.css loads last so wins the tie. */
+label.ai-q-type-option {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 10px;
+    min-height: 70px;
     background: #f9fafb;
     border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 0.82rem;
     color: #374151;
     cursor: pointer;
     user-select: none;
     transition: background 0.12s, border-color 0.12s;
 }
-.ai-q-type-option:has(input:checked) {
+label.ai-q-type-option:has(input:checked) {
     background: #eff6ff;
     border-color: #93c5fd;
     color: #1d4ed8;
 }
-.ai-q-type-option.ai-q-type-disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+.ai-q-type-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-align: center;
+}
+.ai-q-type-label i {
+    font-size: 0.82rem;
+    flex-shrink: 0;
 }
 .ai-q-type-option input[type=checkbox] {
-    margin: 0;
+    flex-shrink: 0;
     accent-color: #3b82f6;
     cursor: pointer;
-}
-.ai-q-type-option i {
-    font-size: 0.78rem;
-    width: 13px;
-    text-align: center;
-    flex-shrink: 0;
+    margin: 0;
+    width: 16px;
+    height: 16px;
 }
 
 /* ===== Max questions slider ===== */
