@@ -5,6 +5,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-25] — revert add-question-type flow
+
+### Removed
+- Reverted the "Add question type" post-generation feature (change #4 from the diagram review). Removed `_getAllAIQTypes()`, `showAddQTypePanel()`, `hideAddQTypePanel()`, `addQTypeGenerate()` functions, the "+ Add question type" button from the Categories pane, the `window._aiGameGeneratedQTypes` tracking, and all associated CSS (`.ai-add-qtype-*`, `.ai-game-q-type-badge`). The other three changes (Word Bucket rename, radio buttons, MCQ note) remain.
+- `script-games.js` version bumped to `?v=21`.
+
+## [2026-05-25] — four AI flow fixes from diagram review
+
+### Changed
+- **Word Rocket renamed to Word Bucket** throughout the AI game setup form (text, value, icon `fa-bucket`), matching the diagram.
+- **Question types: radio buttons (one per generation attempt)**: checkboxes replaced with radio buttons so only one question type can be selected per generation run, matching the diagram note "One question type per generation attempt".
+- **MCQ info note**: a small "No image questions" note displayed below the MCQ label in the question type card, matching the diagram callout.
+- **Add question type flow**: after AI generation, the Categories tab now shows an "+ Add question type" button. Clicking it reveals a question-type picker (radio buttons, already-generated types excluded). Selecting a type and clicking Generate appends mock questions of that type to each existing category, updates the question count chips, and shows a success confirmation. Successive types can be added until all are generated. Implements the diagram's "Add option to move from one question type flow into another".
+- `script-games.js` version bumped to `?v=20`.
+
+## [2026-05-25] — fix game category logic to match diagram
+
+### Fixed
+- **Game categories — topic sub-topics used when topic is linked**: `getAIGameTopicOptions()` now serialises `subTopics` into each option value so `window._aiGamePendingTopic.subTopics` is available at generation time.
+- **`_renderAIGameResults()` — category source logic**: now follows the three-branch rule from the diagram:
+  1. Toggle unchecked (opt out) → no categories rendered.
+  2. Topic linked with sub-topics → each sub-topic becomes a game category name; mock questions assigned per category (prototype behaviour).
+  3. No topic / no sub-topics → AI-suggested categories (existing mock data).
+- **Categories toggle label** updates dynamically when a topic is selected: shows "Use topic categories & generate questions" when the linked topic has sub-topics, or "Generate with categories & questions" otherwise.
+- `script-games.js` version bumped to `?v=19`.
+
+## [2026-05-25] — fix cover image toggle default logic
+
+### Fixed
+- **AI game results — cover image toggle default**: the "Add cover image" toggle on the generated Game tab now correctly defaults to ON only when the linked topic has a cover image. Previously it always defaulted to ON because `coverUrl` fell back to a random preset (making `hasPreset` always truthy). Split into `topicCover` (empty string when no topic cover — drives the toggle ON/OFF state) and `coverUrl` (preset fallback, kept for any save logic). Behaviour now matches the diagram: topic image is the default only when a topic with a cover is linked; otherwise the toggle defaults to OFF.
+- `script-games.js` version bumped to `?v=18`.
+
 ## [2026-05-25] — question type cards: column layout (text above, checkbox below)
 
 ### Changed

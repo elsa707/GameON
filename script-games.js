@@ -1783,7 +1783,12 @@ function getAIGameTopicOptions() {
     }
     if (!topics.length) return '';
     return topics.slice(0, 30).map(function(t) {
-        var val = escapeAttr(JSON.stringify({ name: t.name, description: t.description || '', cover: t.cover || '' }));
+        var val = escapeAttr(JSON.stringify({
+            name: t.name,
+            description: t.description || '',
+            cover: t.cover || '',
+            subTopics: t.subTopics || []
+        }));
         return '<option value="' + val + '">' + escapeAttr(t.name) + '</option>';
     }).join('');
 }
@@ -1792,12 +1797,21 @@ function onAIGameTopicChange(select) {
     window._aiGamePendingTopic = null;
     var val = select ? select.value : '';
     var note = document.getElementById('aiGameContentSkipNote');
+    var catsToggleText = document.querySelector('#aiGameCatsToggle .ai-toggle-text');
     if (!val) {
         if (note) note.classList.add('hidden');
+        if (catsToggleText) catsToggleText.textContent = 'Generate with categories & questions';
         return;
     }
     try { window._aiGamePendingTopic = JSON.parse(val); } catch(e) { window._aiGamePendingTopic = { name: val }; }
     if (note) note.classList.remove('hidden');
+    // Update categories toggle label to reflect that topic sub-topics will be used
+    if (catsToggleText) {
+        var hasSubs = window._aiGamePendingTopic.subTopics && window._aiGamePendingTopic.subTopics.length;
+        catsToggleText.textContent = hasSubs
+            ? 'Use topic categories & generate questions'
+            : 'Generate with categories & questions';
+    }
     updateAIGameGenerateBtn();
 }
 
@@ -1968,12 +1982,12 @@ function addGameAI() {
             '<div class="form-group ai-game-qconfig" id="aiGameQConfig">' +
                 '<label>Question types</label>' +
                 '<div class="ai-q-types-grid">' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-list-ol"></i> MCQ</span><input type="checkbox" name="qtype" value="mcq" checked onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-rocket"></i> Word Rocket</span><input type="checkbox" name="qtype" value="word-rocket" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-border-all"></i> Crossword</span><input type="checkbox" name="qtype" value="crossword" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-underline"></i> Fill in the Blank</span><input type="checkbox" name="qtype" value="fill-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-align-left"></i> Statement Blanking</span><input type="checkbox" name="qtype" value="stmt-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-image"></i> Select on Image</span><input type="checkbox" name="qtype" value="select-img" onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-list-ol"></i> MCQ</span><span class="ai-q-type-note">No image questions</span><input type="radio" name="qtype" value="mcq" checked onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-bucket"></i> Word Bucket</span><input type="radio" name="qtype" value="word-bucket" onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-border-all"></i> Crossword</span><input type="radio" name="qtype" value="crossword" onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-underline"></i> Fill in the Blank</span><input type="radio" name="qtype" value="fill-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-align-left"></i> Statement Blanking</span><input type="radio" name="qtype" value="stmt-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-image"></i> Select on Image</span><input type="radio" name="qtype" value="select-img" onchange="updateAIGameCreditsEstimate()"></label>' +
                 '</div>' +
             '</div>' +
 
@@ -2224,9 +2238,33 @@ function _renderAIGameResults() {
     var suggestion = _GAME_AI_SUGGESTIONS[_aiGameGenerateIdx % _GAME_AI_SUGGESTIONS.length];
     _aiGameGenerateIdx++;
 
-    var coverUrl = (window._aiGamePendingTopic && window._aiGamePendingTopic.cover) ||
-                   GAME_COVER_PRESETS[(_aiGameGenerateIdx - 1) % GAME_COVER_PRESETS.length];
-    var cats = suggestion.categories;
+    // topicCover: the cover from the linked topic (may be empty/falsy when no topic or no cover).
+    // Only use this for the toggle default — if the topic has a cover the toggle is ON and pre-selected;
+    // otherwise the toggle is OFF (diagram: "topic image is default only if topic is linked").
+    var topicCover = (window._aiGamePendingTopic && window._aiGamePendingTopic.cover) || '';
+    // coverUrl is still resolved for any save/preview logic that needs a fallback preset,
+    // but it does NOT affect whether the toggle defaults to on or off.
+    var coverUrl = topicCover || GAME_COVER_PRESETS[(_aiGameGenerateIdx - 1) % GAME_COVER_PRESETS.length];
+
+    // ── Category logic (per diagram) ────────────────────────────────────────
+    // 1. If opted out (toggle unchecked) → no categories.
+    // 2. Topic linked with sub-topics   → use topic sub-topics as category names,
+    //    assign mock questions to each (prototype behaviour).
+    // 3. No topic / no sub-topics       → AI suggests categories (mock data).
+    var includeCatsEl = document.getElementById('aiGameIncludeCats');
+    var includeCats = !includeCatsEl || includeCatsEl.checked;
+    var topicSubs = (window._aiGamePendingTopic && window._aiGamePendingTopic.subTopics) || [];
+    var cats;
+    if (!includeCats) {
+        cats = [];
+    } else if (topicSubs.length) {
+        cats = topicSubs.map(function(sub, idx) {
+            var mockCat = suggestion.categories[idx % suggestion.categories.length];
+            return { name: sub.name, questions: mockCat.questions };
+        });
+    } else {
+        cats = suggestion.categories;
+    }
     var catCount = cats.length;
 
     var accordionItems = cats.map(function(cat) {
@@ -2280,13 +2318,15 @@ function _renderAIGameResults() {
             '<button type="button" class="add-topic-tab" data-tab="ai-schedule" id="aiGameTabSchedule" onclick="switchGameAITab(\'ai-schedule\')" disabled><i class="fas fa-calendar-alt"></i> Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="aiGameTabPaneGame">' +
-            gameCoverToggleHtml(coverUrl, 'aiGameCoverToggle', 'aiGameCoverBody', !!(window._aiGamePendingTopic && window._aiGamePendingTopic.cover)) +
+            gameCoverToggleHtml(topicCover, 'aiGameCoverToggle', 'aiGameCoverBody', !!topicCover) +
             '<div class="form-group"><label>Game Name</label><input type="text" name="name" value="' + escapeAttr(namePair.name) + '" placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description</label><textarea name="description" rows="3">' + escapeAttr(namePair.description) + '</textarea></div>' +
             attemptsHtml +
         '</div>' +
         '<div class="add-topic-pane hidden" id="aiGameTabPaneCats">' +
-            '<div class="ai-sub-list">' + accordionItems + '</div>' +
+            (cats.length
+                ? '<div class="ai-sub-list">' + accordionItems + '</div>'
+                : '<p class="ai-qconfig-note" style="color:#6b7280;font-size:0.85rem;padding:12px 0">No categories generated — toggle "Generate with categories &amp; questions" to include them.</p>') +
         '</div>' +
         '<div class="add-topic-pane hidden" id="aiGameTabPaneShare">' + buildGameShareTabHtml() + '</div>' +
         '<div class="add-topic-pane hidden" id="aiGameTabPaneSchedule">' + buildScheduleBodyHtml() + '</div>';

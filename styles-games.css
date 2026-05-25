@@ -628,13 +628,25 @@ label.ai-q-type-option:has(input:checked) {
     font-size: 0.82rem;
     flex-shrink: 0;
 }
-.ai-q-type-option input[type=checkbox] {
+.ai-q-type-option input[type=checkbox],
+.ai-q-type-option input[type=radio] {
     flex-shrink: 0;
     accent-color: #3b82f6;
     cursor: pointer;
     margin: 0;
     width: 16px;
     height: 16px;
+}
+
+/* MCQ "no image questions" note */
+.ai-q-type-note {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #9ca3af;
+    text-align: center;
+    margin-top: 2px;
+    line-height: 1.3;
 }
 
 /* ===== Max questions slider ===== */
