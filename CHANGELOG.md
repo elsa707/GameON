@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — AI credit balance in panel topbar
+
+### Added
+- **Credit balance pill** shown in the detail panel topbar whenever the AI game flow is open, matching the live site header — displays `🪙 X / Y used` (e.g. `35 / 300 used`) as an amber pill.
+- Pill updates live when a generation completes (credit is consumed) and turns a deeper amber when over 80% of credits are used.
+- Pill is hidden in all non-AI panel states (edit, created, share, schedule).
+- New element `#aiPanelCreditBal` in `index-games.html`; new CSS `.ai-panel-credit-bal` / `.ai-panel-credit-bal--warn` in `styles-games.css`.
+- `script-games.js` version bumped to `?v=31`.
+
+## [2026-05-26] — Game created next-step panel
+
+### Added
+- After **Create Game** succeeds, the detail panel transitions to a **"Created" state** instead of closing: shows the game's cover image, an Active chip, and the prompt *"Your game is ready. Add a category to start building questions."*
+- **Add Category** button in the created panel immediately prompts for a category name, inserts the category row in the table, then opens the question-type picker — letting the user build out the game in one continuous flow.
+- New function `showGameCreatedPanel(gameId, gameName, gameCover)` called at the end of `saveGameAdd()` manual path.
+- New function `openAddCategoryFromPanel(gameId)` — creates the category and opens the question-type picker.
+- New CSS: `.game-created-banner`, `.game-created-cover`, `.game-created-info`, `.game-created-lead`, `.game-created-actions`.
+- `script-games.js` version bumped to `?v=31`.
+
 ## [2026-05-26] — Question type picker panel (matches live site Add Question flow)
 
 ### Added
