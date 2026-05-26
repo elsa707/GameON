@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — Match Games page button styles to Topics page
+
+### Changed
+- **"Add Game" button**: restored to `btn-primary` (dark navy pill, trophy icon, label "Add Game") to match the "Add Topic" button style on the Topics page.
+- **"Generate with AI" button**: label updated from "Generate" to **"Generate with AI"** (keeps the pink gradient `btn-ai` style), matching the Topics page "Generate with AI" button.
+
 ## [2026-05-26] — Align Add Game flow to live site (modal, Advanced section, button labels)
 
 ### Changed
