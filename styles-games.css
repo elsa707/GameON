@@ -925,3 +925,206 @@ label.ai-q-type-option:has(input:checked) {
     font-style: italic;
     margin-top: 3px;
 }
+
+/* ===== Dark "New" button ===== */
+.btn-dark {
+    background: #1f2937;
+    color: #fff;
+    border: 1px solid #1f2937;
+}
+.btn-dark:hover:not(:disabled) {
+    background: #111827;
+    border-color: #111827;
+}
+.btn-dark:disabled {
+    background: #9ca3af;
+    border-color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* ===== Add Game modal overlay ===== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.modal-overlay.hidden {
+    display: none;
+}
+
+.add-game-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 560px;
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.add-game-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    flex-shrink: 0;
+}
+.add-game-modal-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.add-game-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.add-game-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid #f3f4f6;
+    flex-shrink: 0;
+}
+
+/* ===== Modal cover upload zone ===== */
+.add-game-cover-zone-wrap {
+    margin-bottom: 16px;
+}
+label.add-game-cover-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 28px 16px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: #f9fafb;
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 120px;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+}
+label.add-game-cover-zone:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+label.add-game-cover-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+label.add-game-cover-zone input[type=hidden] { display: none; }
+.add-game-cover-icon {
+    font-size: 2rem;
+    color: #9ca3af;
+    pointer-events: none;
+}
+.add-game-cover-title {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #374151;
+    pointer-events: none;
+}
+.add-game-cover-hint {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    pointer-events: none;
+}
+.add-game-cover-preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.add-game-cover-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+}
+label.add-game-cover-zone:hover .add-game-cover-overlay { opacity: 1; }
+
+/* ===== Advanced collapsible section in Add Game modal ===== */
+.add-game-advanced {
+    margin: 4px 0 8px;
+}
+.add-game-advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    padding: 6px 0;
+    user-select: none;
+}
+.add-game-advanced-toggle:hover { color: #111827; }
+.add-game-advanced-icon {
+    font-size: 0.72rem;
+    transition: transform 0.2s;
+    color: #6b7280;
+}
+.add-game-advanced-toggle.open .add-game-advanced-icon {
+    transform: rotate(180deg);
+}
+.add-game-advanced-body {
+    padding: 4px 0 4px;
+    border-left: 2px solid #e5e7eb;
+    padding-left: 14px;
+    margin-left: 2px;
+}
+.add-game-advanced-body.hidden { display: none; }
+
+/* ===== Field hint text ===== */
+.form-field-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: #9ca3af;
+    margin-top: 3px;
+    font-style: italic;
+}
+
+/* ===== Share section inside modal ===== */
+.add-game-share-section {
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+}

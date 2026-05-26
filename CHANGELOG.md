@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — Align Add Game flow to live site (modal, Advanced section, button labels)
+
+### Changed
+- **"Add Game" button** renamed to **"+ New"** (dark button style `.btn-dark`) to match the live site.
+- **"Add with AI" button** renamed to **"Generate"** (sparkles icon, existing `btn-ai` style) to match the live site.
+- **Add Game flow** converted from a right-side detail panel with tabs (Game / Categories / Share & Schedule) to a **centred modal overlay** (`#addGameModal`) matching the live site layout.
+  - Cover image is now a full drag-and-drop upload zone at the top of the modal (cloud icon, "Drag & drop or click to add cover image", "Recommended: 1280 × 720 · JPG or PNG").
+  - Fields: Name *, Description (optional), Topic (optional).
+  - **Advanced ∨ collapsible** section added with: Max attempts (placeholder "e.g. 3", hint "Defaults to 2 if left empty"), Questions per session (default 5, hint "Defaults to 5 if left empty"), **Pass Threshold (%)** (placeholder "e.g. 60", hint "Defaults to 60% if left empty" — previously missing entirely from the prototype).
+  - Share with departments rendered inline at the bottom of the modal (checkbox list, applied on Create Game).
+  - Modal footer: Cancel + **Create Game** buttons.
+  - Clicking the backdrop closes the modal.
+- `_checkPendingGame()` updated to populate modal fields (`#addGameName`, `#addGameDesc`, `#addGameCoverZone`) instead of the old panel pane (`#gameTabPaneGame`).
+
+### Added
+- New functions: `closeAddGameModal()`, `saveAddGameModal()`, `previewAddGameCover()`, `toggleAddGameAdvanced()`, `onAddGameTopicChange()`.
+- New CSS: `.btn-dark`, `.modal-overlay`, `.add-game-modal`, `.add-game-modal-header/body/footer`, `.add-game-cover-zone`, `.add-game-cover-*`, `.add-game-advanced`, `.add-game-advanced-toggle/body`, `.form-field-hint`, `.add-game-share-section`.
+- `script-games.js` version bumped to `?v=30`.
+
 ## [2026-05-26] — GAM-382 gap fixes: difficulty ratio, Match The Terms, file validation
 
 ### Changed
