@@ -1589,12 +1589,66 @@ function actionAddQuestion(btn, evt) {
     var catId = row.dataset.cat;
     var catName = row.dataset.name || 'Category';
 
+    // Show question type picker first (matches live site)
     _gameEditType = 'add-question';
     _gameEditRow = row;
 
     document.getElementById('gameEditTitle').textContent = 'Add Question';
     document.getElementById('gameEditSubtitle').textContent = escapeAttr(catName);
     setGamePanelMode('add');
+
+    var Q_TYPES = [
+        { key: 'mcq',        icon: 'fa-list-ol',    title: 'Multiple Choice (MCQ)',  desc: 'A question with multiple options and one correct answer' },
+        { key: 'fill-blank', icon: 'fa-pen',         title: 'Fill in the Blanks',     desc: 'A sentence with missing words the player must fill in' },
+        { key: 'stmt-blank', icon: 'fa-align-left',  title: 'Statement Blanking',     desc: 'A statement where the player must place blanked words back in their correct positions' },
+        { key: 'select-img', icon: 'fa-image',       title: 'Select on Image',        desc: 'Click on the correct area of an image to answer' },
+        { key: 'match-terms',icon: 'fa-link',        title: 'Match the Terms',        desc: 'Match terms on the left with their definitions on the right' },
+        { key: 'word-bucket',icon: 'fa-bucket',      title: 'Word Bucket',            desc: 'Drag words into the correct category buckets' },
+        { key: 'crossword',  icon: 'fa-border-all',  title: 'Crossword',              desc: 'Fill in a crossword puzzle using the clues provided' }
+    ];
+
+    var cardsHtml = Q_TYPES.map(function(t) {
+        return '<button type="button" class="q-type-card" onclick="openAddQuestionForm(\'' + escapeAttr(t.key) + '\',' + gameId + ',' + catId + ')">' +
+            '<span class="q-type-card-icon"><i class="fas ' + t.icon + '"></i></span>' +
+            '<span class="q-type-card-title">' + escapeAttr(t.title) + '</span>' +
+            '<span class="q-type-card-desc">' + escapeAttr(t.desc) + '</span>' +
+        '</button>';
+    }).join('');
+
+    document.getElementById('gameEditFields').innerHTML =
+        '<p class="q-type-prompt">What type of question would you like to add?</p>' +
+        '<div class="q-type-picker">' + cardsHtml + '</div>';
+
+    // Hide the submit button — type picker has no submit
+    var submitBtn = document.getElementById('gameSubmitBtn');
+    if (submitBtn) submitBtn.hidden = true;
+
+    showGameEdit();
+}
+
+function openAddQuestionForm(questionType, gameId, catId) {
+    var catRow = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+    if (!catRow) return;
+    var catName = catRow.dataset.name || 'Category';
+
+    _gameEditType = 'add-question';
+    _gameEditRow = catRow;
+
+    var TYPE_LABELS = {
+        'mcq':         'Multiple Choice (MCQ)',
+        'fill-blank':  'Fill in the Blanks',
+        'stmt-blank':  'Statement Blanking',
+        'select-img':  'Select on Image',
+        'match-terms': 'Match the Terms',
+        'word-bucket': 'Word Bucket',
+        'crossword':   'Crossword'
+    };
+
+    document.getElementById('gameEditTitle').textContent = 'Add Question';
+    document.getElementById('gameEditSubtitle').textContent = escapeAttr(catName);
+
+    var submitBtn = document.getElementById('gameSubmitBtn');
+    if (submitBtn) { submitBtn.hidden = false; submitBtn.textContent = 'Add Question'; }
 
     var optsHtml = ['A','B','C','D'].map(function(letter, i) {
         return '<div class="q-opt">' +
@@ -1605,6 +1659,7 @@ function actionAddQuestion(btn, evt) {
     }).join('');
 
     document.getElementById('gameEditFields').innerHTML =
+        '<div class="q-type-selected-badge"><i class="fas fa-tag"></i> ' + escapeAttr(TYPE_LABELS[questionType] || questionType) + '</div>' +
         '<div class="form-group"><label>Question Text</label><textarea name="qtext" rows="3" placeholder="Enter question text…"></textarea></div>' +
         '<div class="form-group"><label>Options (select the correct answer)</label><div class="q-opts-grid">' + optsHtml + '</div></div>' +
         '<div class="form-group"><label>Points</label><input type="number" name="points" min="1" max="10" value="1" style="width:70px"></div>';
@@ -1625,22 +1680,18 @@ function actionAddQuestion(btn, evt) {
         var correct = parseInt(data.get('correct') || '0', 10);
         var points = parseInt(data.get('points') || '1', 10);
         var newQ = { id: Date.now() + Math.floor(Math.random() * 1000), text: text, options: opts, correct: correct, points: points };
-        var tbody = document.querySelector('#gamesTable tbody');
         var existingQs = document.querySelectorAll('tr.row-q[data-game="' + gameId + '"][data-cat="' + catId + '"]');
         var qNum = existingQs.length + 1;
-        var insertAfter = existingQs.length ? existingQs[existingQs.length - 1] : row;
+        var insertAfter = existingQs.length ? existingQs[existingQs.length - 1] : catRow;
         insertAfter.insertAdjacentHTML('afterend', qRowHtml(newQ, gameId, catId, qNum));
-        updateCatRowChips(row);
+        updateCatRowChips(catRow);
         var gameRow = document.querySelector('tr.row-game[data-game="' + gameId + '"]');
         if (gameRow) updateGameRowChips(gameRow);
         persistGamesScope();
         showGameToast('Question added');
-        // Restore default onsubmit
         form.onsubmit = saveGameAdd;
         showGameEmpty();
     };
-
-    showGameEdit();
 }
 
 function actionEditCat(btn, evt) {

@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — Question type picker panel (matches live site Add Question flow)
+
+### Added
+- **Add Question** now opens a question type picker in the detail panel before the question form — matching the live site. Seven types shown as stacked cards with icon, title and description: Multiple Choice (MCQ), Fill in the Blanks, Statement Blanking, Select on Image, Match the Terms, Word Bucket, Crossword.
+- Selecting a type transitions to the question form with a blue badge showing the chosen type above the fields.
+- New function `openAddQuestionForm(type, gameId, catId)` — extracted from the old inline handler.
+- New CSS: `.q-type-picker`, `.q-type-card`, `.q-type-card-icon`, `.q-type-card-title`, `.q-type-card-desc`, `.q-type-selected-badge`.
+
 ## [2026-05-26] — Move Add Game form back to right-side detail panel
 
 ### Changed
