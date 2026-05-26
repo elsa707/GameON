@@ -1,0 +1,201 @@
+/* ===== Questions page styles ===== */
+
+/* Back button in page title row */
+.page-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: #374151;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.page-back-btn:hover { background: #f3f4f6; }
+
+/* Warning banner */
+.questions-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #92400e;
+    margin-bottom: 20px;
+}
+.questions-warning i { color: #f97316; flex-shrink: 0; }
+
+/* Empty state */
+.questions-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px 24px;
+    text-align: center;
+}
+.questions-empty-icon {
+    font-size: 3rem;
+    color: #9ca3af;
+}
+.questions-empty-text {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin: 0;
+}
+.questions-empty-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+/* Question list rows */
+#questionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.qlist-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    gap: 12px;
+}
+
+.qlist-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.qlist-text-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.qlist-num {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #374151;
+    flex-shrink: 0;
+}
+
+.qlist-text {
+    font-size: 0.88rem;
+    color: #111827;
+    font-weight: 500;
+}
+
+.chip-qtype {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.qlist-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.q-answer-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    color: #6b7280;
+    white-space: nowrap;
+}
+.q-answer-chip--correct {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
+    font-weight: 600;
+}
+
+.qlist-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding-top: 2px;
+}
+
+.btn-icon-danger { color: #ef4444; }
+.btn-icon-danger:hover { background: #fef2f2; color: #dc2626; }
+
+/* Done bar — inline, right-aligned, just below the question list */
+.questions-done-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+}
+.questions-done-bar .btn {
+    background: #374151;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 24px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.questions-done-bar .btn:hover {
+    background: #1f2937;
+}
+
+/* Full-width green success toast — fixed at very bottom */
+.questions-saved-toast {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.questions-saved-toast[hidden] { display: none; }
+.questions-saved-toast-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}

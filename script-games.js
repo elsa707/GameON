@@ -1009,7 +1009,7 @@ function saveGameAdd(event) {
         var toastMsg = '"' + name + '" added';
         if (deptNames.length) toastMsg += ' and shared to ' + deptNames.length + ' dept' + (deptNames.length !== 1 ? 's' : '');
         showGameToast(toastMsg);
-        showGameCreatedPanel(newId, name, cover);
+        showQTypePickerForNewGame(newId, name);
         return;
     }
 
@@ -1139,106 +1139,46 @@ function saveGameAdd(event) {
     }
 }
 
-// ===== Game created — next-step panel =====
-function showGameCreatedPanel(gameId, gameName, gameCover) {
-    _isGameAddMode = false;
-    _gameEditType = null;
-    _gameEditRow = document.querySelector('tr.row-game[data-game="' + gameId + '"]');
+// ===== After Create Game: auto-create Category 1 and open question type picker =====
+function showQTypePickerForNewGame(gameId, gameName) {
+    var gameRow = document.querySelector('tr.row-game[data-game="' + gameId + '"]');
+    if (!gameRow) { showGameEmpty(); return; }
 
-    var coverBg = gameCover || randomGameCover();
-    var coverCss = coverBg.indexOf('data:') === 0 ? 'url("' + coverBg + '")' : coverBg;
-
-    document.getElementById('gameEditTitle').textContent = gameName;
-    document.getElementById('gameEditSubtitle').textContent = getGamesScopeSubtitle();
-
-    // Restore standard actions bar (was replaced by addGame flow)
-    var actions = document.querySelector('#detailEdit .edit-actions');
-    if (actions) {
-        actions.innerHTML =
-            '<button type="button" class="btn-icon btn-delete-icon hidden" id="gameEditDeleteBtn" onclick="deleteCurrentGame()" title="Delete"><i class="fas fa-trash"></i></button>' +
-            '<button type="button" class="btn btn-text-danger hidden" id="gameEditDisableBtn" onclick="toggleCurrentGameActive()"><i class="fas fa-ban"></i> Disable</button>' +
-            '<button type="button" class="btn btn-outline" onclick="showGameEmpty()">Done</button>' +
-            '<button type="submit" class="btn btn-primary hidden" id="gameSubmitBtn">Save</button>';
+    // Silently create "Category 1"
+    var catId = Date.now();
+    var newCat = { id: catId, name: 'Category 1', description: '', questions: [] };
+    var tbody = document.querySelector('#gamesTable tbody');
+    if (tbody) {
+        gameRow.insertAdjacentHTML('afterend', catRowHtml(newCat, gameId, gameRow.dataset.cover || ''));
+        updateGameRowChips(gameRow);
+        persistGamesScope();
     }
 
+    _isGameAddMode = false;
+    _gameEditType  = 'add-question';
+    _gameEditRow   = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+
+    document.getElementById('gameEditTitle').textContent    = 'Add Question';
+    document.getElementById('gameEditSubtitle').textContent = gameName;
+
     var badge = document.getElementById('gameEditBadge');
-    if (badge) { badge.innerHTML = '<i class="fas fa-check"></i> Created'; badge.classList.remove('badge-ai'); }
+    if (badge) { badge.innerHTML = '<i class="fas fa-plus"></i> Adding'; badge.classList.remove('badge-ai'); }
 
     var creditBal = document.getElementById('aiPanelCreditBal');
     if (creditBal) creditBal.classList.add('hidden');
 
-    document.getElementById('gameEditFields').innerHTML =
-        '<div class="game-created-banner">' +
-            '<div class="game-created-cover" style="background:' + escapeAttr(coverCss) + '"></div>' +
-            '<div class="game-created-info">' +
-                '<span class="chip chip-status chip-status-active" style="margin-bottom:6px">Active</span>' +
-                '<p class="game-created-lead">Your game is ready. Add a category to start building questions.</p>' +
-            '</div>' +
-        '</div>' +
-        '<div class="game-created-actions">' +
-            '<button type="button" class="btn btn-primary btn-full" onclick="openAddCategoryFromPanel(' + gameId + ')">' +
-                '<i class="fas fa-plus"></i> Add Category' +
-            '</button>' +
-        '</div>';
+    document.getElementById('gameEditFields').innerHTML = _renderQTypePickerHtml(gameId, catId);
+
+    var submitBtn = document.getElementById('gameSubmitBtn');
+    if (submitBtn) submitBtn.hidden = true;
+
+    var actionsBar = document.querySelector('#detailEdit .edit-actions');
+    if (actionsBar) {
+        actionsBar.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="showGameEmpty()">Cancel</button>';
+    }
 
     showGameEdit();
-}
-
-function openAddCategoryFromPanel(gameId) {
-    var gameRow = document.querySelector('tr.row-game[data-game="' + gameId + '"]');
-    if (!gameRow) { showGameEmpty(); return; }
-    var catName = prompt('Category name:');
-    if (!catName || !catName.trim()) return;
-    var catId = Date.now();
-    var newCat = { id: catId, name: catName.trim(), description: '', questions: [] };
-    var tbody = document.querySelector('#gamesTable tbody');
-    if (!tbody) return;
-    var lastCat = null;
-    document.querySelectorAll('tr.row-cat[data-game="' + gameId + '"]').forEach(function(cr) { lastCat = cr; });
-    var insertAfter = lastCat || gameRow;
-    insertAfter.insertAdjacentHTML('afterend', catRowHtml(newCat, gameId, gameRow.dataset.cover || ''));
-    updateGameRowChips(gameRow);
-    persistGamesScope();
-    showGameToast('Category "' + catName.trim() + '" added');
-    // Open Add Question picker for the new category
-    var catRow = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
-    if (catRow) {
-        document.getElementById('gameEditTitle').textContent = 'Add Question';
-        document.getElementById('gameEditSubtitle').textContent = catName.trim();
-        _gameEditType = 'add-question';
-        _gameEditRow = catRow;
-
-        var Q_TYPES = [
-            { key: 'mcq',         icon: 'fa-list-ol',   title: 'Multiple Choice (MCQ)',  desc: 'A question with multiple options and one correct answer' },
-            { key: 'fill-blank',  icon: 'fa-pen',        title: 'Fill in the Blanks',     desc: 'A sentence with missing words the player must fill in' },
-            { key: 'stmt-blank',  icon: 'fa-align-left', title: 'Statement Blanking',     desc: 'A statement where the player must place blanked words back in their correct positions' },
-            { key: 'select-img',  icon: 'fa-image',      title: 'Select on Image',        desc: 'Click on the correct area of an image to answer' },
-            { key: 'match-terms', icon: 'fa-link',       title: 'Match the Terms',        desc: 'Match terms on the left with their definitions on the right' },
-            { key: 'word-bucket', icon: 'fa-bucket',     title: 'Word Bucket',            desc: 'Drag words into the correct category buckets' },
-            { key: 'crossword',   icon: 'fa-border-all', title: 'Crossword',              desc: 'Fill in a crossword puzzle using the clues provided' }
-        ];
-        var cardsHtml = Q_TYPES.map(function(t) {
-            return '<button type="button" class="q-type-card" onclick="openAddQuestionForm(\'' + escapeAttr(t.key) + '\',' + gameId + ',' + catId + ')">' +
-                '<span class="q-type-card-icon"><i class="fas ' + t.icon + '"></i></span>' +
-                '<span class="q-type-card-title">' + escapeAttr(t.title) + '</span>' +
-                '<span class="q-type-card-desc">' + escapeAttr(t.desc) + '</span>' +
-            '</button>';
-        }).join('');
-
-        var submitBtn = document.getElementById('gameSubmitBtn');
-        if (submitBtn) submitBtn.hidden = true;
-
-        document.getElementById('gameEditFields').innerHTML =
-            '<p class="q-type-prompt">What type of question would you like to add?</p>' +
-            '<div class="q-type-picker">' + cardsHtml + '</div>';
-
-        var actionsBar = document.querySelector('#detailEdit .edit-actions');
-        if (actionsBar) {
-            actionsBar.innerHTML =
-                '<button type="button" class="btn btn-outline" onclick="showGameEmpty()">Cancel</button>';
-        }
-        showGameEdit();
-    }
 }
 
 // ===== Combined Share + Schedule step (after add) =====
@@ -1691,112 +1631,248 @@ function actionAddQuestion(btn, evt) {
     var row = btn.closest('tr');
     if (!row) return;
     var gameId = row.dataset.game;
-    var catId = row.dataset.cat;
+    var catId  = row.dataset.cat;
     var catName = row.dataset.name || 'Category';
 
-    // Show question type picker first (matches live site)
     _gameEditType = 'add-question';
-    _gameEditRow = row;
+    _gameEditRow  = row;
 
-    document.getElementById('gameEditTitle').textContent = 'Add Question';
-    document.getElementById('gameEditSubtitle').textContent = escapeAttr(catName);
+    document.getElementById('gameEditTitle').textContent    = 'Add Question';
+    document.getElementById('gameEditSubtitle').textContent = catName;
     setGamePanelMode('add');
 
-    var Q_TYPES = [
-        { key: 'mcq',        icon: 'fa-list-ol',    title: 'Multiple Choice (MCQ)',  desc: 'A question with multiple options and one correct answer' },
-        { key: 'fill-blank', icon: 'fa-pen',         title: 'Fill in the Blanks',     desc: 'A sentence with missing words the player must fill in' },
-        { key: 'stmt-blank', icon: 'fa-align-left',  title: 'Statement Blanking',     desc: 'A statement where the player must place blanked words back in their correct positions' },
-        { key: 'select-img', icon: 'fa-image',       title: 'Select on Image',        desc: 'Click on the correct area of an image to answer' },
-        { key: 'match-terms',icon: 'fa-link',        title: 'Match the Terms',        desc: 'Match terms on the left with their definitions on the right' },
-        { key: 'word-bucket',icon: 'fa-bucket',      title: 'Word Bucket',            desc: 'Drag words into the correct category buckets' },
-        { key: 'crossword',  icon: 'fa-border-all',  title: 'Crossword',              desc: 'Fill in a crossword puzzle using the clues provided' }
-    ];
+    document.getElementById('gameEditFields').innerHTML = _renderQTypePickerHtml(gameId, catId);
 
-    var cardsHtml = Q_TYPES.map(function(t) {
-        return '<button type="button" class="q-type-card" onclick="openAddQuestionForm(\'' + escapeAttr(t.key) + '\',' + gameId + ',' + catId + ')">' +
-            '<span class="q-type-card-icon"><i class="fas ' + t.icon + '"></i></span>' +
-            '<span class="q-type-card-title">' + escapeAttr(t.title) + '</span>' +
-            '<span class="q-type-card-desc">' + escapeAttr(t.desc) + '</span>' +
-        '</button>';
-    }).join('');
-
-    document.getElementById('gameEditFields').innerHTML =
-        '<p class="q-type-prompt">What type of question would you like to add?</p>' +
-        '<div class="q-type-picker">' + cardsHtml + '</div>';
-
-    // Hide the submit button — type picker has no submit
     var submitBtn = document.getElementById('gameSubmitBtn');
     if (submitBtn) submitBtn.hidden = true;
+
+    var actionsBar = document.querySelector('#detailEdit .edit-actions');
+    if (actionsBar) {
+        actionsBar.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="showGameEmpty()">Cancel</button>';
+    }
+
+    showGameEdit();
+}
+
+// ===== Shared Q-type picker HTML builder =====
+function _renderQTypePickerHtml(gameId, catId) {
+    var Q_TYPES = [
+        { key: 'mcq',         icon: 'fa-circle-question', title: 'Multiple Choice (MCQ)',  desc: 'A question with multiple options and one correct answer' },
+        { key: 'fill-blank',  icon: 'fa-pen',             title: 'Fill in the Blanks',     desc: 'A sentence with missing words the player must fill in' },
+        { key: 'stmt-blank',  icon: 'fa-pen',             title: 'Statement Blanking',     desc: 'A statement where the player must place blanked words back in their correct positions' },
+        { key: 'select-img',  icon: 'fa-image',           title: 'Select on Image',        desc: 'Click on the correct area of an image to answer' },
+        { key: 'match-terms', icon: 'fa-link',            title: 'Match the Terms',        desc: 'Match terms on the left with their definitions on the right' },
+        { key: 'word-bucket', icon: 'fa-bucket',          title: 'Word Bucket',            desc: 'Drag words into the correct category buckets' },
+        { key: 'crossword',   icon: 'fa-border-all',      title: 'Crossword',              desc: 'Fill in a crossword puzzle using the clues provided' }
+    ];
+    return '<p class="q-type-prompt">What type of question would you like to add?</p>' +
+        '<div class="q-type-picker">' +
+        Q_TYPES.map(function(t) {
+            return '<button type="button" class="q-type-card" onclick="openAddQuestionForm(\'' + escapeAttr(t.key) + '\',' + gameId + ',' + catId + ')">' +
+                '<span class="q-type-card-icon"><i class="fas ' + t.icon + '"></i></span>' +
+                '<span class="q-type-card-title">' + escapeAttr(t.title) + '</span>' +
+                '<span class="q-type-card-desc">' + escapeAttr(t.desc) + '</span>' +
+            '</button>';
+        }).join('') +
+        '</div>';
+}
+
+function backToQTypePicker(gameId, catId) {
+    var catRow = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+    var catName = catRow ? (catRow.dataset.name || 'Category') : 'Category';
+
+    _gameEditType = 'add-question';
+    _gameEditRow = catRow;
+
+    document.getElementById('gameEditTitle').textContent = 'Add Question';
+    document.getElementById('gameEditSubtitle').textContent = catName;
+
+    document.getElementById('gameEditFields').innerHTML = _renderQTypePickerHtml(gameId, catId);
+
+    var submitBtn = document.getElementById('gameSubmitBtn');
+    if (submitBtn) submitBtn.hidden = true;
+
+    var actionsBar = document.querySelector('#detailEdit .edit-actions');
+    if (actionsBar) {
+        actionsBar.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="showGameEmpty()">Cancel</button>';
+    }
+
+    var form = document.getElementById('gameEditForm');
+    if (form) form.onsubmit = saveGameAdd;
 
     showGameEdit();
 }
 
 function openAddQuestionForm(questionType, gameId, catId) {
-    var catRow = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
-    if (!catRow) return;
-    var catName = catRow.dataset.name || 'Category';
+    // catRow may be null on the Questions page (no DOM table there)
+    var catRow  = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+    var catName = catRow ? (catRow.dataset.name || 'Category') : (document.getElementById('gameEditSubtitle') || {}).textContent || 'Category';
 
     _gameEditType = 'add-question';
-    _gameEditRow = catRow;
+    _gameEditRow  = catRow;
 
-    var TYPE_LABELS = {
-        'mcq':         'Multiple Choice (MCQ)',
-        'fill-blank':  'Fill in the Blanks',
-        'stmt-blank':  'Statement Blanking',
-        'select-img':  'Select on Image',
-        'match-terms': 'Match the Terms',
-        'word-bucket': 'Word Bucket',
-        'crossword':   'Crossword'
-    };
+    document.getElementById('gameEditTitle').textContent    = 'Add Question';
+    document.getElementById('gameEditSubtitle').textContent = catName;
 
-    document.getElementById('gameEditTitle').textContent = 'Add Question';
-    document.getElementById('gameEditSubtitle').textContent = escapeAttr(catName);
-
-    var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) { submitBtn.hidden = false; submitBtn.textContent = 'Add Question'; }
-
-    var optsHtml = ['A','B','C','D'].map(function(letter, i) {
-        return '<div class="q-opt">' +
-            '<input type="radio" name="correct" value="' + i + '"' + (i === 0 ? ' checked' : '') + '>' +
-            '<span class="q-opt-label">' + letter + '</span>' +
-            '<input type="text" name="opt' + i + '" placeholder="Option ' + letter + '">' +
+    // Start with 2 options
+    var initOptsHtml = [1,2].map(function(n) {
+        return '<div class="aq-option">' +
+            '<label class="aq-option-label">Option ' + n + '</label>' +
+            '<input type="text" name="opt" placeholder="Option ' + n + '" class="aq-option-input" oninput="aqSyncCorrectRadios()">' +
         '</div>';
     }).join('');
 
     document.getElementById('gameEditFields').innerHTML =
-        '<div class="q-type-selected-badge"><i class="fas fa-tag"></i> ' + escapeAttr(TYPE_LABELS[questionType] || questionType) + '</div>' +
-        '<div class="form-group"><label>Question Text</label><textarea name="qtext" rows="3" placeholder="Enter question text…"></textarea></div>' +
-        '<div class="form-group"><label>Options (select the correct answer)</label><div class="q-opts-grid">' + optsHtml + '</div></div>' +
-        '<div class="form-group"><label>Points</label><input type="number" name="points" min="1" max="10" value="1" style="width:70px"></div>';
+        '<a class="aq-change-type" href="#" onclick="backToQTypePicker(' + gameId + ',' + catId + ');return false;">' +
+            '<i class="fas fa-arrow-left"></i> Change type' +
+        '</a>' +
 
-    // Override submit to add question to existing cat row
+        '<div class="form-group">' +
+            '<label>Question <span class="aq-required">*</span></label>' +
+            '<input type="text" name="qtext" placeholder="Enter the question text" class="aq-question-input">' +
+        '</div>' +
+
+        '<div class="form-group">' +
+            '<label>Difficulty <span class="form-label-optional">(optional)</span></label>' +
+            '<select name="difficulty" class="aq-select">' +
+                '<option value="">Select difficulty</option>' +
+                '<option value="easy">Easy</option>' +
+                '<option value="medium">Medium</option>' +
+                '<option value="hard">Hard</option>' +
+            '</select>' +
+        '</div>' +
+
+        '<div class="form-group">' +
+            '<label>Question Image <span class="form-label-optional">(optional)</span></label>' +
+            '<label class="aq-image-zone">' +
+                '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">' +
+                '<i class="fas fa-cloud-upload-alt aq-image-icon"></i>' +
+                '<span class="aq-image-drag">Drag and drop your file here</span>' +
+                '<span class="aq-image-or">or</span>' +
+                '<span class="aq-image-btn">Choose File</span>' +
+                '<span class="aq-image-hint">Accepted: PNG, JPEG, WEBP, GIF. Max 5 MB.</span>' +
+            '</label>' +
+        '</div>' +
+
+        '<div class="form-group">' +
+            '<label>Answer Options <span class="aq-required">*</span></label>' +
+            '<div class="aq-options" id="aqOptionsList">' + initOptsHtml + '</div>' +
+            '<button type="button" class="btn btn-outline aq-add-option-btn" onclick="aqAddOption()">Add Option</button>' +
+        '</div>' +
+
+        '<div class="form-group" id="aqCorrectSection">' +
+            '<label>Correct Answer <span class="aq-required">*</span></label>' +
+            '<div class="aq-correct-radios" id="aqCorrectRadios">' +
+                '<label class="aq-correct-row"><input type="radio" name="correct" value="0" checked> Option 1</label>' +
+                '<label class="aq-correct-row"><input type="radio" name="correct" value="1"> Option 2</label>' +
+            '</div>' +
+        '</div>' +
+        '<input type="hidden" name="questionType" value="' + escapeAttr(questionType) + '">';
+
+    var submitBtn = document.getElementById('gameSubmitBtn');
+    if (submitBtn) submitBtn.hidden = true;
+
+    var actionsBar = document.querySelector('#detailEdit .edit-actions');
+    if (actionsBar) {
+        actionsBar.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="showGameEmpty()">Cancel</button>' +
+            '<button type="button" class="btn btn-outline" onclick="saveQAndAddAnother(' + gameId + ',' + catId + ')">Save &amp; Add Another</button>' +
+            '<button type="button" class="btn btn-primary" onclick="submitAddQuestion(' + gameId + ',' + catId + ')">Add Question</button>';
+    }
+
+    showGameEdit();
+}
+
+function _doSaveQuestion(gameId, catId) {
     var form = document.getElementById('gameEditForm');
-    form.onsubmit = function(e) {
-        e.preventDefault();
-        var data = new FormData(form);
-        var text = (data.get('qtext') || '').trim();
-        if (!text) { showGameToast('Enter question text'); return; }
-        var opts = [];
-        for (var i = 0; i < 4; i++) {
-            var v = (data.get('opt' + i) || '').trim();
-            if (!v) { showGameToast('Fill in all 4 options'); return; }
-            opts.push(v);
-        }
-        var correct = parseInt(data.get('correct') || '0', 10);
-        var points = parseInt(data.get('points') || '1', 10);
-        var newQ = { id: Date.now() + Math.floor(Math.random() * 1000), text: text, options: opts, correct: correct, points: points };
-        var existingQs = document.querySelectorAll('tr.row-q[data-game="' + gameId + '"][data-cat="' + catId + '"]');
-        var qNum = existingQs.length + 1;
-        var insertAfter = existingQs.length ? existingQs[existingQs.length - 1] : catRow;
-        insertAfter.insertAdjacentHTML('afterend', qRowHtml(newQ, gameId, catId, qNum));
-        updateCatRowChips(catRow);
-        var gameRow = document.querySelector('tr.row-game[data-game="' + gameId + '"]');
-        if (gameRow) updateGameRowChips(gameRow);
-        persistGamesScope();
-        showGameToast('Question added');
-        form.onsubmit = saveGameAdd;
-        showGameEmpty();
-    };
+    if (!form) return false;
+    var qtextEl = form.querySelector('input[name="qtext"]');
+    var text = qtextEl ? qtextEl.value.trim() : '';
+    if (!text) { showGameToast('Enter question text'); return false; }
+    var opts = [];
+    var optEls = form.querySelectorAll('#aqOptionsList input[name="opt"]');
+    optEls.forEach(function(el) { opts.push(el.value.trim()); });
+    opts = opts.filter(function(v) { return v; });
+    if (opts.length < 2) { showGameToast('Add at least 2 options'); return false; }
+    var correctEl = form.querySelector('input[name="correct"]:checked');
+    var correct = correctEl ? parseInt(correctEl.value, 10) : 0;
+    var diffEl = form.querySelector('select[name="difficulty"]');
+    var difficulty = diffEl ? diffEl.value : '';
+
+    var catRow = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+    var newQ = { id: Date.now() + Math.floor(Math.random() * 1000), text: text, options: opts, correct: correct, difficulty: difficulty };
+    var existingQs = document.querySelectorAll('tr.row-q[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+    var qNum = existingQs.length + 1;
+    var insertAfter = existingQs.length ? existingQs[existingQs.length - 1] : catRow;
+    insertAfter.insertAdjacentHTML('afterend', qRowHtml(newQ, gameId, catId, qNum));
+    if (catRow) updateCatRowChips(catRow);
+    var gameRow = document.querySelector('tr.row-game[data-game="' + gameId + '"]');
+    if (gameRow) updateGameRowChips(gameRow);
+    persistGamesScope();
+    showGameToast('Question added');
+    return true;
+}
+
+function _navigateToQuestionsPage(gameId, catId, openPicker) {
+    try {
+        localStorage.setItem('gameon.questionsNav', JSON.stringify({
+            gameId:     String(gameId),
+            catId:      String(catId),
+            openPicker: !!openPicker,
+            companyKey: (_currentGameScope && _currentGameScope.companyKey) || '',
+            dept:       (_currentGameScope && _currentGameScope.dept)       || '',
+            deptName:   (_currentGameScope && _currentGameScope.deptName)   || ''
+        }));
+    } catch(e) {}
+    window.location.href = 'index-questions.html';
+}
+
+function submitAddQuestion(gameId, catId) {
+    if (_doSaveQuestion(gameId, catId)) {
+        var form = document.getElementById('gameEditForm');
+        if (form) form.onsubmit = saveGameAdd;
+        _navigateToQuestionsPage(gameId, catId, false);
+    }
+}
+
+function saveQAndAddAnother(gameId, catId) {
+    if (_doSaveQuestion(gameId, catId)) {
+        _navigateToQuestionsPage(gameId, catId, true);
+    }
+}
+
+// ===== Add Question form helpers =====
+function aqAddOption() {
+    var list = document.getElementById('aqOptionsList');
+    if (!list) return;
+    var n = list.querySelectorAll('.aq-option').length + 1;
+    var div = document.createElement('div');
+    div.className = 'aq-option';
+    div.innerHTML =
+        '<label class="aq-option-label">Option ' + n + '</label>' +
+        '<input type="text" name="opt" placeholder="Option ' + n + '" class="aq-option-input" oninput="aqSyncCorrectRadios()">';
+    list.appendChild(div);
+    aqSyncCorrectRadios();
+}
+
+function aqSyncCorrectRadios() {
+    var list = document.getElementById('aqOptionsList');
+    var radiosEl = document.getElementById('aqCorrectRadios');
+    if (!list || !radiosEl) return;
+
+    var prevVal = (radiosEl.querySelector('input[name="correct"]:checked') || {}).value || '0';
+
+    var inputs = list.querySelectorAll('input[name="opt"]');
+    radiosEl.innerHTML = Array.prototype.map.call(inputs, function(inp, i) {
+        var label = inp.value.trim() || ('Option ' + (i + 1));
+        var checked = (String(i) === String(prevVal)) ? ' checked' : '';
+        return '<label class="aq-correct-row">' +
+            '<input type="radio" name="correct" value="' + i + '"' + checked + '> ' +
+            escapeAttr(label) +
+        '</label>';
+    }).join('');
 }
 
 function actionEditCat(btn, evt) {
@@ -2378,20 +2454,6 @@ function updateGameScopeCreditsDisplay() {
         }
     }
 
-    // Page-header credit balance badge
-    var pageEl = document.getElementById('pageAICreditBalance');
-    if (pageEl) {
-        if (!key) { pageEl.hidden = true; }
-        else {
-            pageEl.hidden = false;
-            var usedEl  = document.getElementById('pageCreditsUsed');
-            var totalEl = document.getElementById('pageCreditsTotal');
-            if (usedEl)  usedEl.textContent  = used;
-            if (totalEl) totalEl.textContent = total;
-            // Colour the badge amber when over 80 % consumed
-            pageEl.classList.toggle('page-ai-credit-balance--warn', used / total >= 0.8);
-        }
-    }
 
     // Panel topbar credit pill (visible only during AI flow)
     var panelBal = document.getElementById('aiPanelCreditBal');

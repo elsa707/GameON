@@ -4,32 +4,6 @@
    styles-topics.css which is also loaded on the games page. Only NEW rules go here.
 */
 
-/* ===== Page-header AI credit balance badge ===== */
-.page-ai-credit-balance {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    background: #fefce8;
-    border: 1px solid #fde68a;
-    border-radius: 20px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #92400e;
-    white-space: nowrap;
-}
-.page-ai-credit-balance i {
-    color: #f59e0b;
-    font-size: 0.8rem;
-}
-.page-ai-credit-balance--warn {
-    background: #fff7ed;
-    border-color: #fdba74;
-    color: #9a3412;
-}
-.page-ai-credit-balance--warn i {
-    color: #ea580c;
-}
 
 /* ===== Panel topbar AI credit pill (shown during AI flow) ===== */
 .ai-panel-credit-bal {
@@ -1160,56 +1134,56 @@ label.add-game-cover-zone:hover .add-game-cover-overlay { opacity: 1; }
 .q-type-prompt {
     font-size: 0.88rem;
     color: #374151;
-    margin: 0 0 12px;
+    margin: 0 0 14px;
 }
 
 .q-type-picker {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 button.q-type-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     width: 100%;
-    padding: 16px 12px;
-    background: #fff;
+    padding: 20px 16px;
+    background: #f3f4f6;
     border: 1px solid #e5e7eb;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     text-align: center;
     transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 button.q-type-card:hover {
-    border-color: #3b82f6;
-    background: #f8faff;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    border-color: #a5b4fc;
+    background: #eef2ff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
 }
 
 .q-type-card-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: #f3f4f6;
+    width: 54px;
+    height: 54px;
+    background: #dde1e7;
     border-radius: 50%;
-    color: #6b7280;
-    font-size: 1.1rem;
+    color: #1f2937;
+    font-size: 1.2rem;
     flex-shrink: 0;
     transition: background 0.15s, color 0.15s;
 }
 button.q-type-card:hover .q-type-card-icon {
-    background: #dbeafe;
-    color: #2563eb;
+    background: #c7d2fe;
+    color: #4338ca;
 }
 
 .q-type-card-title {
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 700;
     color: #111827;
     line-height: 1.3;
 }
@@ -1272,4 +1246,130 @@ button.q-type-card:hover .q-type-card-icon {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+/* ===== Add Question form (aq-*) ===== */
+.aq-change-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #6b7280;
+    text-decoration: none;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    width: 100%;
+}
+.aq-change-type:hover { color: #374151; }
+.aq-change-type i { font-size: 0.75rem; }
+
+.aq-required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.aq-question-input,
+.aq-select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #111827;
+    background: #fff;
+    box-sizing: border-box;
+}
+.aq-question-input:focus,
+.aq-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px #e0e7ff;
+}
+.aq-select { appearance: auto; cursor: pointer; }
+
+.aq-image-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 22px 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+}
+.aq-image-zone:hover { border-color: #6366f1; background: #f5f3ff; }
+.aq-image-icon { font-size: 1.8rem; color: #9ca3af; }
+.aq-image-drag { font-size: 0.85rem; color: #374151; }
+.aq-image-or   { font-size: 0.78rem; color: #9ca3af; }
+.aq-image-btn  {
+    display: inline-block;
+    padding: 5px 18px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #374151;
+    background: #fff;
+}
+.aq-image-hint { font-size: 0.72rem; color: #9ca3af; }
+
+.aq-options { display: flex; flex-direction: column; gap: 10px; }
+
+.aq-option-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 5px;
+}
+.aq-option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.aq-option-input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #111827;
+    background: #fff;
+}
+.aq-option-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px #e0e7ff;
+}
+
+.aq-add-option-btn {
+    width: 100%;
+    margin-top: 8px;
+    justify-content: center;
+}
+
+.aq-correct-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+.aq-correct-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: #374151;
+    cursor: pointer;
+}
+.aq-correct-row input[type=radio] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+    flex-shrink: 0;
 }

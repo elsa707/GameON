@@ -5,13 +5,103 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
-## [2026-05-26] — AI credit balance in panel topbar
+## [2026-05-26] — Questions page: remove redundant empty state
+
+### Removed
+- **`index-questions.html`** — removed the `#questionsEmpty` block (icon + "No questions yet" text + duplicate Import/Add buttons); the header already has these buttons permanently.
+
+### Changed
+- **`index-questions.html`** — `#questionsHeaderActions` is now always visible (removed `hidden` attribute); no longer toggled by question count.
+- **`script-questions.js`** — `renderQuestionsPage()` simplified: always shows and renders the question list, removing dead empty-state and header-actions toggling logic.
+
+## [2026-05-26] — Questions page layout match (Done button + row styling)
+
+### Changed
+- **`index-questions.html`** — moved `#questionsDoneBar` inside `<main>` (after `#questionsList`), removed the stale fixed-position copy outside the layout.
+- **`styles-questions.css`** — `.questions-done-bar` is now inline right-aligned (`display: flex; justify-content: flex-end`) instead of `position: fixed`. Button style changed to dark solid (`background: #374151`, white text, `border-radius: 8px`) to match live site.
+- **`styles-questions.css`** — `.qlist-row` now has a light grey filled background (`#f3f4f6`), horizontal padding (`12px 16px`), `border-radius: 8px`, and `gap: 6px` between rows; removed the old bottom-border separator.
+
+## [2026-05-26] — Questions page visual polish
+
+### Changed
+- **`styles-questions.css`** — answer chip colours corrected to match live site:
+  - Incorrect answers: grey background (`#f3f4f6`), grey border (`#e5e7eb`), grey text (`#6b7280`).
+  - Correct answer (`.q-answer-chip--correct`): green filled (`#dcfce7` bg, `#86efac` border, `#166534` text, bold).
+- **`styles-questions.css`** — added `.questions-saved-toast` — full-width green banner fixed at bottom (`background: #22c55e`), with white checkmark-circle icon and "Questions saved successfully." text, auto-hides after 3.5 s.
+- **`index-questions.html`** — added `#questionsSavedToast` element (hidden by default) for the success toast.
+- **`script-questions.js`** — added `showQSavedToast()` helper; called in `submitAddQuestion` after every successful save; also shown on page-load when arriving after a save (i.e., questions exist and `openPicker` is false).
+
+## [2026-05-26] — Questions page (index-questions.html)
 
 ### Added
-- **Credit balance pill** shown in the detail panel topbar whenever the AI game flow is open, matching the live site header — displays `🪙 X / Y used` (e.g. `35 / 300 used`) as an amber pill.
+- **`index-questions.html`** — new full page for managing a category's questions, matching the live site.
+  - Back arrow (← ) returns to Games page.
+  - Orange warning banner when fewer than 5 questions exist: *"At least 5 questions are required before this category can be used in a game."*
+  - Empty state: large question-mark icon, "No questions yet. Add the first one.", Import from Excel + Add Question buttons.
+  - Numbered question rows: question text + MCQ/type chip, answer chips (correct answer highlighted green), pencil + trash action icons.
+  - **Done** button fixed bottom-right.
+  - **+ Add Question** header button (shown once questions exist); opens the type picker in the right detail panel.
+- **`script-questions.js`** — Questions page controller (IIFE):
+  - Reads `gameon.questionsNav` localStorage key written by the Games page on save.
+  - Loads game/category from `gameon.games.scope` localStorage.
+  - Overrides `_doSaveQuestion` to write directly to localStorage (no DOM table on this page).
+  - Overrides `submitAddQuestion` / `saveQAndAddAnother` to stay on this page and re-render.
+  - Overrides `onGamesScope` to prevent games-table re-render on scope change.
+  - Handles question delete; edit stub (toast "coming soon").
+- **`styles-questions.css`** — page-specific styles: warning banner, empty state, question list rows, type chip, answer chips, done bar.
+- **`script-games.js`**: `submitAddQuestion` and `saveQAndAddAnother` now navigate to `index-questions.html` via `_navigateToQuestionsPage(gameId, catId, openPicker)` which stores context in `gameon.questionsNav`.
+- `openAddQuestionForm` made resilient when no DOM cat row exists (questions page); hidden `input[name="questionType"]` added so the type is recorded on save.
+- `script-games.js` version bumped to `?v=35`.
+
+## [2026-05-26] — Add Question form: dynamic options + separate Correct Answer section
+
+### Changed
+- **Answer Options** starts with 2 inputs (not 4); **Add Option** button appends more dynamically.
+- **Correct Answer** is now a separate section below Answer Options, showing a radio list that mirrors the option labels — labels update live as options are typed.
+- Removed inline radio buttons from each option row.
+- `aqAddOption()` — appends a new option input and syncs the correct-answer radios.
+- `aqSyncCorrectRadios()` — rebuilds the Correct Answer radio list whenever an option label changes, preserving the previously selected index.
+- `_doSaveQuestion()` now reads all `input[name="opt"]` elements instead of fixed `opt0–opt3` names; requires at least 2 options.
+- New CSS: `.aq-add-option-btn`, `.aq-correct-radios`, `.aq-correct-row`.
+- `script-games.js` version bumped to `?v=34`.
+
+## [2026-05-26] — Add Question form matching live site
+
+### Changed
+- **Add Question form** rebuilt to match live site: `← Change type` back link, **Question \*** text input, **Difficulty** dropdown (Easy / Medium / Hard), **Question Image** drag-and-drop zone (cloud icon, "Choose File" button, accepted types hint), **Answer Options** with Option 1–4 stacked inputs each with a green radio to mark the correct answer.
+- Footer buttons: **Cancel** | **Save & Add Another** (saves and returns to type picker) | **Add Question** (saves and closes panel).
+- `backToQTypePicker(gameId, catId)` — clicking "← Change type" returns to the type picker without losing the category.
+- `saveQAndAddAnother(gameId, catId)` — saves current question and reopens type picker for next question in same category.
+- `submitAddQuestion(gameId, catId)` / `_doSaveQuestion(gameId, catId)` — replaces the old form.onsubmit override.
+- `_renderQTypePickerHtml(gameId, catId)` — shared helper used by all three entry points (new game flow, `actionAddQuestion`, `backToQTypePicker`); removes three copies of the Q_TYPES array.
+- New CSS: `.aq-change-type`, `.aq-required`, `.aq-question-input`, `.aq-select`, `.aq-image-zone`, `.aq-image-*`, `.aq-options`, `.aq-option-label`, `.aq-option-row`, `.aq-option-input`, `.aq-correct-radio`.
+- `script-games.js` version bumped to `?v=33`.
+
+## [2026-05-26] — Open question type picker directly after Create Game
+
+### Changed
+- After **Create Game** succeeds, the panel now opens directly on the **question type picker** (matching live site) instead of an intermediate "game created" banner.
+- A **Category 1** is auto-created silently so the question picker is immediately usable — no prompt required.
+- Panel title = "Add Question", subtitle = game name.
+- Question type cards restyled to match live site: grey card background (`#f3f4f6`), larger centred icon circle (54 px, dark icon on `#dde1e7`), bolder title, rounded-12 corners, indigo hover.
+- MCQ icon updated to `fa-circle-question` to better match the live site.
+- `showGameCreatedPanel()` and `openAddCategoryFromPanel()` replaced by `showQTypePickerForNewGame()`.
+- `script-games.js` version bumped to `?v=32`.
+
+### Removed
+- "Game created" banner step and "Add Category" prompt removed from the post-create flow.
+
+## [2026-05-26] — Remove page-header credit balance; add panel topbar credit pill
+
+### Added
+- **Credit balance pill** shown in the detail panel topbar whenever the AI game flow is open — displays `🪙 X / Y used` (e.g. `35 / 300 used`) as an amber pill matching the live site.
 - Pill updates live when a generation completes (credit is consumed) and turns a deeper amber when over 80% of credits are used.
 - Pill is hidden in all non-AI panel states (edit, created, share, schedule).
 - New element `#aiPanelCreditBal` in `index-games.html`; new CSS `.ai-panel-credit-bal` / `.ai-panel-credit-bal--warn` in `styles-games.css`.
+
+### Removed
+- **Page-header credit balance badge** (`#pageAICreditBalance`) removed from `index-games.html` — credits are now shown only in the panel topbar during AI flow.
+- `.page-ai-credit-balance` CSS removed from `styles-games.css`.
 - `script-games.js` version bumped to `?v=31`.
 
 ## [2026-05-26] — Game created next-step panel
