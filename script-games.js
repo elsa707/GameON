@@ -641,7 +641,7 @@ function addGame() {
             '<button type="button" class="add-topic-tab" data-tab="share-schedule" id="gameTabShareSchedule" disabled onclick="switchGameTab(\'share-schedule\')"><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="gameTabPaneGame">' +
-            gameCoverDropZoneHtml('') +
+            '<div class="form-group"><label>Cover Image</label>' + gameCoverPickerHtml('') + '</div>' +
             '<div class="form-group"><label>Game Name <span class="required-mark">*</span></label><input type="text" name="name" value="" required placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description <span class="form-label-optional">(optional)</span></label><textarea name="description" rows="3" placeholder="What will players learn?"></textarea></div>' +
             '<div class="form-group"><label for="gameTopicSelect">Topic <span class="form-label-optional">(optional)</span></label>' +
@@ -650,18 +650,12 @@ function addGame() {
                     getAIGameTopicOptions() +
                 '</select>' +
             '</div>' +
-            '<div class="form-row-2">' +
-                '<div class="form-group">' +
-                    '<label>Max attempts</label>' +
-                    '<div class="number-stepper">' +
-                        '<button type="button" class="stepper-btn" onclick="stepGameAttempts(-1,\'gameMaxAttempts\')"><i class="fas fa-minus"></i></button>' +
-                        '<input type="number" name="maxAttempts" id="gameMaxAttempts" value="1" min="1" max="99">' +
-                        '<button type="button" class="stepper-btn" onclick="stepGameAttempts(1,\'gameMaxAttempts\')"><i class="fas fa-plus"></i></button>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="form-group">' +
-                    '<label>Questions per session</label>' +
-                    '<input type="text" name="questionsPerSession" placeholder="Server default">' +
+            '<div class="form-group">' +
+                '<label>Max attempts</label>' +
+                '<div class="number-stepper">' +
+                    '<button type="button" class="stepper-btn" onclick="stepGameAttempts(-1,\'gameMaxAttempts\')"><i class="fas fa-minus"></i></button>' +
+                    '<input type="number" name="maxAttempts" id="gameMaxAttempts" value="1" min="1" max="99">' +
+                    '<button type="button" class="stepper-btn" onclick="stepGameAttempts(1,\'gameMaxAttempts\')"><i class="fas fa-plus"></i></button>' +
                 '</div>' +
             '</div>' +
         '</div>' +
@@ -2324,7 +2318,7 @@ function _renderAIGameResults() {
             '<button type="button" class="add-topic-tab" data-tab="ai-share-schedule" id="aiGameTabShareSchedule" onclick="switchGameAITab(\'ai-share-schedule\')" disabled><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="aiGameTabPaneGame">' +
-            gameCoverDropZoneHtml(topicCover) +
+            '<div class="form-group"><label>Cover Image</label>' + gameCoverPickerHtml(topicCover || '') + '</div>' +
             '<div class="form-group"><label>Game Name</label><input type="text" name="name" value="' + escapeAttr(namePair.name) + '" placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description</label><textarea name="description" rows="3">' + escapeAttr(namePair.description) + '</textarea></div>' +
             attemptsHtml +
