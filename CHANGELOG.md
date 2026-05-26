@@ -11,6 +11,40 @@ Project contact: elsadr@agilebridge.co.za
 - **Topics — Text content: rich text editor**: the "Text" tab in the sub-topic content picker now renders a `contenteditable` div with a compact formatting toolbar (Bold, Italic, Underline, Bullet list, Numbered list) instead of a plain textarea. Content is stored and restored as HTML. CSS added in `styles-topics.css`. `readContentPicker()` and `removeTopicContent()` updated to use `innerHTML`.
 - **Topics — AI flow Text input: rich text editor**: the "Text" source field (`#aiTextInput`) in the AI generate flow also uses the same rich text editor pattern (toolbar + `contenteditable` div with `.ai-rte` styling).
 - **Topics — AI prompt: single-line input**: the AI-flow prompt field (`#aiPromptText`) changed from a multi-row textarea to a single-line `<input type="text">`.
+- Removed the "Difficulty" Easy/Medium/Hard badge row from the AI Questions setup pane.
+- Added a **Difficulty mix** ratio row to the generated Game tab (results preview), showing coloured percentage chips — e.g. `Easy 10%` · `Medium 70%` · `Hard 20%`. Ratios cycle through four mock presets per generation.
+- Removed old `.ai-difficulty-row / .ai-difficulty-label / .ai-difficulty-badges / .ai-diff-badge / .ai-difficulty-note` CSS; replaced with `.ai-diff-ratio / .ai-diff-ratio-label / .ai-diff-ratio-chips / .ai-diff-chip` (colour vars `.ai-diff-easy/medium/hard` retained).
+- **Share & Schedule tabs merged**: The separate "Share" and "Schedule" tabs in both the manual Add Game form and the AI-generated game results panel are replaced by a single "Share & Schedule" tab. Includes department checkboxes and a date‑range picker.
+- **Date range picker**: replaced the old single `datetime-local` input with two `date` inputs (Start date / End date).
+- **Combined confirm action**: one "Confirm" button applies both sharing and scheduling; old functions removed.
+- **Kebab-menu schedule panel** updated to use the date‑range picker.
+- **Word Rocket renamed to Word Bucket** throughout the AI game setup form.
+- **Question types: radio buttons** (one per generation attempt) instead of checkboxes.
+- **MCQ info note**: small "No image questions" note displayed below the MCQ label.
+- **AI Add Game — two-tab setup panel**: restructured into Content and Questions tabs with proper tab bar.
+- **File upload — approved formats only**: restricts to `.pdf`, `.docx`, `.xlsx`, `.png`, `.jpeg`, `.jpg`.
+- **Question type cards — column layout**: text above, checkbox below; equal fixed height; centred alignment fixes applied.
+- **Side panel — no horizontal scrollbar**: added `overflow-x: hidden`.
+- **Game categories logic** updated to match diagram (topic sub-topics vs AI-suggested categories).
+- **AI game results — cover image toggle default** fixed to only default ON when topic has a cover image.
+
+### Added
+- Restored the AI credit balance pill badge (`#pageAICreditBalance`) in the games page header, showing `<used> / <total>` credits with coin icon; amber when over 80% consumed.
+- **AI credit balance badge** also added to games landing page header.
+
+### Removed
+- Removed the "Publish immediately" / "Schedule for a date range" radio toggle from the schedule form. Start/End date inputs are now always visible. `onScheduleTypeChange` and `.schedule-option` CSS removed.
+- Removed the "Questions per session" input from the AI-generated game results panel; replaced with just "Max attempts".
+- Reverted the "Add question type" post-generation feature (functions and CSS removed; button removed).
+
+### Fixed
+- **Question type cards — equal height**: all six cards now exactly the same height.
+- **Questions pane — no vertical scrollbar**: tightened spacing so full content fits without scroll.
+- **Question type cards — text and checkbox centre alignment**: specificity fix so flex layout applies correctly.
+- **Question type cards — proper centre alignment**: wrapped label in flex span for consistent alignment.
+- **Question type cards — checkbox alignment**: icon+text left, checkbox right, vertically centred.
+- **Select on Image — enabled**: option now selectable like others.
+- **Detail panel — no outer scroll**: only form fields area scrolls; top/bottom pinned.
 
 ## [2026-05-22] — fixes
 
