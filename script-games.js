@@ -548,9 +548,7 @@ function setGamePanelMode(mode) {
     }
     var badge = document.getElementById('gameEditBadge');
     var submitBtn = document.getElementById('gameSubmitBtn');
-    var creditsEl = document.getElementById('aiGameCreditsDisplay');
     if (badge) badge.classList.remove('badge-ai');
-    if (creditsEl) creditsEl.hidden = true;
     if (submitBtn) { submitBtn.hidden = false; submitBtn.disabled = false; }
 
     var genBtn = document.getElementById('aiGameGenerateBtn');
@@ -643,7 +641,7 @@ function addGame() {
             '<button type="button" class="add-topic-tab" data-tab="share-schedule" id="gameTabShareSchedule" disabled onclick="switchGameTab(\'share-schedule\')"><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="gameTabPaneGame">' +
-            gameCoverToggleHtml('', 'gameAddCoverToggle', 'gameAddCoverBody', false) +
+            gameCoverDropZoneHtml('') +
             '<div class="form-group"><label>Game Name <span class="required-mark">*</span></label><input type="text" name="name" value="" required placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description <span class="form-label-optional">(optional)</span></label><textarea name="description" rows="3" placeholder="What will players learn?"></textarea></div>' +
             '<div class="form-group"><label for="gameTopicSelect">Topic <span class="form-label-optional">(optional)</span></label>' +
@@ -1853,27 +1851,53 @@ function updateAIGameCreditsEstimate() {
     valEl.textContent = estimate;
 }
 
-function toggleGameCoverSection(checkbox, bodyId) {
-    var el = document.getElementById(bodyId);
-    if (el) el.classList.toggle('hidden', !checkbox.checked);
+// ===== Cover image drop zone (used in add / AI result flows) =====
+function gameCoverDropZoneHtml(currentCover) {
+    var hasImage = !!currentCover;
+    var inner = hasImage
+        ? '<img src="' + escapeAttr(currentCover) + '" alt="Cover" class="cover-drop-preview">' +
+          '<span class="cover-drop-overlay"><i class="fas fa-cloud-arrow-up"></i> Change</span>'
+        : '<i class="fas fa-cloud-arrow-up cover-drop-icon"></i>' +
+          '<span class="cover-drop-text">Drop a file or click to upload</span>';
+    return '<div class="form-group">' +
+        '<label>Upload</label>' +
+        '<label class="cover-drop-zone" id="gameCoverDropZone">' +
+            inner +
+            '<input type="file" class="cover-file-input" id="gameCoverFileInput" accept="image/*" onchange="previewGameCoverDrop(this)">' +
+            '<input type="hidden" class="cover-hidden-input" name="cover" id="gameCoverHiddenInput" value="' + escapeAttr(currentCover || '') + '">' +
+        '</label>' +
+    '</div>';
 }
 
-function gameCoverToggleHtml(currentCover, toggleId, bodyId, fromTopic) {
-    var hasPreset = !!currentCover;
-    var labelExtra = fromTopic ? ' <span class="form-label-optional">(from topic)</span>' : '';
-    return '<div class="form-group">' +
-        '<label class="ai-toggle-label" style="margin-bottom:0">' +
-            '<span class="ai-toggle-wrap">' +
-                '<input type="checkbox" class="ai-toggle-input" id="' + escapeAttr(toggleId) + '"' + (hasPreset ? ' checked' : '') +
-                    ' onchange="toggleGameCoverSection(this,\'' + escapeAttr(bodyId) + '\')">' +
-                '<span class="ai-toggle-track"></span>' +
-            '</span>' +
-            '<span class="ai-toggle-text">Add cover image' + labelExtra + '</span>' +
-        '</label>' +
-        '<div id="' + escapeAttr(bodyId) + '"' + (!hasPreset ? ' class="hidden"' : '') + ' style="margin-top:8px">' +
-            gameCoverPickerHtml(currentCover || '') +
-        '</div>' +
-    '</div>';
+function previewGameCoverDrop(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var dataUrl = e.target.result;
+        var zone = input.closest('.cover-drop-zone');
+        if (!zone) return;
+        var hidden = zone.querySelector('.cover-hidden-input');
+        if (hidden) hidden.value = dataUrl;
+        // Rebuild interior with preview + overlay, keep the file + hidden inputs
+        var existingFile = zone.querySelector('input[type=file]');
+        var existingHidden = zone.querySelector('input[type=hidden]');
+        // Clear non-input children
+        Array.from(zone.childNodes).forEach(function(n) {
+            if (n.nodeName !== 'INPUT') zone.removeChild(n);
+        });
+        var img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = 'Cover';
+        img.className = 'cover-drop-preview';
+        var overlay = document.createElement('span');
+        overlay.className = 'cover-drop-overlay';
+        overlay.innerHTML = '<i class="fas fa-cloud-arrow-up"></i> Change';
+        zone.insertBefore(overlay, zone.firstChild);
+        zone.insertBefore(img, zone.firstChild);
+        if (existingHidden) existingHidden.value = dataUrl;
+    };
+    reader.readAsDataURL(file);
 }
 
 function stepGameAttempts(delta, inputId) {
@@ -2009,16 +2033,6 @@ function addGameAI() {
         badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Adding with AI';
         badge.classList.add('badge-ai');
     }
-
-    var ck = (_currentGameScope && _currentGameScope.companyKey) || '';
-    var usedNow = _gameAiCreditsUsed[ck] || 0;
-    var totalNow = getGameCompanyCreditsTotal(ck);
-    var countEl = document.getElementById('aiGameCreditsCount');
-    if (countEl) countEl.textContent = usedNow;
-    var totalEl = document.getElementById('aiGameCreditsTotal');
-    if (totalEl) totalEl.textContent = totalNow;
-    var creditsEl = document.getElementById('aiGameCreditsDisplay');
-    if (creditsEl) creditsEl.hidden = false;
 
     var submitBtn = document.getElementById('gameSubmitBtn');
     if (submitBtn) {
@@ -2310,7 +2324,7 @@ function _renderAIGameResults() {
             '<button type="button" class="add-topic-tab" data-tab="ai-share-schedule" id="aiGameTabShareSchedule" onclick="switchGameAITab(\'ai-share-schedule\')" disabled><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
         '</div>' +
         '<div class="add-topic-pane" id="aiGameTabPaneGame">' +
-            gameCoverToggleHtml(topicCover, 'aiGameCoverToggle', 'aiGameCoverBody', !!topicCover) +
+            gameCoverDropZoneHtml(topicCover) +
             '<div class="form-group"><label>Game Name</label><input type="text" name="name" value="' + escapeAttr(namePair.name) + '" placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description</label><textarea name="description" rows="3">' + escapeAttr(namePair.description) + '</textarea></div>' +
             attemptsHtml +
@@ -2335,8 +2349,6 @@ function _renderAIGameResults() {
         _sc[ck] = _gameAiCreditsUsed[ck];
         localStorage.setItem('gameon.aiCredits', JSON.stringify(_sc));
     } catch(e) {}
-    var countEl = document.getElementById('aiGameCreditsCount');
-    if (countEl) countEl.textContent = _gameAiCreditsUsed[ck];
     updateGameScopeCreditsDisplay();
 }
 

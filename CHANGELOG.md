@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — replace cover image toggle with always-visible drop zone
+
+### Changed
+- Removed the "Add cover image" on/off toggle from the Add Game and AI-generated game panels. The cover upload is now always visible as a dashed drop zone (`Drop a file or click to upload`) matching the upload design pattern.
+- When a file is selected the zone shows a full-bleed preview with a "Change" overlay on hover.
+- New `gameCoverDropZoneHtml()` builder and `previewGameCoverDrop()` handler replace `gameCoverToggleHtml()` / `toggleGameCoverSection()` for the add/AI flows. The edit existing game panel retains the preset-tile picker.
+- Added `.cover-drop-zone`, `.cover-drop-icon`, `.cover-drop-text`, `.cover-drop-preview`, `.cover-drop-overlay` CSS rules in `styles-games.css`.
+- `script-games.js` version bumped to `?v=28`.
+
+## [2026-05-26] — remove AI credit balance from detail panel topbar
+
+### Removed
+- Removed the `#aiGameCreditsDisplay` credit balance pill (`20 / 300 used`) from the detail panel topbar. The page-header badge (`#pageAICreditBalance`) is unchanged.
+- Removed associated JS references (`aiGameCreditsCount`, `aiGameCreditsTotal`, `aiGameCreditsDisplay`) from `setGamePanelMode()` and the post-generation credit update. Credits are still tracked and reflected on the page-header badge via `updateGameScopeCreditsDisplay()`.
+- `script-games.js` version bumped to `?v=27`.
+
 ## [2026-05-25]
 
 ### Changed
