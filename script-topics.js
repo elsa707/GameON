@@ -167,7 +167,15 @@ function contentPickerHtml(idPrefix, defaults) {
                 <input type="url" class="cp-video-url" value="${kind === 'video' ? escapeAttr(mediaName) : ''}" placeholder="https://…">
             </div>
             <div class="content-pane${kind === 'text' ? '' : ' hidden'}" data-pane="text">
-                <textarea class="cp-text" rows="4" placeholder="Type the sub-topic content…">${kind === 'text' ? escapeAttr(mediaName) : ''}</textarea>
+                <div class="rte-toolbar">
+                    <button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand('bold')"><i class="fas fa-bold"></i></button>
+                    <button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand('italic')"><i class="fas fa-italic"></i></button>
+                    <button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand('underline')"><i class="fas fa-underline"></i></button>
+                    <span class="rte-sep"></span>
+                    <button type="button" class="rte-btn" title="Bullet list" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="rte-btn" title="Numbered list" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                </div>
+                <div class="cp-text" contenteditable="true" data-placeholder="Type the sub-topic content…">${kind === 'text' ? mediaName : ''}</div>
             </div>
         </div>
     `;
@@ -253,7 +261,9 @@ function readContentPicker(picker) {
         return { mediaType: 'video', mediaName: picker.querySelector('.cp-video-url').value.trim() };
     }
     if (kind === 'text') {
-        return { mediaType: 'text', mediaName: picker.querySelector('.cp-text').value.trim() };
+        const el = picker.querySelector('.cp-text');
+        const html = el ? el.innerHTML.trim() : '';
+        return { mediaType: 'text', mediaName: (html === '<br>' || html === '') ? '' : html };
     }
     return {
         mediaType: picker.querySelector('.cp-media-type').value || 'PDF',
@@ -304,7 +314,7 @@ function removeTopicContent() {
         picker.querySelector('.cp-media-type').value = 'PDF';
         picker.querySelector('.cp-media-name').value = '';
         const v = picker.querySelector('.cp-video-url'); if (v) v.value = '';
-        const t = picker.querySelector('.cp-text');      if (t) t.value = '';
+        const t = picker.querySelector('.cp-text');      if (t) t.innerHTML = '';
         picker.querySelectorAll('.content-kind-tab').forEach(b => b.classList.toggle('active', b.dataset.kind === 'upload'));
         picker.querySelectorAll('.content-pane').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== 'upload'));
         const label = picker.querySelector('.cp-detected'); if (label) label.innerHTML = '';
@@ -1330,8 +1340,16 @@ function addTopicAI() {
             </div>
             <div class="form-group" id="aiTextSection">
                 <label>Text</label>
-                <textarea id="aiTextInput" class="ai-text-input" rows="4"
-                          placeholder="Paste text, notes, or reference material…" oninput="updateAIGenerateBtn()"></textarea>
+                <div class="rte-toolbar">
+                    <button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand('bold')"><i class="fas fa-bold"></i></button>
+                    <button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand('italic')"><i class="fas fa-italic"></i></button>
+                    <button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand('underline')"><i class="fas fa-underline"></i></button>
+                    <span class="rte-sep"></span>
+                    <button type="button" class="rte-btn" title="Bullet list" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="rte-btn" title="Numbered list" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                </div>
+                <div id="aiTextInput" class="ai-rte" contenteditable="true"
+                     data-placeholder="Paste text, notes, or reference material…" oninput="updateAIGenerateBtn()"></div>
             </div>
             <div class="ai-subtopics-option">
                 <label class="ai-toggle-label">
@@ -1347,8 +1365,8 @@ function addTopicAI() {
         <div class="add-topic-pane hidden" id="aiTabPaneSubs"></div>
         <div class="ai-generate-block">
             <div class="form-group">
-                <textarea class="ai-text-input" id="aiPromptText" rows="3"
-                          placeholder="What learning content would you like to create today?"></textarea>
+                <input type="text" class="ai-text-input" id="aiPromptText"
+                       placeholder="What learning content would you like to create today?">
             </div>
             <button type="button" class="btn btn-ai btn-full" id="aiGenerateBtn" onclick="triggerAIGenerate()">
                 <i class="fas fa-wand-magic-sparkles"></i> Generate Topic

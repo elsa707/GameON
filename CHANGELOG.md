@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-25]
+
+### Changed
+- **Topics — Text content: rich text editor**: the "Text" tab in the sub-topic content picker now renders a `contenteditable` div with a compact formatting toolbar (Bold, Italic, Underline, Bullet list, Numbered list) instead of a plain textarea. Content is stored and restored as HTML. CSS added in `styles-topics.css`. `readContentPicker()` and `removeTopicContent()` updated to use `innerHTML`.
+- **Topics — AI flow Text input: rich text editor**: the "Text" source field (`#aiTextInput`) in the AI generate flow also uses the same rich text editor pattern (toolbar + `contenteditable` div with `.ai-rte` styling).
+- **Topics — AI prompt: single-line input**: the AI-flow prompt field (`#aiPromptText`) changed from a multi-row textarea to a single-line `<input type="text">`.
+
 ## [2026-05-22] — fixes
 
 ### Fixed
