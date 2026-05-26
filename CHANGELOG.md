@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — GAM-382 gap fixes: difficulty ratio, Match The Terms, file validation
+
+### Changed
+- **Difficulty mix display**: changed from mock percentage chips (`Easy 10% · Medium 70% · Hard 20%`) to the correct backend-fixed ratio `1 Easy · 1 Medium · 1 Hard` per category (user cannot set this).
+
+### Added
+- **Match The Terms question type**: added to the AI question types grid (`fa-link` icon, value `match-terms`), completing the full set from GAM-382 (MCQ, Word Bucket, Crossword, Fill in the Blank, Statement Blanking, Select on Image, Match The Terms).
+- **File upload validation toasts**: `onAIGameFileChange()` now explicitly checks the file extension against the allowed list (`pdf`, `docx`, `xlsx`, `png`, `jpeg`, `jpg`) and shows *"Unsupported file type. Please upload a PDF, DOCX, XLSX, PNG, JPG, or JPEG file."* on failure, or *"File successfully uploaded."* on success.
+- `script-games.js` version bumped to `?v=29`.
+
 ## [2026-05-26] — replace cover image toggle with always-visible drop zone
 
 ### Changed

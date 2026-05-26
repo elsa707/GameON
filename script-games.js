@@ -1996,6 +1996,7 @@ function addGameAI() {
                     '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-underline"></i> Fill in the Blank</span><input type="radio" name="qtype" value="fill-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
                     '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-align-left"></i> Statement Blanking</span><input type="radio" name="qtype" value="stmt-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
                     '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-image"></i> Select on Image</span><input type="radio" name="qtype" value="select-img" onchange="updateAIGameCreditsEstimate()"></label>' +
+                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-link"></i> Match The Terms</span><input type="radio" name="qtype" value="match-terms" onchange="updateAIGameCreditsEstimate()"></label>' +
                 '</div>' +
             '</div>' +
 
@@ -2102,6 +2103,13 @@ function onAIGameFileChange(input) {
     if (!container) return;
 
     var ext = file.name.split('.').pop().toLowerCase();
+    var allowedExts = ['pdf', 'docx', 'xlsx', 'png', 'jpeg', 'jpg'];
+    if (allowedExts.indexOf(ext) === -1) {
+        showGameToast('Unsupported file type. Please upload a PDF, DOCX, XLSX, PNG, JPG, or JPEG file.');
+        input.value = '';
+        return;
+    }
+
     var isImage = (ext === 'png' || ext === 'jpeg' || ext === 'jpg');
     var iconClass = isImage    ? 'fa-image' :
                     ext === 'pdf'  ? 'fa-file-pdf' :
@@ -2132,6 +2140,7 @@ function onAIGameFileChange(input) {
                 '</label>' +
             '</div>';
         updateAIGameGenerateBtn();
+        showGameToast('File successfully uploaded.');
     }
 
     if (isImage) {
@@ -2280,22 +2289,14 @@ function _renderAIGameResults() {
         '</div>';
     }).join('');
 
-    // Mock difficulty ratios — vary slightly per generation cycle
-    var _diffSets = [
-        { easy: 10, medium: 70, hard: 20 },
-        { easy: 20, medium: 65, hard: 15 },
-        { easy: 15, medium: 60, hard: 25 },
-        { easy: 25, medium: 55, hard: 20 }
-    ];
-    var diffRatio = _diffSets[(_aiGameGenerateIdx - 1) % _diffSets.length];
-
+    // Difficulty ratio is fixed by the backend: 1 Easy · 1 Medium · 1 Hard per category
     var diffRatioHtml =
         '<div class="ai-diff-ratio">' +
             '<span class="ai-diff-ratio-label"><i class="fas fa-sliders"></i> Difficulty mix</span>' +
             '<div class="ai-diff-ratio-chips">' +
-                '<span class="ai-diff-chip ai-diff-easy">Easy ' + diffRatio.easy + '%</span>' +
-                '<span class="ai-diff-chip ai-diff-medium">Medium ' + diffRatio.medium + '%</span>' +
-                '<span class="ai-diff-chip ai-diff-hard">Hard ' + diffRatio.hard + '%</span>' +
+                '<span class="ai-diff-chip ai-diff-easy">1 Easy</span>' +
+                '<span class="ai-diff-chip ai-diff-medium">1 Medium</span>' +
+                '<span class="ai-diff-chip ai-diff-hard">1 Hard</span>' +
             '</div>' +
         '</div>';
 
