@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — Move Add Game form back to right-side detail panel
+
+### Changed
+- **Add Game form** moved from centred modal overlay back to the right-side detail panel (user feedback: should not be a modal).
+- All new fields remain: drag-and-drop cover zone, Name *, Description, Topic, Advanced collapsible (Max attempts / Questions per session / Pass Threshold %), Share with departments.
+- Submit button in the panel labelled **"Create Game"** in add mode.
+- `saveGameAdd()` manual path now reads fields by ID and applies share inline (no longer switches to a Share & Schedule tab step).
+- Modal HTML and `saveAddGameModal()` removed; `closeAddGameModal()` redirects to `showGameEmpty()`.
+
 ## [2026-05-26] — Match Games page button styles to Topics page
 
 ### Changed

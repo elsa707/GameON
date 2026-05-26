@@ -559,7 +559,7 @@ function setGamePanelMode(mode) {
     if (mode === 'add') {
         _isGameAddMode = true;
         if (badge) badge.innerHTML = '<i class="fas fa-plus"></i> Adding';
-        if (submitBtn) submitBtn.textContent = 'Save';
+        if (submitBtn) submitBtn.textContent = 'Create Game';
         // hide delete/disable for add
         var delBtn = document.getElementById('gameEditDeleteBtn');
         var disBtn = document.getElementById('gameEditDisableBtn');
@@ -624,7 +624,7 @@ function buildShareScheduleTabHtml() {
     '</div>';
 }
 
-// ===== Add Game (manual — modal flow) =====
+// ===== Add Game (manual — side panel) =====
 function addGame() {
     _gameAddCats = [];
     _editingCatIdx = null;
@@ -633,13 +633,13 @@ function addGame() {
     _gameEditRow = null;
     _gameEditType = 'game';
 
-    var body = document.getElementById('addGameModalBody');
-    if (!body) return;
+    document.getElementById('gameEditTitle').textContent = 'Add Game';
+    document.getElementById('gameEditSubtitle').textContent = getGamesScopeSubtitle();
 
     var topicOpts = getAIGameTopicOptions();
     var deptShareHtml = buildGameShareTabHtml();
 
-    body.innerHTML =
+    document.getElementById('gameEditFields').innerHTML =
         '<div class="add-game-cover-zone-wrap">' +
             '<label class="add-game-cover-zone" id="addGameCoverZone">' +
                 '<i class="fas fa-cloud-arrow-up add-game-cover-icon"></i>' +
@@ -691,14 +691,13 @@ function addGame() {
             deptShareHtml +
         '</div>';
 
-    var overlay = document.getElementById('addGameModal');
-    if (overlay) overlay.classList.remove('hidden');
+    setGamePanelMode('add');
+    showGameEdit();
 }
 
 function closeAddGameModal() {
-    var overlay = document.getElementById('addGameModal');
-    if (overlay) overlay.classList.add('hidden');
-    _isGameAddMode = false;
+    // Modal removed — panel is used instead; treat as cancel
+    showGameEmpty();
 }
 
 function saveAddGameModal() {
@@ -963,23 +962,22 @@ function saveGameAdd(event) {
     if (event) event.preventDefault();
 
     if (_isGameAddMode && !_isAIGameFlow) {
-        // Manual add
-        var form = document.getElementById('gameEditForm');
-        var data = new FormData(form);
-        var name = (data.get('name') || '').trim();
+        // Manual add — fields rendered by addGame() using IDs
+        var nameInput = document.getElementById('addGameName');
+        var name = nameInput ? nameInput.value.trim() : '';
         if (!name) {
             showGameToast('Game name is required');
-            var nameInput = form.querySelector('input[name="name"]');
             if (nameInput) nameInput.focus();
             return;
         }
-        var description = (data.get('description') || '').trim();
-        var cover = readGameCoverPicker() || randomGameCover();
+        var descInput = document.getElementById('addGameDesc');
+        var description = descInput ? descInput.value.trim() : '';
+        var coverHidden = document.getElementById('addGameCoverHidden');
+        var cover = (coverHidden && coverHidden.value) ? coverHidden.value : randomGameCover();
 
         var tbody = document.querySelector('#gamesTable tbody');
         if (!tbody) return;
 
-        // Generate unique id
         var newId = Date.now();
         var gameObj = {
             id: newId,
@@ -988,30 +986,27 @@ function saveGameAdd(event) {
             cover: cover,
             active: true,
             scheduledDate: null,
-            categories: _gameAddCats
+            categories: []
         };
 
         var gameHtml = gameRowHtml(gameObj, newId);
         tbody.insertAdjacentHTML('beforeend', gameHtml);
         var gameRow = document.querySelector('tr.row-game[data-game="' + newId + '"]');
-
-        var newGameCover = gameRow ? (gameRow.dataset.cover || '') : '';
-        _gameAddCats.forEach(function(cat) {
-            var catHtml = catRowHtml(cat, newId, newGameCover);
-            tbody.insertAdjacentHTML('beforeend', catHtml);
-            var catRow = document.querySelector('tr.row-cat[data-game="' + newId + '"][data-cat="' + cat.id + '"]');
-            cat.questions.forEach(function(q, qi) {
-                var qHtml = qRowHtml(q, newId, cat.id, qi + 1);
-                tbody.insertAdjacentHTML('beforeend', qHtml);
-            });
-            if (catRow) updateCatRowChips(catRow);
-        });
         if (gameRow) updateGameRowChips(gameRow);
+
+        // Apply sharing immediately if any departments are checked
+        var deptNames = Array.from(document.querySelectorAll('#gameEditFields input[name="shareDept"]:checked'))
+            .map(function(i) { return i.value; });
+        if (deptNames.length) {
+            shareGameWithDepts(_currentGameScope.companyKey, name, deptNames);
+        }
 
         persistGamesScope();
         updateGamesCount(document.querySelectorAll('#gamesTable tbody tr.row-game'));
-        showGameToast('"' + name + '" added');
-        showAddGameShareStep(name);
+        var toastMsg = '"' + name + '" added';
+        if (deptNames.length) toastMsg += ' and shared to ' + deptNames.length + ' dept' + (deptNames.length !== 1 ? 's' : '');
+        showGameToast(toastMsg);
+        showGameEmpty();
         return;
     }
 
