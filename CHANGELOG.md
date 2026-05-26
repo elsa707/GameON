@@ -5,6 +5,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-26] — Schedule panel: pre-fill existing dates
+
+### Changed
+- **`script-games.js`** — `buildScheduleBodyHtml(existingStart, existingEnd)` now accepts optional date values and pre-fills the Start/End date inputs when re-opening the Schedule panel on a game that already has dates set.
+- **`script-games.js`** — `openGameSchedulePanel` passes `gameRow.dataset.scheduledDate` and `gameRow.dataset.scheduledEndDate` to the panel so existing dates are visible immediately.
+- `script-games.js` version bumped to `?v=38`.
+
+## [2026-05-26] — Games page: difficulty donut tooltip + difficulty tracking
+
+### Added
+- **`script-games.js`** — difficulty donut is now a 3-segment pie (green=Easy, orange=Medium, red=Hard) matching the live site.
+- **`script-games.js`** — hover tooltip on each donut shows "Easy X% / Medium X% / Hard X%" with coloured dots; tooltip dismisses on mouse-out and does not trigger row click.
+- **`styles-games.css`** — `.donut-tooltip`, `.donut-tt-row`, `.donut-tt-dot` — tooltip panel styles.
+
+### Changed
+- **`script-games.js`** — `_difficultyDonutSvg(easy, medium, hard)` now takes counts per level; segments computed via `rotate()` transform on each SVG `circle`.
+- **`script-games.js`** — `qRowHtml` stores `data-difficulty` on every question row so `updateGameRowChips` can re-read it after DOM edits.
+- **`script-games.js`** — `persistGamesScope` now saves `difficulty` field on each saved question.
+- `script-games.js` version bumped to `?v=37`.
+
+## [2026-05-26] — Games page: schedule date range + difficulty donut chart
+
+### Added
+- **`script-games.js`** — `_fmtDate(iso)` and `_fmtDateRange(start, end)` helpers format schedule dates as "Mon DD, YYYY – Mon DD, YYYY" (matching live site).
+- **`script-games.js`** — `_difficultyDonutSvg(totalQ, catCount)` renders an inline SVG donut ring per game row; arc fill = total questions / (categories × 5 required); orange when incomplete, green when complete.
+- **`styles-games.css`** — `.game-donut` flex wrapper for the donut SVG; updated `.chip-scheduled` to blue palette (`#eff6ff` bg, `#1d4ed8` text, `#3b82f6` icon) to match live site.
+
+### Changed
+- **`script-games.js`** — `gameRowHtml` now includes `data-scheduled-end-date` attribute, shows the full date range in the scheduled chip, and appends the donut SVG between the status chip and the actions menu.
+- **`script-games.js`** — `updateGameRowChips` updated to display the full date range (start – end) and refresh the donut SVG in-place.
+- **`script-games.js`** — `persistGamesScope` now saves `scheduledEndDate` from `data-scheduled-end-date` on the game row.
+- `script-games.js` version bumped to `?v=36`.
+
 ## [2026-05-26] — Questions page: remove redundant empty state
 
 ### Removed

@@ -202,11 +202,58 @@ label.cover-drop-zone:hover {
 .chip-questions i { color: #d97706; }
 
 .chip-scheduled {
-    background: #eef2ff;
-    color: #3730a3;
+    background: #eff6ff;
+    color: #1d4ed8;
     cursor: default;
 }
-.chip-scheduled i { color: #6366f1; }
+.chip-scheduled i { color: #3b82f6; }
+
+/* ===== Difficulty donut chart + tooltip ===== */
+.game-donut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 4px;
+    position: relative;
+    cursor: default;
+}
+.game-donut svg { display: block; }
+
+.donut-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    padding: 10px 14px;
+    min-width: 150px;
+    flex-direction: column;
+    gap: 7px;
+    z-index: 200;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.game-donut:hover .donut-tooltip { display: flex; }
+
+.donut-tt-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #374151;
+}
+.donut-tt-row strong { margin-left: auto; padding-left: 12px; }
+
+.donut-tt-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
 
 /* ===== Staged category list in Add Game > Categories tab ===== */
 .game-cat-list {

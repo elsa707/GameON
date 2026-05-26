@@ -188,6 +188,7 @@ function persistGamesScope() {
                     text: qRow.dataset.text || '',
                     options: opts,
                     correct: parseInt(qRow.dataset.correct, 10) || 0,
+                    difficulty: qRow.dataset.difficulty || '',
                     points: parseInt(qRow.dataset.points, 10) || 1
                 });
             });
@@ -205,6 +206,7 @@ function persistGamesScope() {
             cover: gameRow.dataset.cover || '',
             active: gameRow.dataset.active !== 'false',
             scheduledDate: gameRow.dataset.scheduledDate || null,
+            scheduledEndDate: gameRow.dataset.scheduledEndDate || null,
             categories: cats
         });
     });
@@ -231,6 +233,60 @@ function refreshGames() {
     renderGamesForScope(_currentGameScope.companyKey, _currentGameScope.dept);
 }
 
+// ===== Shared date / donut helpers =====
+var _MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function _fmtDate(iso) {
+    var d = new Date(iso);
+    return _MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+
+function _fmtDateRange(start, end) {
+    if (!start) return '';
+    return _fmtDate(start) + (end ? ' – ' + _fmtDate(end) : '');
+}
+
+// easy, medium, hard are counts of questions at each level
+function _difficultyDonutSvg(easy, medium, hard) {
+    var total = easy + medium + hard;
+    var cx = 13, cy = 13, r = 9;
+    var circ = 2 * Math.PI * r; // ~56.55
+    var track = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="#e5e7eb" stroke-width="3.5" fill="none"/>';
+    var segs  = '';
+
+    if (total > 0) {
+        var cumAngle = -90; // start at 12 o'clock
+        function makeSeg(count, color) {
+            if (count <= 0) return '';
+            var arcLen = (count / total) * circ;
+            var s = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="' + color + '"' +
+                ' stroke-width="3.5" fill="none"' +
+                ' stroke-dasharray="' + arcLen.toFixed(2) + ' ' + circ.toFixed(2) + '"' +
+                ' transform="rotate(' + cumAngle.toFixed(2) + ' ' + cx + ' ' + cy + ')"/>';
+            cumAngle += (count / total) * 360;
+            return s;
+        }
+        segs += makeSeg(easy,   '#22c55e');
+        segs += makeSeg(medium, '#f97316');
+        segs += makeSeg(hard,   '#ef4444');
+    }
+
+    var ep = total ? Math.round(easy   / total * 100) : 0;
+    var mp = total ? Math.round(medium / total * 100) : 0;
+    var hp = total ? (100 - ep - mp)                  : 0;
+
+    var tooltip = '<div class="donut-tooltip">' +
+        '<span class="donut-tt-row"><span class="donut-tt-dot" style="background:#22c55e"></span>Easy <strong>' + ep + '%</strong></span>' +
+        '<span class="donut-tt-row"><span class="donut-tt-dot" style="background:#f97316"></span>Medium <strong>' + mp + '%</strong></span>' +
+        '<span class="donut-tt-row"><span class="donut-tt-dot" style="background:#ef4444"></span>Hard <strong>' + hp + '%</strong></span>' +
+        '</div>';
+
+    return '<span class="game-donut" onclick="event.stopPropagation()">' +
+        '<svg width="26" height="26" viewBox="0 0 26 26" fill="none">' + track + segs + '</svg>' +
+        tooltip +
+    '</span>';
+}
+
 // ===== Chip helpers =====
 function updateGameRowChips(gameRow) {
     if (!gameRow) return;
@@ -251,18 +307,34 @@ function updateGameRowChips(gameRow) {
     var chevron = gameRow.querySelector('.chevron');
     if (chevron) chevron.style.visibility = catCount > 0 ? '' : 'hidden';
 
-    // Scheduled chip
+    // Scheduled chip (date range)
     var cellPills = gameRow.querySelector('.cell-pills');
     if (cellPills) {
-        var sd = gameRow.dataset.scheduledDate || '';
+        var sd  = gameRow.dataset.scheduledDate    || '';
+        var sed = gameRow.dataset.scheduledEndDate || '';
         var existing = cellPills.querySelector('.chip-scheduled');
         if (existing) existing.remove();
         if (sd) {
-            var d = new Date(sd);
-            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            var label = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+            var label = _fmtDateRange(sd, sed);
             cellPills.insertAdjacentHTML('afterbegin', '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + escapeAttr(label) + '</span>');
         }
+    }
+
+    // Difficulty donut — read difficulty from question row data attributes
+    var easyQ = 0, medQ = 0, hardQ = 0;
+    document.querySelectorAll('tr.row-q[data-game="' + gameId + '"]').forEach(function(qr) {
+        var d = (qr.dataset.difficulty || '').toLowerCase();
+        if (d === 'medium') medQ++;
+        else if (d === 'hard') hardQ++;
+        else easyQ++;
+    });
+    var newDonut = _difficultyDonutSvg(easyQ, medQ, hardQ);
+    var donutEl = gameRow.querySelector('.game-donut');
+    if (donutEl) {
+        donutEl.outerHTML = newDonut;
+    } else {
+        var statusSpan = gameRow.querySelector('.row-status');
+        if (statusSpan) statusSpan.insertAdjacentHTML('afterend', newDonut);
     }
 }
 
@@ -302,11 +374,20 @@ function gameRowHtml(game, id) {
 
     var scheduledChip = '';
     if (game.scheduledDate) {
-        var d = new Date(game.scheduledDate);
-        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        var dateLabel = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+        var dateLabel = _fmtDateRange(game.scheduledDate, game.scheduledEndDate || '');
         scheduledChip = '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + escapeAttr(dateLabel) + '</span>';
     }
+
+    var easyQ = 0, medQ = 0, hardQ = 0;
+    (game.categories || []).forEach(function(c) {
+        (c.questions || []).forEach(function(q) {
+            var d = (q.difficulty || '').toLowerCase();
+            if (d === 'medium') medQ++;
+            else if (d === 'hard') hardQ++;
+            else easyQ++;
+        });
+    });
+    var donutHtml = _difficultyDonutSvg(easyQ, medQ, hardQ);
 
     var optionsPart = '' +
         '<button type="button" class="action-item" onclick="actionAddCategory(this,event)"><i class="fas fa-list"></i> Add Category</button>' +
@@ -317,7 +398,7 @@ function gameRowHtml(game, id) {
         '<div class="action-sep"></div>' +
         '<button type="button" class="action-item action-item-danger" onclick="actionDeleteGame(this,event)"><i class="fas fa-trash"></i> Delete</button>';
 
-    return '<tr class="' + escapeAttr(rowClass) + '" data-game="' + id + '" data-name="' + escapeAttr(game.name) + '" data-description="' + escapeAttr(game.description || '') + '" data-cover="' + escapeAttr(cover) + '" data-active="' + isActive + '" data-scheduled-date="' + escapeAttr(game.scheduledDate || '') + '" onclick="toggleGame(' + id + ')">' +
+    return '<tr class="' + escapeAttr(rowClass) + '" data-game="' + id + '" data-name="' + escapeAttr(game.name) + '" data-description="' + escapeAttr(game.description || '') + '" data-cover="' + escapeAttr(cover) + '" data-active="' + isActive + '" data-scheduled-date="' + escapeAttr(game.scheduledDate || '') + '" data-scheduled-end-date="' + escapeAttr(game.scheduledEndDate || '') + '" onclick="toggleGame(' + id + ')">' +
         '<td class="col-name"><div class="cell-row">' +
             '<span class="chevron"' + (catCount === 0 ? ' style="visibility:hidden"' : '') + '><i class="fas fa-chevron-right"></i></span>' +
             gameCoverHtml(cover) +
@@ -325,6 +406,7 @@ function gameRowHtml(game, id) {
             '<span class="row-main-chip">' + catChip + '</span>' +
             '<span class="cell-pills">' + scheduledChip + '</span>' +
             '<span class="row-status">' + statusChip + '</span>' +
+            donutHtml +
             '<span class="row-actions"><div class="action-menu">' +
                 '<button class="btn-icon action-menu-trigger" onclick="toggleGameMenu(this,event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>' +
                 '<div class="action-menu-popup" role="menu">' + optionsPart + '</div>' +
@@ -369,7 +451,7 @@ function qRowHtml(q, gameId, catId, qNum) {
         '<div class="action-sep"></div>' +
         '<button type="button" class="action-item action-item-danger" onclick="actionDeleteQuestion(this,event)"><i class="fas fa-trash"></i> Delete</button>';
 
-    return '<tr class="row-q hidden" data-game="' + gameId + '" data-cat="' + catId + '" data-q="' + q.id + '" data-text="' + escapeAttr(q.text) + '" data-options=\'' + JSON.stringify(q.options || []).replace(/'/g, '&#39;') + '\' data-correct="' + (q.correct || 0) + '" data-points="' + (q.points || 1) + '">' +
+    return '<tr class="row-q hidden" data-game="' + gameId + '" data-cat="' + catId + '" data-q="' + q.id + '" data-text="' + escapeAttr(q.text) + '" data-options=\'' + JSON.stringify(q.options || []).replace(/'/g, '&#39;') + '\' data-correct="' + (q.correct || 0) + '" data-points="' + (q.points || 1) + '" data-difficulty="' + escapeAttr(q.difficulty || '') + '">' +
         '<td class="col-name"><div class="cell-row">' +
             '<span class="q-num">Q' + qNum + '</span>' +
             '<span class="company-name">' + escapeAttr(textPreview) + '</span>' +
@@ -597,16 +679,18 @@ function buildGameShareTabHtml() {
 }
 
 // ===== Schedule HTML (date range) =====
-function buildScheduleBodyHtml() {
+function buildScheduleBodyHtml(existingStart, existingEnd) {
+    var startVal = existingStart ? ' value="' + escapeAttr(existingStart) + '"' : '';
+    var endVal   = existingEnd   ? ' value="' + escapeAttr(existingEnd)   + '"' : '';
     return '<div class="schedule-form">' +
         '<div class="schedule-date-row">' +
             '<div class="form-group">' +
                 '<label>Start date</label>' +
-                '<input type="date" id="scheduleStartDate" class="schedule-date-input">' +
+                '<input type="date" id="scheduleStartDate" class="schedule-date-input"' + startVal + '>' +
             '</div>' +
             '<div class="form-group">' +
                 '<label>End date</label>' +
-                '<input type="date" id="scheduleEndDate" class="schedule-date-input">' +
+                '<input type="date" id="scheduleEndDate" class="schedule-date-input"' + endVal + '>' +
             '</div>' +
         '</div>' +
     '</div>';
@@ -1346,10 +1430,12 @@ function confirmGameSharePanel() {
 // ===== Panel schedule (from kebab menu) =====
 function openGameSchedulePanel(gameRow) {
     _schedulingGameRow = gameRow;
-    var name = gameRow.dataset.name || '';
-    document.getElementById('scheduleTitle').textContent = 'Schedule Game';
+    var name  = gameRow.dataset.name || '';
+    var start = gameRow.dataset.scheduledDate    || '';
+    var end   = gameRow.dataset.scheduledEndDate || '';
+    document.getElementById('scheduleTitle').textContent    = 'Schedule Game';
     document.getElementById('scheduleSubtitle').textContent = escapeAttr(name);
-    document.getElementById('scheduleBody').innerHTML = buildScheduleBodyHtml();
+    document.getElementById('scheduleBody').innerHTML = buildScheduleBodyHtml(start, end);
     showGameSchedule();
 }
 
