@@ -132,7 +132,7 @@
             <div class="detail-content hidden" id="detailEdit">
                 <div class="detail-topbar">
                     <span class="detail-edit-badge" id="gameEditBadge"><i class="fas fa-pen"></i> Editing</span>
-                    <span id="aiPanelCreditBal" class="ai-panel-credit-bal hidden"></span>
+                    <span id="aiPanelCreditBal" class="ai-credits-display" hidden><i class="fas fa-coins"></i> <span id="aiGameCreditsCount">0</span> / <span id="aiGameCreditsTotal">300</span> used</span>
                     <button class="btn-icon" onclick="cancelGameEdit()" title="Close"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="detail-header">
@@ -163,7 +163,7 @@
                 <div id="gameShareBody"></div>
                 <div class="edit-actions">
                     <button type="button" class="btn btn-outline" onclick="cancelGameSharePanel()">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="gameShareConfirmBtn" onclick="confirmGameSharePanel()" disabled>Share</button>
+                    <button type="button" class="btn btn-primary" id="gameShareConfirmBtn" onclick="confirmGameSharePanel()" disabled>No changes</button>
                 </div>
             </div>
 
@@ -188,7 +188,7 @@
 
     <script src="games-data.js?v=1"></script>
     <script src="topics-data.js?v=1"></script>
-    <script src="script-games.js?v=45"></script>
+    <script src="script-games.js?v=82"></script>
     <script src="script-games-sidebar-scope.js?v=1"></script>
     <script src="script-sidebar-scope.js"></script>
 </body>

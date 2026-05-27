@@ -1165,6 +1165,10 @@ body:has(.sidebar.collapsed)::before {
 }
 
 .detail-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-bottom: 20px;
     flex-shrink: 0;
 }
@@ -1172,7 +1176,7 @@ body:has(.sidebar.collapsed)::before {
 .detail-header h3 {
     font-size: 16px;
     font-weight: 700;
-    margin-bottom: 2px;
+    margin-bottom: 0;
 }
 
 .detail-parent {

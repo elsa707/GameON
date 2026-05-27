@@ -5,6 +5,106 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Generate Game AI: Add "Link to topic" toggle to Content tab
+
+### Added
+- **`script-games.js`** — "Link to a topic" toggle added to the bottom of the Content tab (after the categories toggle). Off by default (standalone game). When switched on, shows a topic dropdown populated from the current scope's topics.
+- **`script-games.js`** — `toggleAIGameTopicLink(checkbox)` — shows/hides the topic dropdown row; clears `_aiGamePendingTopic` when toggled off.
+- **`script-games.js`** — `onAIGameTopicChange` updated to find the categories toggle label by content scan (robust to DOM restructure). Selecting a topic with sub-topics updates the categories toggle label to "Use topic categories & generate questions"; deselecting resets it.
+- **`script-games.js`** — Blue info note (`#aiGameContentSkipNote`) shown below the dropdown when a topic with sub-topics is selected: "Topic sub-topics will be used as game categories". Version bumped to `?v=82`.
+- **`styles-games.css`** — `.ai-topic-linked-note` styles added (blue info pill).
+
+## [2026-05-27] — Generate Game AI: Remove difficulty ratio display
+
+### Removed
+- **`script-games.js`** — Difficulty ratio info row removed from the generate block. Version bumped to `?v=81`.
+- **`styles-games.css`** — `.ai-diff-info` styles removed.
+
+## [2026-05-27] — Generate Game AI: Add read-only difficulty ratio to generate block
+
+### Added
+- **`script-games.js`** — Difficulty info row added to the generate block (visible before generation): 🔒 "Difficulty per category: Easy · Medium · Hard — set by backend". Non-editable, communicates the backend-controlled ratio per the user story. Version bumped to `?v=80`.
+- **`styles-games.css`** — `.ai-diff-info`, `.ai-diff-info-lock`, `.ai-diff-info-note` styles added.
+
+## [2026-05-27] — Generate Game AI: Remove credits used display from Game tab
+
+### Removed
+- **`script-games.js`** — "X / Y AI credits used" row removed from the Game tab. Version bumped to `?v=79`.
+- **`styles-games.css`** — `.ai-credits-estimate` styles removed.
+
+## [2026-05-27] — Generate Game AI: Use actual input content to shape generated output
+
+### Changed
+- **`script-games.js`** — `_deriveAIGameContext()` added — reads the URL input (extracts brand from domain), prompt text, uploaded file name, and text body to produce a `{ topic, brand }` context object.
+- **`script-games.js`** — `_contextCats(brand, suggestion)` added — maps the brand name onto category names ("Weelee Overview", "Weelee Products & Services", etc.) instead of using generic mock category names.
+- **`script-games.js`** — `_renderAIGameResults` now uses the derived context: game name becomes "[Topic] Knowledge Challenge", description becomes "Test your knowledge of [topic].", and category names are branded if a URL was provided. Linked-topic data still takes priority. Version bumped to `?v=78`.
+
+## [2026-05-27] — Generate Game AI: Move estimated credit spend to Game tab (last step)
+
+### Changed
+- **`script-games.js`** — Estimated credits moved from the Content tab to the bottom of the Game tab (shown after generation as "X / Y AI credits used"). Version bumped to `?v=77`.
+- **`styles-games.css`** — `.ai-credits-estimate` styles restored for the Game tab position.
+
+## [2026-05-27] — Generate Game AI: Revert question type picker and Q-count additions
+
+### Removed
+- **`script-games.js`** — Question type radio grid, questions per category stepper, and estimated credits row removed from the Content tab (reverted to upload / URL / text / categories toggle only). Version bumped to `?v=76`.
+- **`styles-games.css`** — `.ai-credits-estimate` styles removed.
+
+## [2026-05-27] — Generate Game AI: Remove difficulty mix display from Game tab
+
+### Removed
+- **`script-games.js`** — "Difficulty mix" (1 Easy / 1 Medium / 1 Hard chips) removed from the generated Game tab. Version bumped to `?v=75`.
+
+## [2026-05-27] — Generate Game AI: Question type picker, Q-count stepper, estimated credits
+
+### Added
+- **`script-games.js`** — `_AI_Q_TYPES` constant — the 7 question types defined in the user story (MCQ, Fill in the Blank, Statement Blanking, Select on Image, Match the Terms, Word Bucket, Crossword).
+- **`script-games.js`** — `_aiGameQTypeGridHtml()` — builds the 2-column radio-card grid for the Content tab; first selection defaults to MCQ.
+- **`script-games.js`** — **Question type** section added to the Content tab — single-select radio cards (one type per game as per user story).
+- **`script-games.js`** — **Questions per category** stepper (1–20, default 5) added to the Content tab; `stepAIGameQCount(delta)` handles button clicks.
+- **`script-games.js`** — `updateAIGameCreditsEstimate()` — computes estimated AI credits (base 1 + 0.4 × Q-count, ×3 weight if categories on) and updates the `#aiGameCreditsEstVal` span; called on question count, type, and categories-toggle changes.
+- **`script-games.js`** — Estimated credits row added inside the generate block, above the Generate button, with a gold coin icon. Version bumped to `?v=74`.
+- **`styles-games.css`** — `.ai-credits-estimate` styles added (flex row, coin icon in amber, bold count value).
+
+## [2026-05-27] — Generate Game AI: Tab-based flow matching Topics AI panel
+
+### Changed
+- **`script-games.js`** — Generate Game AI panel restructured to mirror the Topics AI flow:
+  - Tab bar at top: **Content** (active on open) | **Game** (disabled until first generate) | **Categories** (hidden, appears with count badge after generate if categories were requested)
+  - Content pane contains AI MODEL, UPLOAD, URL, TEXT, and the "Generate with categories & questions" toggle — unchanged fields, new layout
+  - Game pane (cover, name, description, max attempts, difficulty mix) and Categories pane (accordion of categories with questions) are now persistent tab panes, not rebuilt inside `aiGameStep2`
+  - On first Generate → spinner in button → fills Game + Categories panes → switches to Game tab
+  - Subsequent generates respect the active tab: Game tab → "Regenerate Game" rebuilds game pane only; Categories tab → "Regenerate Categories" rebuilds categories only; Content tab → "Regenerate" rebuilds both
+  - `updateAIGameGenBtnLabel()` added — updates button label and prompt placeholder based on active tab (mirrors Topics' `updateAIGenBtnLabel`)
+  - `switchAIGameTab(tab)` replaces old `switchGameAITab` (tab bar ID was `aiGameTabsBar`, now `aiGameTabBar` to match Topics pattern)
+  - Removed: `collapseAIGameStep1`, `expandAIGameStep1`, `switchGameAITab`, `updateAIGameCreditsEstimate`, step-progress animation
+  - `_aiGameHasGenerated` state variable added (mirrors Topics' `_aiHasGenerated`)
+- `script-games.js` version bumped to `?v=73`.
+
+## [2026-05-27] — Generate Game: Fix "Create Game" button visible but disabled during AI generation
+
+### Fixed
+- **`script-games.js`** — "Create Game" button was showing (disabled) during the Generate Game flow because DevExtreme's CSS reset overrides the HTML `hidden` attribute. Switched all `submitBtn.hidden = true/false` to `submitBtn.classList.add/remove('hidden')`, which hits `.hidden { display: none !important; }` from `styles.css` and wins.
+- **`script-games.js`** — After `generateAIGame()` completes, button now re-labels as "Create Game" (was "Save"). Version bumped to `?v=72`.
+
+## [2026-05-27] — Add Game: Move "Add content" card above Configure accordion
+
+### Changed
+- **`script-games.js`** — "Add content" card section now renders before the Configure accordion (previously it was after). Version bumped to `?v=71`.
+
+## [2026-05-27] — Add Game: Remove "Add categories" card (categories managed in background)
+
+### Removed
+- **`script-games.js`** — "Add categories" card button removed from the Add Game panel; the BA confirmed categories are managed in the background, not by the admin.
+- **`script-games.js`** — `openGameCategoriesForm`, `cancelGameCategoriesForm`, `saveGameCategoriesForm`, `addGameCategoryItem`, `removeGameCategoryItem` functions removed (dead code).
+- **`styles-games.css`** — `.game-choice-cards` 2-column grid removed.
+
+### Changed
+- **`script-games.js`** — "Add content" card is now full-width (`.btn-choice-full`); container `#gameChoiceCards` retained for the show/hide toggle.
+- **`styles-games.css`** — Added `.btn-choice-full { width: 100%; }` in place of the grid.
+- `script-games.js` version bumped to `?v=70` (`index-games.html`, `index-questions.html`).
+
 ## [2026-05-27] — Topics: "Also create a game" toggle with inline flow picker
 
 ### Changed
@@ -15,6 +115,191 @@ Project contact: elsadr@agilebridge.co.za
 - **`script-topics.js`** — `doAIGenerate` preserves and restores both the toggle state and the selected flow when the topic pane is rebuilt during AI regeneration.
 - **`styles-topics.css`** — `.create-game-row`, `.game-flow-picker`, `.game-flow-btn` styles added.
 - `script-topics.js` version bumped to `?v=52`.
+
+## [2026-05-27] — Add Game: Content and Categories as card buttons (no prompt wrapper)
+
+### Changed
+- **`script-games.js`** — Replaced accordion toggles with the original card-button style (`.btn-choice`): two cards in a 2-column grid, no dashed wrapper box, no prompt text. Each card toggles its body section open/closed and highlights blue when active.
+- **`script-games.js`** — `toggleGameSection(bodyId, btn)` added: toggles the section, syncs the card's `.btn-choice-active` class, focuses the category input when opening categories.
+- **`styles-games.css`** — `.game-choice-cards` (2-column grid) and `.btn-choice-active` (blue highlight) added; removed old `.game-section-row/col` rules.
+- `script-games.js` version bumped to `?v=68`.
+
+## [2026-05-27] — Add Game: Content and Categories accordions side by side
+
+### Changed
+- **`script-games.js`** — Content and Categories accordion sections are now wrapped in `.game-section-row` so they sit next to each other. When either body is expanded it stretches to full width via `:has()` CSS.
+- **`styles-games.css`** — `.game-section-row` / `.game-section-col` flex layout added; `:has(.add-game-advanced-body:not(.hidden))` expands an open column to full width.
+- `script-games.js` version bumped to `?v=67`.
+
+## [2026-05-27] — Add Game: replace choice picker with collapsible accordions
+
+### Changed
+- **`script-games.js`** — Removed the "What would you like to add?" choice picker. Content and Categories are now two collapsible accordions (same `.add-game-advanced` / `.add-game-advanced-toggle` / `.add-game-advanced-body` pattern as Configure), both collapsed by default.
+- **`script-games.js`** — `toggleAddGameAdvanced` now reads `btn.dataset.body` to support all three accordions (Configure, Content, Categories) with one function.
+- **`script-games.js`** — Removed `chooseAddGameContent`, `chooseAddGameCategories`, `removeGameContent`, `_syncGameChoiceBtns` (all replaced by the shared accordion toggle).
+- **`styles-games.css`** — Removed `.btn-choice-active` rule (no longer needed).
+- `script-games.js` version bumped to `?v=66`.
+
+## [2026-05-27] — Add Game: choice picker stays visible; both sections can be open together
+
+### Changed
+- **`script-games.js`** — `chooseAddGameContent` and `chooseAddGameCategories` no longer hide the choice picker. Instead they **toggle** the respective section open/closed so both content and categories can be expanded simultaneously.
+- **`script-games.js`** — `_syncGameChoiceBtns()` added: keeps the two choice buttons highlighted (`.btn-choice-active`) when their section is open.
+- **`styles-games.css`** — `.btn-choice-active` style added (blue border + light blue background) to indicate an open section.
+- `script-games.js` version bumped to `?v=65`.
+
+## [2026-05-27] — Add Game: content picker and categories choice (matches Add Topic)
+
+### Added
+- **`script-games.js`** — Add Game panel now has a **choice picker** at the bottom (same `.choice-picker` / `.btn-choice` pattern as Add Topic): "Add content" (PDF/image/video URL/text) and "Add categories" (inline category list).
+- **`script-games.js`** — `_gameContentPickerHtml()` — generates Upload / Web URL / Text tab picker HTML reusing Topics' `.content-picker` / `.content-kind-tab` / `.content-pane` / `.cp-dropzone` CSS classes.
+- **`script-games.js`** — `setGameContentKind`, `onGameContentFileChange`, `onGameContentFileDrop` — content picker interaction handlers.
+- **`script-games.js`** — `chooseAddGameContent` / `removeGameContent` — show/hide the content section.
+- **`script-games.js`** — `chooseAddGameCategories` / `removeGameCategories` — show/hide the inline category add section (requires game name before opening).
+- **`script-games.js`** — `addGameCategoryItem`, `removeGameCategoryItem`, `renderGameAddCatList` — manage the staged `_gameAddCats` list with an Add row and removable chips.
+- **`script-games.js`** — `saveGameAdd` now seeds the new game's `categories` array from `_gameAddCats` if any were staged.
+- **`styles-games.css`** — `.game-cat-add-row`, `.game-add-cat-list`, `.game-add-cat-item`, `.btn-icon-sm` for the category add UI.
+- `script-games.js` version bumped to `?v=64`.
+
+## [2026-05-27] — Generate Game AI: fix "Generate Game" button being removed on open
+
+### Fixed
+- **`script-games.js`** — `addGameAI()` called `setGamePanelMode('add')` **after** setting `gameEditFields.innerHTML`, so `setGamePanelMode` found and removed the freshly-injected `aiGameGenerateBtn`. Moved `setGamePanelMode('add')` to run **before** the `innerHTML` assignment so the generate button survives. Removed the now-redundant second `setGamePanelMode` / `_isAIGameFlow = true` call at the bottom of the function.
+- `script-games.js` version bumped to `?v=63`.
+
+## [2026-05-27] — Generate Game AI: remove Questions tab
+
+### Removed
+- **`script-games.js`** — "Questions" tab button removed from the Generate Game AI panel tab bar (the "Generate with categories & questions" toggle at the bottom already covers this). The entire `aiGameSetupPaneQuestions` pane (question-type picker + count slider) is removed. `collapseAIGameStep1`, `expandAIGameStep1`, and `switchAIGameSetupTab` simplified — no longer reference the now-gone Questions pane or tab bar.
+- `script-games.js` version bumped to `?v=62`.
+
+## [2026-05-27] — Share Game panel: date tag shows scheduled From – To range
+
+### Changed
+- **`script-games.js`** — The date tag next to already-shared departments in the Share panel now shows the game's **scheduled date range** (e.g. "30 May – 30 Jun '26") instead of the single share date. New helper `_fmtScheduleTag(start, end)` produces the compact format; tag is omitted when no schedule dates are set.
+- `script-games.js` version bumped to `?v=61`.
+
+## [2026-05-27] — Games list: shares badge opens Share panel
+
+### Changed
+- **`script-games.js`** — `_buildShareChip` now fires `openGameSharePanelFromChip(this)` on click (in addition to stopping propagation); new helper `openGameSharePanelFromChip` walks up to the nearest `tr.row-game` and calls `openGameSharePanel`. Clicking the "X shares" badge on any game row now opens the Share panel for that game.
+- `script-games.js` version bumped to `?v=60`.
+
+## [2026-05-27] — Share Game panel: remove From / To date inputs
+
+### Removed
+- **`script-games.js`** — From / To date fields removed from the Share panel body; date-change detection removed from `syncGameShareConfirmButton`; date reading/applying removed from `confirmGameSharePanel`.
+- **`styles-games.css`** — `.share-date-row` rule removed.
+- `script-games.js` version bumped to `?v=59`.
+
+## [2026-05-27] — Games list: remove scheduled date chip from rows
+
+### Changed
+- **`script-games.js`** — `gameRowHtml` and `updateGameRowChips` no longer render the `.chip-scheduled` date chip on game list rows. The `scheduledDate` / `scheduledEndDate` values are still stored on the row's `dataset` so the Share panel can read and pre-fill the From / To fields.
+- `script-games.js` version bumped to `?v=58`.
+
+## [2026-05-27] — Share Game panel: show scheduled date range from Schedule step
+
+### Changed
+- **`script-games.js`** — `openGameSharePanel` now renders a **From / To** date row (separated by a divider) below the department checkbox list; dates are pre-filled from the game row's `scheduledDate` / `scheduledEndDate` (i.e. whatever was set via the Schedule kebab option).
+- **`script-games.js`** — `syncGameShareConfirmButton` now also detects changes to the date inputs and enables "Save" when either the dept selection OR the dates have changed.
+- **`script-games.js`** — `confirmGameSharePanel` reads the date inputs and applies them to the game row (finding the fresh DOM node after any `refreshGames()` re-render), then calls `updateGameRowChips` and `persistGamesScope`.
+- **`styles-games.css`** — `.share-date-row` re-added with a top border/divider to visually separate it from the dept list.
+- `script-games.js` version bumped to `?v=57`.
+
+## [2026-05-27] — Share Game panel: match Topics share panel design
+
+### Changed
+- **`script-games.js`** — `openGameSharePanel(gameRow, opts)` completely rewritten: replaced the collapsible checkbox-dropdown with a flat `.share-dept-list` (same markup as Topics), showing a date tag on already-shared departments. `opts.isNew = true` pre-checks the current department and keeps the confirm button always enabled (used after creating a new game).
+- **`script-games.js`** — `syncGameShareConfirmButton` now shows "No changes" / "Save" dynamically (enabled only when the selection has changed from the initial state), matching the Topics share panel.
+- **`script-games.js`** — `confirmGameSharePanel` now diffs initial vs current selection to produce `toShare` / `toUnshare` lists; calls new `unshareGameFromDepts` for removals; removed From/To date input handling.
+- **`script-games.js`** — `unshareGameFromDepts(companyKey, gameName, deptNames)` added: removes a game from target departments' `GAMES_BY_SCOPE` buckets and trims the source game's `sharedDepts` array.
+- **`script-games.js`** — Helper functions added: `formatGameSharedDate`, `getGameSharedDepts`, `getGameSharedDate`.
+- **`index-games.html`** — confirm button initial label changed to "No changes" (updated dynamically by `syncGameShareConfirmButton`).
+- **`styles-games.css`** — removed `.share-date-row` rule (date inputs removed from share panel).
+- `script-games.js` version bumped to `?v=56`.
+
+## [2026-05-27] — Share Game panel: date chip appears on main game list
+
+### Fixed
+- **`script-games.js`** — `confirmGameSharePanel()` was calling `updateGameRowChips` on a stale (detached) DOM node because `refreshGames()` had already re-rendered all rows. Now queries `tr.row-game[data-name]` to find the fresh node after the refresh before applying dates and updating chips. `script-games.js` version bumped to `?v=55`.
+
+## [2026-05-27] — Share Game panel: From / To date fields
+
+### Added
+- **`script-games.js`** — `openGameSharePanel()` now renders a two-column "From / To" date row (`#shareStartDate` / `#shareEndDate`) below the department dropdown; pre-fills if the game row already has scheduled dates.
+- **`script-games.js`** — `confirmGameSharePanel()` reads the date inputs and applies them to the game row (`dataset.scheduledDate` / `scheduledEndDate`), then calls `updateGameRowChips` and `persistGamesScope` so the date chip appears immediately on the row.
+- **`styles-games.css`** — `.share-date-row` — two-column grid for the date inputs.
+- `script-games.js` version bumped to `?v=54`.
+
+## [2026-05-27] — Topics "Also create a game": AI flow routes to Generate Game AI panel
+
+### Changed
+- **`script-games.js`** — `_checkPendingGame()` now reads `pending.gameFlow` from `gameon.pendingGame`; when it is `'ai'`, calls `addGameAI()` (Generate Game AI panel) instead of `addGame()` (manual panel). `script-games.js` version bumped to `?v=53`.
+
+## [2026-05-27] — Add Game Configure: rename "Questions per session" label
+
+### Changed
+- **`script-games.js`** — Configure field label changed from "Questions per session" to "Questions for this game".
+
+## [2026-05-27] — Games detail panel: remove inner scroll
+
+### Changed
+- **`styles-games.css`** — `#gameEditFields` changed from `overflow-y: auto / flex: 1` to `overflow: visible / flex: none` — content no longer has its own scrollbar.
+- **`styles-games.css`** — `#detailEdit` set to `overflow-y: auto` and `#detailEdit .edit-form` set to `overflow: visible / flex: none` so the whole panel scrolls as one unit.
+- **`styles-games.css`** — `#detailPanel.open` set to `overflow-y: auto` to allow the panel container itself to scroll.
+
+## [2026-05-27] — Add Game Configure: two-column layout
+
+### Changed
+- **`script-games.js`** — Max Attempts and Questions per Session moved into a `.configure-grid` two-column row; Pass Threshold stays full-width below. Inline `style="width:100px"` removed from the two grid inputs.
+- **`styles-games.css`** — `.configure-grid` added: `display: grid; grid-template-columns: 1fr 1fr; gap: 12px`.
+- `script-games.js` version bumped to `?v=52`.
+
+## [2026-05-27] — Add Game Configure: remove hint text below inputs
+
+### Removed
+- **`script-games.js`** — "Defaults to X if left empty" hint spans removed from Max Attempts, Questions per Session, and Pass Threshold fields in the Configure section. `script-games.js` version bumped to `?v=51`.
+
+## [2026-05-27] — Detail panel: title and scope subtitle on same line
+
+### Changed
+- **`styles.css`** — `.detail-header` changed to `display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap` so the panel title (`h3`) and scope subtitle (`.detail-parent`) render on the same line, matching the Topics AI panel style. Applies to all detail panels (games, topics, users, companies).
+
+## [2026-05-27] — Generate Game AI: remove "Link to topic" dropdown
+
+### Removed
+- **`script-games.js`** — "Link to topic (optional)" dropdown removed from the Generate Game AI panel's generate block. `script-games.js` version bumped to `?v=50`.
+
+## [2026-05-27] — Generate Game AI: topbar and content layout matches Topics AI panel
+
+### Changed
+- **`index-games.html`** — Credit pill element changed from custom `ai-panel-credit-bal` to the shared `ai-credits-display` class (same orange/red coin pill as topics); inner HTML uses `#aiGameCreditsCount` / `#aiGameCreditsTotal` spans so JS updates them individually.
+- **`script-games.js`** — `addGameAI()` title updated to "Generate Game"; badge text updated to "Generating with AI" to match topics badge wording.
+- **`script-games.js`** — `addGameAI()` content pane restructured: AI MODEL first → UPLOAD (always visible, `ai-upload-zone` style) → URL (always visible) → TEXT (always visible, RTE toolbar matching topics) → Generate with categories toggle. Mini-tab switcher removed.
+- **`script-games.js`** — `addGameAI()` bottom block: prompt text input + full-width "Generate Game" button (`ai-generate-block`) replaces the dynamically-injected button in the edit-actions bar. Topic link dropdown moved into this block.
+- **`script-games.js`** — `onAIGameFileDrop` helper added for drag-and-drop on the new upload zone.
+- **`script-games.js`** — Credit display JS updated to write `#aiGameCreditsCount` / `#aiGameCreditsTotal` spans instead of setting innerHTML on the container.
+- `script-games.js` version bumped to `?v=49`.
+
+## [2026-05-27] — Add Game: question type picker resumes after share step
+
+### Changed
+- **`script-games.js`** — `_postShareCallback` state variable added; set to `showQTypePickerForNewGame` when the share panel opens from a new-game save.
+- **`script-games.js`** — `confirmGameSharePanel()` and `cancelGameSharePanel()` fire `_postShareCallback` (if set) instead of `showGameEmpty()`, so the question type picker appears immediately after sharing/skipping — whether the user shares or cancels.
+- `script-games.js` version bumped to `?v=48`.
+
+## [2026-05-27] — Add Game: share as separate panel after save
+
+### Changed
+- **`script-games.js`** — "Share with departments" section removed from the Add Game form; the form now ends at Configure.
+- **`script-games.js`** — `saveGameAdd()` (manual flow): after the game is created, the dedicated Share panel (`detailShare`) opens automatically via `openGameSharePanel(gameRow)` — the same panel used from the kebab menu — with title, game name, dept checkboxes, and Cancel / Share buttons.
+- `script-games.js` version bumped to `?v=47`.
+
+## [2026-05-27] — Add Game: rename "Advanced" toggle to "Configure"
+
+### Changed
+- **`script-games.js`** — `addGame()` form: collapsible settings toggle label changed from "Advanced" to "Configure". `script-games.js` version bumped to `?v=46`.
 
 ## [2026-05-27] — Add Game: topic always pre-selected in dropdown when arriving from Topics page
 

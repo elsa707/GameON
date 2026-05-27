@@ -14,6 +14,7 @@ var _isAIGameFlow     = false;
 var _gameStatusFilter = 'active';
 var _currentGameShareTarget = null;
 var _schedulingGameRow = null;
+var _postShareCallback = null;   // fn to call after share panel confirm/cancel (new-game flow)
 
 // ===== Utilities =====
 function escapeAttr(str) {
@@ -253,10 +254,15 @@ function _buildShareChip(depts) {
     var items = depts.map(function(d) {
         return '<span class="shares-tt-item">' + escapeAttr(d) + '</span>';
     }).join('');
-    return '<span class="chip chip-shares" onclick="event.stopPropagation()">' +
+    return '<span class="chip chip-shares" onclick="event.stopPropagation();openGameSharePanelFromChip(this)">' +
         label +
         '<div class="shares-tooltip">' + items + '</div>' +
     '</span>';
+}
+
+function openGameSharePanelFromChip(chip) {
+    var row = chip.closest('tr.row-game');
+    if (row) openGameSharePanel(row);
 }
 
 // easy, medium, hard are counts of questions at each level
@@ -320,18 +326,8 @@ function updateGameRowChips(gameRow) {
     var chevron = gameRow.querySelector('.chevron');
     if (chevron) chevron.style.visibility = catCount > 0 ? '' : 'hidden';
 
-    // Scheduled chip (date range)
-    var cellPills = gameRow.querySelector('.cell-pills');
-    if (cellPills) {
-        var sd  = gameRow.dataset.scheduledDate    || '';
-        var sed = gameRow.dataset.scheduledEndDate || '';
-        var existing = cellPills.querySelector('.chip-scheduled');
-        if (existing) existing.remove();
-        if (sd) {
-            var label = _fmtDateRange(sd, sed);
-            cellPills.insertAdjacentHTML('afterbegin', '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + escapeAttr(label) + '</span>');
-        }
-    }
+    // Scheduled date chip intentionally not shown on the game list row
+    // (dates are visible in the Share panel only)
 
     // Share count chip
     var cellShare = gameRow.querySelector('.cell-share');
@@ -393,12 +389,7 @@ function gameRowHtml(game, id) {
         ? '<span class="chip chip-cats"><i class="fas fa-list"></i> ' + catCount + ' categor' + (catCount !== 1 ? 'ies' : 'y') + '</span>'
         : '';
 
-    var scheduledChip = '';
-    if (game.scheduledDate) {
-        var dateLabel = _fmtDateRange(game.scheduledDate, game.scheduledEndDate || '');
-        scheduledChip = '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + escapeAttr(dateLabel) + '</span>';
-    }
-
+    // scheduledDate is stored on the row dataset for use in the Share panel but not shown as a chip
     var sharedDepts = game.sharedDepts || [];
     var shareChip = sharedDepts.length > 0
         ? _buildShareChip(sharedDepts)
@@ -430,7 +421,7 @@ function gameRowHtml(game, id) {
             gameCoverHtml(cover) +
             '<span class="company-name">' + escapeAttr(game.name) + '</span>' +
             '<span class="row-main-chip">' + catChip + '</span>' +
-            '<span class="cell-pills">' + scheduledChip + '</span>' +
+            '<span class="cell-pills"></span>' +
             '<span class="cell-share">' + shareChip + '</span>' +
             '<span class="row-status">' + statusChip + '</span>' +
             donutHtml +
@@ -658,13 +649,13 @@ function setGamePanelMode(mode) {
     var badge = document.getElementById('gameEditBadge');
     var submitBtn = document.getElementById('gameSubmitBtn');
     if (badge) badge.classList.remove('badge-ai');
-    if (submitBtn) { submitBtn.hidden = false; submitBtn.disabled = false; }
+    if (submitBtn) { submitBtn.classList.remove('hidden'); submitBtn.disabled = false; }
 
     var genBtn = document.getElementById('aiGameGenerateBtn');
     if (genBtn) genBtn.remove();
 
     var creditBal = document.getElementById('aiPanelCreditBal');
-    if (creditBal) creditBal.classList.add('hidden');
+    if (creditBal) creditBal.hidden = true;
 
     _isAIGameFlow = false;
 
@@ -793,7 +784,6 @@ function addGame() {
     document.getElementById('gameEditSubtitle').textContent = getGamesScopeSubtitle();
 
     var topicOpts = getAIGameTopicOptions();
-    var deptShareHtml = buildGameShareTabHtml();
 
     document.getElementById('gameEditFields').innerHTML =
         '<div class="form-group">' +
@@ -815,31 +805,49 @@ function addGame() {
             '<label>Description <span class="form-label-optional">(optional)</span></label>' +
             '<textarea id="addGameDesc" rows="3" placeholder="What will players learn?"></textarea>' +
         '</div>' +
+        // ── Content section ───────────────────────────────────────────────────
+        '<div id="gameAddChoiceSection">' +
+
+            // Card (default view)
+            '<div id="gameChoiceCards">' +
+                '<button type="button" class="btn-choice btn-choice-full" id="gameContentCardBtn" onclick="openGameContentForm()">' +
+                    '<i class="fas fa-upload"></i>' +
+                    '<span class="choice-label">Add content</span>' +
+                    '<span class="choice-hint">PDF, image, video URL, or text</span>' +
+                '</button>' +
+            '</div>' +
+
+            // Content form
+            '<div class="hidden" id="gameContentForm">' +
+                _gameContentPickerHtml() +
+                '<div class="game-section-actions">' +
+                    '<button type="button" class="btn btn-outline" onclick="cancelGameContentForm()">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" onclick="saveGameContentForm()">Save content</button>' +
+                '</div>' +
+            '</div>' +
+
+        '</div>' +
+
         '<div class="add-game-advanced">' +
-            '<button type="button" class="add-game-advanced-toggle" onclick="toggleAddGameAdvanced(this)">' +
-                'Advanced <i class="fas fa-chevron-down add-game-advanced-icon"></i>' +
+            '<button type="button" class="add-game-advanced-toggle" onclick="toggleAddGameAdvanced(this)" data-body="addGameAdvancedBody">' +
+                'Configure <i class="fas fa-chevron-down add-game-advanced-icon"></i>' +
             '</button>' +
             '<div class="add-game-advanced-body hidden" id="addGameAdvancedBody">' +
-                '<div class="form-group">' +
-                    '<label>Max attempts</label>' +
-                    '<input type="number" id="addGameMaxAttempts" placeholder="e.g. 3" min="1" max="99" style="width:100px">' +
-                    '<span class="form-field-hint">Defaults to 2 if left empty</span>' +
-                '</div>' +
-                '<div class="form-group">' +
-                    '<label>Questions per session</label>' +
-                    '<input type="number" id="addGameQPerSession" value="5" min="1" max="100" style="width:100px">' +
-                    '<span class="form-field-hint">Defaults to 5 if left empty</span>' +
+                '<div class="configure-grid">' +
+                    '<div class="form-group">' +
+                        '<label>Max attempts</label>' +
+                        '<input type="number" id="addGameMaxAttempts" placeholder="e.g. 3" min="1" max="99">' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>Questions for this game</label>' +
+                        '<input type="number" id="addGameQPerSession" value="5" min="1" max="100">' +
+                    '</div>' +
                 '</div>' +
                 '<div class="form-group">' +
                     '<label>Pass Threshold (%)</label>' +
                     '<input type="number" id="addGamePassThreshold" placeholder="e.g. 60" min="0" max="100" style="width:100px">' +
-                    '<span class="form-field-hint">Defaults to 60% if left empty</span>' +
                 '</div>' +
             '</div>' +
-        '</div>' +
-        '<div class="form-group add-game-share-section">' +
-            '<label><i class="fas fa-people-group" style="margin-right:5px;color:#6b7280"></i>Share with departments</label>' +
-            deptShareHtml +
         '</div>';
 
     setGamePanelMode('add');
@@ -853,11 +861,129 @@ function closeAddGameModal() {
 
 
 function toggleAddGameAdvanced(btn) {
-    var body = document.getElementById('addGameAdvancedBody');
+    var bodyId = btn.dataset.body || 'addGameAdvancedBody';
+    var body = document.getElementById(bodyId);
     if (!body) return;
     var isOpen = !body.classList.contains('hidden');
     body.classList.toggle('hidden', isOpen);
     btn.classList.toggle('open', !isOpen);
+}
+
+// ===== Add Game — content picker =====
+function _gameContentPickerHtml() {
+    return '<div class="content-picker" id="gameContentPicker">' +
+        '<div class="content-kind-tabs" role="tablist">' +
+            '<button type="button" class="content-kind-tab active" data-kind="upload" onclick="setGameContentKind(this)"><i class="fas fa-upload"></i> Upload</button>' +
+            '<button type="button" class="content-kind-tab" data-kind="video" onclick="setGameContentKind(this)"><i class="fas fa-link"></i> Web URL</button>' +
+            '<button type="button" class="content-kind-tab" data-kind="text" onclick="setGameContentKind(this)"><i class="fas fa-align-left"></i> Text</button>' +
+        '</div>' +
+        '<input type="hidden" id="gameContentKind" value="upload">' +
+        '<input type="hidden" id="gameContentMediaType" value="PDF">' +
+
+        '<div class="content-pane" data-pane="upload">' +
+            '<div class="cp-dropzone" onclick="document.getElementById(\'gameContentFile\').click()"' +
+                ' ondragover="event.preventDefault();this.classList.add(\'drag-over\')"' +
+                ' ondragleave="this.classList.remove(\'drag-over\')"' +
+                ' ondrop="onGameContentFileDrop(this,event)">' +
+                '<i class="fas fa-upload"></i>' +
+                '<span class="cp-dropzone-hint">Drop file or <u>browse</u></span>' +
+                '<span class="cp-dropzone-name" id="gameContentFileName"></span>' +
+                '<input type="file" id="gameContentFile" accept="application/pdf,image/*" onchange="onGameContentFileChange(this)" style="display:none">' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="content-pane hidden" data-pane="video">' +
+            '<input type="url" id="gameContentUrl" placeholder="https://…">' +
+        '</div>' +
+
+        '<div class="content-pane hidden" data-pane="text">' +
+            '<div class="rte-toolbar">' +
+                '<button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand(\'bold\')"><i class="fas fa-bold"></i></button>' +
+                '<button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand(\'italic\')"><i class="fas fa-italic"></i></button>' +
+                '<button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand(\'underline\')"><i class="fas fa-underline"></i></button>' +
+                '<span class="rte-sep"></span>' +
+                '<button type="button" class="rte-btn" title="Bullets" onmousedown="event.preventDefault();document.execCommand(\'insertUnorderedList\')"><i class="fas fa-list-ul"></i></button>' +
+                '<button type="button" class="rte-btn" title="Numbers" onmousedown="event.preventDefault();document.execCommand(\'insertOrderedList\')"><i class="fas fa-list-ol"></i></button>' +
+            '</div>' +
+            '<div id="gameContentText" contenteditable="true" class="cp-text" data-placeholder="Type the content…"></div>' +
+        '</div>' +
+    '</div>';
+}
+
+function setGameContentKind(btn) {
+    var picker = document.getElementById('gameContentPicker');
+    if (!picker) return;
+    var kind = btn.dataset.kind;
+    picker.querySelectorAll('.content-kind-tab').forEach(function(t) { t.classList.toggle('active', t === btn); });
+    picker.querySelectorAll('.content-pane').forEach(function(p) { p.classList.toggle('hidden', p.dataset.pane !== kind); });
+    var kindInput = document.getElementById('gameContentKind');
+    if (kindInput) kindInput.value = kind;
+}
+
+function onGameContentFileChange(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var nameEl = document.getElementById('gameContentFileName');
+    if (nameEl) nameEl.textContent = file.name;
+    var typeInput = document.getElementById('gameContentMediaType');
+    if (typeInput) {
+        var ext = file.name.split('.').pop().toLowerCase();
+        typeInput.value = (ext === 'pdf') ? 'PDF' : 'image';
+    }
+}
+
+function onGameContentFileDrop(zone, event) {
+    event.preventDefault();
+    zone.classList.remove('drag-over');
+    var file = event.dataTransfer.files[0];
+    if (!file) return;
+    var nameEl = document.getElementById('gameContentFileName');
+    if (nameEl) nameEl.textContent = file.name;
+    var typeInput = document.getElementById('gameContentMediaType');
+    if (typeInput) {
+        var ext = file.name.split('.').pop().toLowerCase();
+        typeInput.value = (ext === 'pdf') ? 'PDF' : 'image';
+    }
+}
+
+// ===== Add Game — Content toggle form =====
+function _showGameCards() {
+    var cards = document.getElementById('gameChoiceCards');
+    var cf    = document.getElementById('gameContentForm');
+    if (cards) cards.classList.remove('hidden');
+    if (cf)    cf.classList.add('hidden');
+}
+
+function openGameContentForm() {
+    var cards = document.getElementById('gameChoiceCards');
+    var form  = document.getElementById('gameContentForm');
+    if (cards) cards.classList.add('hidden');
+    if (form)  form.classList.remove('hidden');
+}
+
+function cancelGameContentForm() { _showGameCards(); }
+
+function saveGameContentForm() {
+    var btn = document.getElementById('gameContentCardBtn');
+    if (btn) {
+        btn.classList.add('btn-choice-done');
+        btn.querySelector('.choice-label').textContent = 'Content added';
+        btn.querySelector('.choice-hint').textContent  = 'Click to change';
+    }
+    _showGameCards();
+}
+
+function renderGameAddCatList() {
+    var list = document.getElementById('gameAddCatList');
+    if (!list) return;
+    if (!_gameAddCats.length) { list.innerHTML = ''; return; }
+    list.innerHTML = _gameAddCats.map(function(c, i) {
+        return '<div class="game-add-cat-item">' +
+            '<i class="fas fa-list"></i>' +
+            '<span class="game-add-cat-name">' + escapeAttr(c.name) + '</span>' +
+            '<button type="button" class="btn-icon btn-icon-sm" onclick="removeGameCategoryItem(' + i + ')" title="Remove"><i class="fas fa-times"></i></button>' +
+        '</div>';
+    }).join('');
 }
 
 function _setAddGameCoverPreview(src) {
@@ -1073,7 +1199,7 @@ function saveGameAdd(event) {
             cover: cover,
             active: true,
             scheduledDate: null,
-            categories: []
+            categories: _gameAddCats.length ? _gameAddCats.slice() : []
         };
 
         var gameHtml = gameRowHtml(gameObj, newId);
@@ -1081,19 +1207,21 @@ function saveGameAdd(event) {
         var gameRow = document.querySelector('tr.row-game[data-game="' + newId + '"]');
         if (gameRow) updateGameRowChips(gameRow);
 
-        // Apply sharing immediately if any departments are checked
-        var deptNames = Array.from(document.querySelectorAll('#gameEditFields input[name="shareDept"]:checked'))
-            .map(function(i) { return i.value; });
-        if (deptNames.length) {
-            shareGameWithDepts(_currentGameScope.companyKey, name, deptNames);
-        }
-
         persistGamesScope();
         updateGamesCount(document.querySelectorAll('#gamesTable tbody tr.row-game'));
-        var toastMsg = '"' + name + '" added';
-        if (deptNames.length) toastMsg += ' and shared to ' + deptNames.length + ' dept' + (deptNames.length !== 1 ? 's' : '');
-        showGameToast(toastMsg);
-        showQTypePickerForNewGame(newId, name);
+        showGameToast('"' + name + '" added');
+
+        // After share is confirmed or skipped, go to the question type picker
+        var capturedId = newId;
+        var capturedName = name;
+        _postShareCallback = function() { showQTypePickerForNewGame(capturedId, capturedName); };
+
+        // Open the share panel immediately as a separate step (isNew pre-checks current dept)
+        if (gameRow) {
+            openGameSharePanel(gameRow, { isNew: true });
+        } else {
+            showQTypePickerForNewGame(newId, name);
+        }
         return;
     }
 
@@ -1249,12 +1377,12 @@ function showQTypePickerForNewGame(gameId, gameName) {
     if (badge) { badge.innerHTML = '<i class="fas fa-plus"></i> Adding'; badge.classList.remove('badge-ai'); }
 
     var creditBal = document.getElementById('aiPanelCreditBal');
-    if (creditBal) creditBal.classList.add('hidden');
+    if (creditBal) creditBal.hidden = true;
 
     document.getElementById('gameEditFields').innerHTML = _renderQTypePickerHtml(gameId, catId);
 
     var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) submitBtn.hidden = true;
+    if (submitBtn) submitBtn.classList.add('hidden');
 
     var actionsBar = document.querySelector('#detailEdit .edit-actions');
     if (actionsBar) {
@@ -1366,6 +1494,25 @@ function shareGameWithDepts(companyKey, gameName, deptNames) {
     }
 }
 
+function unshareGameFromDepts(companyKey, gameName, deptNames) {
+    if (typeof GAMES_BY_SCOPE === 'undefined') return;
+    deptNames.forEach(function(dn) {
+        var key = (companyKey || '') + '|' + dn;
+        var bucket = GAMES_BY_SCOPE[key];
+        if (bucket) {
+            for (var i = bucket.length - 1; i >= 0; i--) {
+                if (bucket[i].name === gameName) { bucket.splice(i, 1); break; }
+            }
+        }
+    });
+    // Remove from source game's sharedDepts list
+    var visible = collectGamesForScope(companyKey, _currentGameScope.dept);
+    var src = visible.find ? visible.find(function(g) { return g.name === gameName; }) : null;
+    if (src && src.sharedDepts) {
+        src.sharedDepts = src.sharedDepts.filter(function(d) { return deptNames.indexOf(d) === -1; });
+    }
+}
+
 // ===== Schedule panel confirm (kebab-menu flow for existing games) =====
 function confirmGameSchedule() {
     var startVal = document.getElementById('scheduleStartDate') ? document.getElementById('scheduleStartDate').value : '';
@@ -1389,22 +1536,77 @@ function skipGameSchedule() {
     showGameEmpty();
 }
 
-// ===== Panel share (for existing game from kebab menu) =====
-function openGameSharePanel(gameRow) {
-    var name = gameRow.dataset.name || '';
-    var companyKey = _currentGameScope.companyKey;
-    var companies = (typeof GAMES_SIDEBAR_COMPANIES !== 'undefined') ? GAMES_SIDEBAR_COMPANIES : [];
+// ===== Share helpers =====
+var _SHARE_MONTHS_GAME = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatGameSharedDate(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    return d.getDate() + ' ' + _SHARE_MONTHS_GAME[d.getMonth()] + ' \'' + String(d.getFullYear()).slice(2);
+}
+
+// Formats a scheduled date range for the share-panel dept tag.
+// e.g. "30 May – 30 Jun '26"  or just "30 May '26" when no end date.
+function _fmtScheduleTag(start, end) {
+    if (!start) return '';
+    var s = new Date(start);
+    var sStr = s.getDate() + ' ' + _SHARE_MONTHS_GAME[s.getMonth()];
+    if (!end) return sStr + ' \'' + String(s.getFullYear()).slice(2);
+    var e = new Date(end);
+    var eStr = e.getDate() + ' ' + _SHARE_MONTHS_GAME[e.getMonth()];
+    var yr = '\'' + String(e.getFullYear()).slice(2);
+    return sStr + ' – ' + eStr + ' ' + yr;
+}
+
+function getGameSharedDepts(companyKey, gameName) {
+    if (!companyKey || !gameName || typeof GAMES_BY_SCOPE === 'undefined') return [];
+    var visible = collectGamesForScope(companyKey, _currentGameScope.dept);
+    var src = visible.find ? visible.find(function(g) { return g.name === gameName; }) : null;
+    return (src && src.sharedDepts) ? src.sharedDepts : [];
+}
+
+function getGameSharedDate(companyKey, gameName, deptName) {
+    if (typeof GAMES_BY_SCOPE === 'undefined') return '';
+    var key = (companyKey || '') + '|' + deptName;
+    var bucket = GAMES_BY_SCOPE[key];
+    if (!bucket) return '';
+    var game = bucket.find ? bucket.find(function(g) { return g.name === gameName; }) : null;
+    if (!game) return '';
+    if (!game.sharedDate) { game.sharedDate = new Date().toISOString(); persistGamesScope(); }
+    return game.sharedDate;
+}
+
+// ===== Panel share =====
+// opts.isNew = true → pre-checks current dept, confirm button always enabled
+function openGameSharePanel(gameRow, opts) {
+    opts = opts || {};
+    if (!_postShareCallback) _postShareCallback = null;
+    var name        = gameRow.dataset.name            || '';
+    var existStart  = gameRow.dataset.scheduledDate    || '';
+    var existEnd    = gameRow.dataset.scheduledEndDate || '';
+    var companyKey  = _currentGameScope.companyKey;
+    var companies   = (typeof GAMES_SIDEBAR_COMPANIES   !== 'undefined') ? GAMES_SIDEBAR_COMPANIES   : [];
     var departments = (typeof GAMES_SIDEBAR_DEPARTMENTS !== 'undefined') ? GAMES_SIDEBAR_DEPARTMENTS : [];
     var company = companies.find(function(c) { return c.name.toLowerCase() === companyKey; });
     if (!company) { showGameToast('Select a company first'); return; }
 
-    var allDepts = departments.filter(function(d) { return d.companyId === company.id; });
-    _currentGameShareTarget = { name: name, row: gameRow };
+    var allDepts    = departments.filter(function(d) { return d.companyId === company.id; });
+    var sharedNow   = new Set(getGameSharedDepts(companyKey, name));
+    var currentDept = (_currentGameScope && _currentGameScope.dept) || '';
+    _currentGameShareTarget = {
+        name: name, row: gameRow,
+        sharedDepts: Array.from(sharedNow), isNew: !!opts.isNew,
+        initialStart: existStart, initialEnd: existEnd
+    };
 
+    var scheduleTag = _fmtScheduleTag(existStart, existEnd);
     var items = allDepts.map(function(d) {
+        var already  = sharedNow.has(d.name);
+        var precheck = already || (opts.isNew && d.name === currentDept);
         return '<label class="share-dept-item">' +
-            '<input type="checkbox" value="' + escapeAttr(d.name) + '" onchange="syncShareDropdownLabel(\'sharePanelDropdown\')">' +
+            '<input type="checkbox" value="' + escapeAttr(d.name) + '"' + (precheck ? ' checked' : '') + '>' +
             '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
+            (already && scheduleTag ? '<span class="share-dept-tag">' + escapeAttr(scheduleTag) + '</span>' : '') +
         '</label>';
     }).join('') || '<p class="share-empty">No departments to share with.</p>';
 
@@ -1412,7 +1614,7 @@ function openGameSharePanel(gameRow) {
     document.getElementById('gameShareSubtitle').textContent = getGamesScopeSubtitle();
     document.getElementById('gameShareBody').innerHTML =
         '<p class="share-panel-lead"><strong>' + escapeAttr(name) + '</strong></p>' +
-        _buildShareDeptDropdown(items, 'sharePanelDropdown', 'gameShareDeptList');
+        '<div class="share-dept-list" id="gameShareDeptList">' + items + '</div>';
 
     var list = document.getElementById('gameShareDeptList');
     if (list) list.addEventListener('change', syncGameShareConfirmButton);
@@ -1421,32 +1623,59 @@ function openGameSharePanel(gameRow) {
 }
 
 function syncGameShareConfirmButton() {
-    var btn = document.getElementById('gameShareConfirmBtn');
+    var btn  = document.getElementById('gameShareConfirmBtn');
     var list = document.getElementById('gameShareDeptList');
     if (!btn || !list) return;
-    var anyChecked = list.querySelectorAll('input:checked').length > 0;
-    btn.disabled = !anyChecked;
+    if (_currentGameShareTarget && _currentGameShareTarget.isNew) {
+        btn.disabled = false;
+        btn.textContent = 'Share';
+        return;
+    }
+    var initial    = new Set((_currentGameShareTarget && _currentGameShareTarget.sharedDepts) || []);
+    var current    = new Set(Array.from(list.querySelectorAll('input:checked')).map(function(c) { return c.value; }));
+    var hasChanges = current.size !== initial.size
+        || Array.from(current).some(function(d) { return !initial.has(d); })
+        || Array.from(initial).some(function(d) { return !current.has(d); });
+    btn.disabled    = !hasChanges;
+    btn.textContent = hasChanges ? 'Save' : 'No changes';
 }
 
 function cancelGameSharePanel() {
     _currentGameShareTarget = null;
-    showGameEmpty();
+    var cb = _postShareCallback;
+    _postShareCallback = null;
+    if (cb) { cb(); } else { showGameEmpty(); }
 }
 
 function confirmGameSharePanel() {
     var target = _currentGameShareTarget;
-    if (!target) { showGameEmpty(); return; }
+    _currentGameShareTarget = null;
+    var cb = _postShareCallback;
+    _postShareCallback = null;
+    if (!target) { if (cb) { cb(); } else { showGameEmpty(); } return; }
     var list = document.getElementById('gameShareDeptList');
-    if (!list) { showGameEmpty(); return; }
-    var depts = Array.from(list.querySelectorAll('input:checked')).map(function(c) { return c.value; });
-    if (depts.length) {
-        shareGameWithDepts(_currentGameScope.companyKey, target.name, depts);
+    if (!list) { if (cb) { cb(); } else { showGameEmpty(); } return; }
+
+    var all       = Array.from(list.querySelectorAll('input')).map(function(c) { return c.value; });
+    var current   = new Set(Array.from(list.querySelectorAll('input:checked')).map(function(c) { return c.value; }));
+    var initial   = new Set(target.sharedDepts || []);
+    var toShare   = all.filter(function(d) { return  current.has(d) && !initial.has(d); });
+    var toUnshare = all.filter(function(d) { return !current.has(d) &&  initial.has(d); });
+
+    if (toShare.length)   shareGameWithDepts(_currentGameScope.companyKey, target.name, toShare);
+    if (toUnshare.length) unshareGameFromDepts(_currentGameScope.companyKey, target.name, toUnshare);
+
+    if (toShare.length || toUnshare.length) {
+        var parts = [];
+        if (toShare.length)   parts.push('shared with ' + toShare.length);
+        if (toUnshare.length) parts.push('removed from ' + toUnshare.length);
+        var total = toShare.length + toUnshare.length;
         persistGamesScope();
-        showGameToast('"' + target.name + '" shared to ' + depts.length + ' dept' + (depts.length !== 1 ? 's' : ''));
+        showGameToast('"' + target.name + '" ' + parts.join(', ') + ' dept' + (total !== 1 ? 's' : ''));
         refreshGames();
     }
-    _currentGameShareTarget = null;
-    showGameEmpty();
+
+    if (cb) { cb(); } else { showGameEmpty(); }
 }
 
 // ===== Panel schedule (from kebab menu) =====
@@ -1752,7 +1981,7 @@ function actionAddQuestion(btn, evt) {
     document.getElementById('gameEditFields').innerHTML = _renderQTypePickerHtml(gameId, catId);
 
     var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) submitBtn.hidden = true;
+    if (submitBtn) submitBtn.classList.add('hidden');
 
     var actionsBar = document.querySelector('#detailEdit .edit-actions');
     if (actionsBar) {
@@ -1799,7 +2028,7 @@ function backToQTypePicker(gameId, catId) {
     document.getElementById('gameEditFields').innerHTML = _renderQTypePickerHtml(gameId, catId);
 
     var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) submitBtn.hidden = true;
+    if (submitBtn) submitBtn.classList.add('hidden');
 
     var actionsBar = document.querySelector('#detailEdit .edit-actions');
     if (actionsBar) {
@@ -1880,7 +2109,7 @@ function openAddQuestionForm(questionType, gameId, catId) {
         '<input type="hidden" name="questionType" value="' + escapeAttr(questionType) + '">';
 
     var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) submitBtn.hidden = true;
+    if (submitBtn) submitBtn.classList.add('hidden');
 
     var actionsBar = document.querySelector('#detailEdit .edit-actions');
     if (actionsBar) {
@@ -2068,6 +2297,7 @@ var _gameAiCreditsUsed = {};
     } catch(e) {}
 })();
 var _aiGameGenerateIdx = 0;
+var _aiGameHasGenerated = false;
 
 var _GAME_AI_NAME_POOL = [
     { name: 'Digital Marketing Challenge',   description: 'Test your knowledge of modern digital marketing strategies and channels.' },
@@ -2257,25 +2487,46 @@ function getAIGameTopicOptions() {
     }).join('');
 }
 
+function toggleAIGameTopicLink(checkbox) {
+    var row = document.getElementById('aiGameTopicRow');
+    if (!row) return;
+    if (checkbox.checked) {
+        row.classList.remove('hidden');
+    } else {
+        row.classList.add('hidden');
+        var sel = document.getElementById('aiGameTopicSelect');
+        if (sel) sel.value = '';
+        onAIGameTopicChange(null);
+    }
+}
+
 function onAIGameTopicChange(select) {
     window._aiGamePendingTopic = null;
     var val = select ? select.value : '';
     var note = document.getElementById('aiGameContentSkipNote');
-    var catsToggleText = document.querySelector('#aiGameCatsToggle .ai-toggle-text');
+    var catsToggleText = document.querySelector('.ai-subtopics-option #aiGameIncludeCats + .ai-toggle-track + .ai-toggle-text') ||
+                         document.querySelector('#aiGameTabPaneContent .ai-toggle-text');
     if (!val) {
         if (note) note.classList.add('hidden');
-        if (catsToggleText) catsToggleText.textContent = 'Generate with categories & questions';
+        // Reset categories toggle label
+        var allToggles = document.querySelectorAll('#aiGameTabPaneContent .ai-toggle-text');
+        allToggles.forEach(function(t) {
+            if (t.textContent.indexOf('categor') >= 0) t.textContent = 'Generate with categories & questions';
+        });
         return;
     }
     try { window._aiGamePendingTopic = JSON.parse(val); } catch(e) { window._aiGamePendingTopic = { name: val }; }
     if (note) note.classList.remove('hidden');
-    // Update categories toggle label to reflect that topic sub-topics will be used
-    if (catsToggleText) {
-        var hasSubs = window._aiGamePendingTopic.subTopics && window._aiGamePendingTopic.subTopics.length;
-        catsToggleText.textContent = hasSubs
-            ? 'Use topic categories & generate questions'
-            : 'Generate with categories & questions';
-    }
+    // Update categories toggle label to reflect topic sub-topics
+    var hasSubs = window._aiGamePendingTopic.subTopics && window._aiGamePendingTopic.subTopics.length;
+    var allToggles = document.querySelectorAll('#aiGameTabPaneContent .ai-toggle-text');
+    allToggles.forEach(function(t) {
+        if (t.textContent.indexOf('categor') >= 0) {
+            t.textContent = hasSubs
+                ? 'Use topic categories & generate questions'
+                : 'Generate with categories & questions';
+        }
+    });
     updateAIGameGenerateBtn();
 }
 
@@ -2386,72 +2637,31 @@ function stepGameAttempts(delta, inputId) {
 function addGameAI() {
     _gameAddCats = [];
     _editingCatIdx = null;
+    _aiGameHasGenerated = false;
     _gameEditRow = null;
     _gameEditType = 'game';
+
+    // setGamePanelMode BEFORE innerHTML so it can't remove aiGameGenerateBtn
+    setGamePanelMode('add');
     _isAIGameFlow = true;
 
-    document.getElementById('gameEditTitle').textContent = 'Add Game with AI';
+    document.getElementById('gameEditTitle').textContent = 'Generate Game';
     document.getElementById('gameEditSubtitle').textContent = getGamesScopeSubtitle();
     window._aiGamePendingTopic = null;
 
-    var topicOpts = getAIGameTopicOptions();
-
     document.getElementById('gameEditFields').innerHTML =
 
-        // ── Setup tab bar ──────────────────────────────────────────────────
-        '<div class="add-topic-tabs" id="aiGameSetupTabBar">' +
-            '<button type="button" class="add-topic-tab active" data-tab="content" onclick="switchAIGameSetupTab(\'content\')">Content</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="questions" onclick="switchAIGameSetupTab(\'questions\')">Questions</button>' +
+        // ── Tab bar (Content active, Game + Categories unlocked after first generate) ──
+        '<div class="add-topic-tabs" id="aiGameTabBar">' +
+            '<button type="button" class="add-topic-tab active" data-tab="ai-content" onclick="switchAIGameTab(\'ai-content\')">Content</button>' +
+            '<button type="button" class="add-topic-tab" data-tab="ai-game" id="aiGameGameTab" onclick="switchAIGameTab(\'ai-game\')" disabled>Game</button>' +
+            '<button type="button" class="add-topic-tab hidden" data-tab="ai-cats" id="aiGameCatsTab" onclick="switchAIGameTab(\'ai-cats\')" disabled>' +
+                '<i class="fas fa-list-ol"></i> Categories' +
+            '</button>' +
         '</div>' +
 
-        // ── Content pane ───────────────────────────────────────────────────
-        '<div class="add-topic-pane" id="aiGameSetupPaneContent">' +
-
-            // Link to existing topic
-            '<div class="form-group" id="aiGameTopicGroup">' +
-                '<label for="aiGameTopicSelect">Link to topic <span class="form-label-optional">(optional)</span></label>' +
-                '<select id="aiGameTopicSelect" class="ai-model-select" onchange="onAIGameTopicChange(this)">' +
-                    '<option value="">— no topic —</option>' +
-                    (topicOpts || '<option value="" disabled style="color:#9ca3af">No topics in current scope</option>') +
-                '</select>' +
-            '</div>' +
-
-            // Content input
-            '<div class="form-group" id="aiGameStep1">' +
-                '<label>Content to base the game on' +
-                    '<span class="form-label-optional ai-content-skip-note hidden" id="aiGameContentSkipNote"> — optional when linked to a topic</span>' +
-                '</label>' +
-                '<div class="content-kind-tabs" style="display:flex;gap:6px;margin-bottom:8px">' +
-                    '<button type="button" class="content-kind-tab active" onclick="switchAIGameContentTab(this,\'upload\')"><i class="fas fa-upload"></i> Upload</button>' +
-                    '<button type="button" class="content-kind-tab" onclick="switchAIGameContentTab(this,\'url\')"><i class="fas fa-link"></i> URL</button>' +
-                    '<button type="button" class="content-kind-tab" onclick="switchAIGameContentTab(this,\'text\')"><i class="fas fa-align-left"></i> Text</button>' +
-                '</div>' +
-                '<div id="aiGameContentUpload" class="ai-content-pane">' +
-                    '<label class="file-upload-zone" style="display:flex;align-items:center;justify-content:center;height:80px;border:2px dashed #d1d5db;border-radius:8px;cursor:pointer;color:#6b7280;font-size:0.85rem;gap:8px">' +
-                        '<i class="fas fa-upload"></i> Upload PDF, DOCX, XLSX, PNG or JPEG' +
-                        '<input type="file" accept=".pdf,.docx,.xlsx,.png,.jpeg,.jpg" style="display:none" onchange="onAIGameFileChange(this)">' +
-                    '</label>' +
-                '</div>' +
-                '<div id="aiGameContentUrl" class="ai-content-pane hidden">' +
-                    '<input type="text" id="aiGameUrlInput" placeholder="https://…" style="width:100%;padding:7px 10px;font-size:0.85rem;border:1px solid #d1d5db;border-radius:6px" oninput="updateAIGameGenerateBtn()">' +
-                '</div>' +
-                '<div id="aiGameContentText" class="ai-content-pane hidden">' +
-                    '<textarea id="aiGameTextInput" rows="5" placeholder="Paste learning content here…" style="width:100%;padding:7px 10px;font-size:0.85rem;border:1px solid #d1d5db;border-radius:6px;resize:vertical;font-family:inherit" oninput="updateAIGameGenerateBtn()"></textarea>' +
-                '</div>' +
-            '</div>' +
-
-            // Categories toggle
-            '<div class="ai-subtopics-option" id="aiGameCatsToggle">' +
-                '<label class="ai-toggle-label">' +
-                    '<span class="ai-toggle-wrap">' +
-                        '<input type="checkbox" id="aiGameIncludeCats" class="ai-toggle-input" checked onchange="updateAIGameCreditsEstimate()">' +
-                        '<span class="ai-toggle-track"></span>' +
-                    '</span>' +
-                    '<span class="ai-toggle-text">Generate with categories &amp; questions</span>' +
-                '</label>' +
-            '</div>' +
-
-            // AI model
+        // ── Content pane ──────────────────────────────────────────────────────
+        '<div class="add-topic-pane" id="aiGameTabPaneContent">' +
             '<div class="form-group ai-model-group">' +
                 '<label for="aiGameModelSelect">AI Model</label>' +
                 '<select id="aiGameModelSelect" class="ai-model-select">' +
@@ -2462,79 +2672,106 @@ function addGameAI() {
                     '<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>' +
                 '</select>' +
             '</div>' +
+            '<div class="form-group" id="aiGameUploadSection">' +
+                '<label>Upload</label>' +
+                '<div class="ai-upload-zone" id="aiGameUploadZone"' +
+                    ' onclick="document.getElementById(\'aiGameFileInput\').click()"' +
+                    ' ondragover="event.preventDefault();this.classList.add(\'drag-over\')"' +
+                    ' ondragleave="this.classList.remove(\'drag-over\')"' +
+                    ' ondrop="onAIGameFileDrop(this,event)">' +
+                    '<input type="file" id="aiGameFileInput" hidden accept=".pdf,.docx,.xlsx,.png,.jpeg,.jpg" onchange="onAIGameFileChange(this)">' +
+                    '<i class="fas fa-cloud-upload-alt ai-upload-icon"></i>' +
+                    '<span class="ai-upload-prompt" id="aiGameUploadPrompt">Drop a file or click to upload</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="form-group" id="aiGameUrlSection">' +
+                '<label>URL</label>' +
+                '<input type="url" id="aiGameUrlInput" class="ai-text-input" placeholder="https://…" oninput="updateAIGameGenerateBtn()">' +
+            '</div>' +
+            '<div class="form-group" id="aiGameTextSection">' +
+                '<label>Text</label>' +
+                '<div class="rte-toolbar">' +
+                    '<button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand(\'bold\')"><i class="fas fa-bold"></i></button>' +
+                    '<button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand(\'italic\')"><i class="fas fa-italic"></i></button>' +
+                    '<button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand(\'underline\')"><i class="fas fa-underline"></i></button>' +
+                    '<span class="rte-sep"></span>' +
+                    '<button type="button" class="rte-btn" title="Bullet list" onmousedown="event.preventDefault();document.execCommand(\'insertUnorderedList\')"><i class="fas fa-list-ul"></i></button>' +
+                    '<button type="button" class="rte-btn" title="Numbered list" onmousedown="event.preventDefault();document.execCommand(\'insertOrderedList\')"><i class="fas fa-list-ol"></i></button>' +
+                '</div>' +
+                '<div id="aiGameTextInput" class="ai-rte" contenteditable="true"' +
+                    ' data-placeholder="Paste text, notes, or reference material…"' +
+                    ' oninput="updateAIGameGenerateBtn()"></div>' +
+            '</div>' +
+            '<div class="ai-subtopics-option">' +
+                '<label class="ai-toggle-label">' +
+                    '<span class="ai-toggle-wrap">' +
+                        '<input type="checkbox" id="aiGameIncludeCats" class="ai-toggle-input" checked>' +
+                        '<span class="ai-toggle-track"></span>' +
+                    '</span>' +
+                    '<span class="ai-toggle-text">Generate with categories &amp; questions</span>' +
+                '</label>' +
+            '</div>' +
 
-        '</div>' +
-
-        // ── Questions pane ─────────────────────────────────────────────────
-        '<div class="add-topic-pane hidden" id="aiGameSetupPaneQuestions">' +
-
-            // Question types
-            '<div class="form-group ai-game-qconfig" id="aiGameQConfig">' +
-                '<label>Question types</label>' +
-                '<div class="ai-q-types-grid">' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-list-ol"></i> MCQ</span><span class="ai-q-type-note">No image questions</span><input type="radio" name="qtype" value="mcq" checked onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-bucket"></i> Word Bucket</span><input type="radio" name="qtype" value="word-bucket" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-border-all"></i> Crossword</span><input type="radio" name="qtype" value="crossword" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-underline"></i> Fill in the Blank</span><input type="radio" name="qtype" value="fill-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-align-left"></i> Statement Blanking</span><input type="radio" name="qtype" value="stmt-blank" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-image"></i> Select on Image</span><input type="radio" name="qtype" value="select-img" onchange="updateAIGameCreditsEstimate()"></label>' +
-                    '<label class="ai-q-type-option"><span class="ai-q-type-label"><i class="fas fa-link"></i> Match The Terms</span><input type="radio" name="qtype" value="match-terms" onchange="updateAIGameCreditsEstimate()"></label>' +
+            // ── Link to topic (optional) ──────────────────────────────────────
+            '<div class="ai-subtopics-option">' +
+                '<label class="ai-toggle-label">' +
+                    '<span class="ai-toggle-wrap">' +
+                        '<input type="checkbox" id="aiGameLinkTopicToggle" class="ai-toggle-input" onchange="toggleAIGameTopicLink(this)">' +
+                        '<span class="ai-toggle-track"></span>' +
+                    '</span>' +
+                    '<span class="ai-toggle-text">Link to a topic</span>' +
+                '</label>' +
+            '</div>' +
+            '<div class="hidden" id="aiGameTopicRow">' +
+                '<div class="form-group" style="margin-top:8px">' +
+                    '<select id="aiGameTopicSelect" class="ai-model-select" onchange="onAIGameTopicChange(this)">' +
+                        '<option value="">Select a topic</option>' +
+                        (getAIGameTopicOptions() || '') +
+                    '</select>' +
+                '</div>' +
+                '<div class="hidden ai-topic-linked-note" id="aiGameContentSkipNote">' +
+                    '<i class="fas fa-circle-info"></i> Topic sub-topics will be used as game categories' +
                 '</div>' +
             '</div>' +
 
-            // Max questions slider
-            '<div class="form-group ai-qcount-group" id="aiGameQCountGroup">' +
-                '<label>Questions per category — <strong><span id="aiGameQCountLabel">5</span></strong> <span class="form-label-optional">(max 10)</span></label>' +
-                '<input type="range" id="aiGameQCount" min="1" max="10" value="5" class="ai-qcount-slider" oninput="updateAIGameQCount(this)">' +
-                '<div class="ai-qcount-scale"><span>1</span><span>5</span><span>10</span></div>' +
-                '<div class="ai-qcount-note">Questions per attempt is configured in the manual flow</div>' +
-            '</div>' +
-
-            // Credits estimate
-            '<div class="ai-credits-estimate" id="aiGameCreditsEstimate">' +
-                '<i class="fas fa-coins"></i> Estimated <strong><span id="aiGameCreditsEstimateVal">3</span> credits</strong> for this generation' +
-            '</div>' +
-
         '</div>' +
 
-        '<div class="hidden" id="aiGameStep2"></div>';
+        // ── Game pane (filled after generation) ───────────────────────────────
+        '<div class="add-topic-pane hidden" id="aiGameTabPaneGame"></div>' +
+
+        // ── Categories pane (filled after generation, shown only if cats generated) ─
+        '<div class="add-topic-pane hidden" id="aiGameTabPaneCats"></div>' +
+
+        // ── Generate block — always at bottom ─────────────────────────────────
+        '<div class="ai-generate-block">' +
+            '<div class="form-group">' +
+                '<input type="text" class="ai-text-input" id="aiGamePromptText" placeholder="What game would you like to create today?">' +
+            '</div>' +
+            '<button type="button" class="btn btn-ai btn-full" id="aiGameGenerateBtn" onclick="aiGameGenerate()">' +
+                '<i class="fas fa-wand-magic-sparkles"></i> Generate Game' +
+            '</button>' +
+        '</div>';
 
     _aiGameGenerateIdx = 0;
-    updateAIGameCreditsEstimate();
-
-    setGamePanelMode('add');
-    _isAIGameFlow = true;
 
     var badge = document.getElementById('gameEditBadge');
     if (badge) {
-        badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Adding with AI';
+        badge.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generating with AI';
         badge.classList.add('badge-ai');
     }
 
-    (function() {
-        var creditBal = document.getElementById('aiPanelCreditBal');
-        if (!creditBal) return;
-        var key   = _currentGameScope && _currentGameScope.companyKey;
-        var used  = key ? (_gameAiCreditsUsed[key] || 0) : 0;
-        var total = getGameCompanyCreditsTotal(key || '');
-        creditBal.innerHTML = '<i class="fas fa-coins"></i> ' + used + ' / ' + total + ' used';
-        creditBal.classList.remove('hidden');
-        creditBal.classList.toggle('ai-panel-credit-bal--warn', used / total >= 0.8);
-    })();
+    var key   = _currentGameScope && _currentGameScope.companyKey;
+    var used  = key ? (_gameAiCreditsUsed[key] || 0) : 0;
+    var total = getGameCompanyCreditsTotal(key || '');
+    var countEl = document.getElementById('aiGameCreditsCount');
+    var totalEl = document.getElementById('aiGameCreditsTotal');
+    if (countEl) countEl.textContent = used;
+    if (totalEl) totalEl.textContent = total;
+    var creditBal = document.getElementById('aiPanelCreditBal');
+    if (creditBal) creditBal.hidden = false;
 
     var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Save';
-        var genBtn = document.createElement('button');
-        genBtn.type = 'button';
-        genBtn.id = 'aiGameGenerateBtn';
-        genBtn.className = 'btn btn-ai';
-        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate';
-        genBtn.disabled = false;  // Always enabled in prototype
-        genBtn.onclick = aiGameGenerate;
-        submitBtn.parentNode.insertBefore(genBtn, submitBtn);
-    }
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('hidden'); }
 
     showGameEdit();
 }
@@ -2565,9 +2802,11 @@ function updateGameScopeCreditsDisplay() {
 
     // Panel topbar credit pill (visible only during AI flow)
     var panelBal = document.getElementById('aiPanelCreditBal');
-    if (panelBal && !panelBal.classList.contains('hidden')) {
-        panelBal.innerHTML = '<i class="fas fa-coins"></i> ' + used + ' / ' + total + ' used';
-        panelBal.classList.toggle('ai-panel-credit-bal--warn', used / total >= 0.8);
+    if (panelBal && !panelBal.hidden) {
+        var pcCount = document.getElementById('aiGameCreditsCount');
+        var pcTotal = document.getElementById('aiGameCreditsTotal');
+        if (pcCount) pcCount.textContent = used;
+        if (pcTotal) pcTotal.textContent = total;
     }
 
 }
@@ -2582,10 +2821,19 @@ function switchAIGameContentTab(btn, kind) {
     updateAIGameGenerateBtn();
 }
 
+function onAIGameFileDrop(zone, event) {
+    event.preventDefault();
+    zone.classList.remove('drag-over');
+    var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+    if (!file) return;
+    var fakeInput = { files: [file] };
+    onAIGameFileChange(fakeInput);
+}
+
 function onAIGameFileChange(input) {
     var file = input.files && input.files[0];
     if (!file) return;
-    var container = document.getElementById('aiGameContentUpload');
+    var container = document.getElementById('aiGameUploadZone');
     if (!container) return;
 
     var ext = file.name.split('.').pop().toLowerCase();
@@ -2654,103 +2902,80 @@ function updateAIGameGenerateBtn() {
 }
 
 function aiGameGenerate() {
-    var step2 = document.getElementById('aiGameStep2');
-    if (!step2) return;
-
-    // Show progress animation
-    step2.innerHTML =
-        '<div class="ai-gen-progress-wrap" id="aiGenProgressWrap">' +
-            '<div class="ai-gen-progress-bar"><div class="ai-gen-progress-fill" id="aiGenProgressFill"></div></div>' +
-            '<div class="ai-gen-progress-steps">' +
-                '<div class="ai-gen-step ai-gen-step-active" id="aiGenStep0"><i class="fas fa-file-alt"></i> Analysing content</div>' +
-                '<div class="ai-gen-step" id="aiGenStep1"><i class="fas fa-sitemap"></i> Identifying categories</div>' +
-                '<div class="ai-gen-step" id="aiGenStep2"><i class="fas fa-question-circle"></i> Generating questions</div>' +
-                '<div class="ai-gen-step" id="aiGenStep3"><i class="fas fa-sliders"></i> Applying difficulty settings</div>' +
-            '</div>' +
-        '</div>';
-    step2.classList.remove('hidden');
-
-    if (!document.getElementById('aiGameStep1Collapsed')) collapseAIGameStep1();
+    var action;
+    if (!_aiGameHasGenerated) {
+        action = 'generate';
+    } else {
+        var activeTab = document.querySelector('#aiGameTabBar .add-topic-tab.active');
+        var tab = activeTab ? activeTab.dataset.tab : 'ai-content';
+        if (tab === 'ai-game')  action = 'regen-game';
+        else if (tab === 'ai-cats') action = 'regen-cats';
+        else action = 'regen-all';
+    }
 
     var genBtn = document.getElementById('aiGameGenerateBtn');
     if (genBtn) { genBtn.disabled = true; genBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating…'; }
     var submitBtn = document.getElementById('gameSubmitBtn');
     if (submitBtn) submitBtn.disabled = true;
 
-    // Simulate progress steps
-    var stepDefs = [
-        { pct: 25, active: 1, done: [0] },
-        { pct: 55, active: 2, done: [0, 1] },
-        { pct: 80, active: 3, done: [0, 1, 2] },
-        { pct: 100, active: -1, done: [0, 1, 2, 3] }
-    ];
-    var si = 0;
-    function advance() {
-        if (si >= stepDefs.length) {
-            setTimeout(_renderAIGameResults, 300);
-            return;
-        }
-        var s = stepDefs[si++];
-        var fill = document.getElementById('aiGenProgressFill');
-        if (fill) fill.style.width = s.pct + '%';
-        for (var idx = 0; idx < 4; idx++) {
-            var el = document.getElementById('aiGenStep' + idx);
-            if (!el) continue;
-            el.classList.remove('ai-gen-step-active', 'ai-gen-step-done');
-            if (s.done.indexOf(idx) >= 0) el.classList.add('ai-gen-step-done');
-            else if (idx === s.active) el.classList.add('ai-gen-step-active');
-        }
-        setTimeout(advance, si === stepDefs.length ? 400 : 300);
-    }
-    setTimeout(advance, 80);
+    setTimeout(function() { _renderAIGameResults(action); }, 1200);
 }
 
-function _renderAIGameResults() {
-    var step2 = document.getElementById('aiGameStep2');
-    if (!step2) return;
+// ── Derive a brand/topic label from the user's actual inputs ─────────────────
+function _deriveAIGameContext() {
+    var prompt    = ((document.getElementById('aiGamePromptText')  || {}).value       || '').trim();
+    var url       = ((document.getElementById('aiGameUrlInput')    || {}).value       || '').trim();
+    var textBody  = ((document.getElementById('aiGameTextInput')   || {}).innerText   || '').trim();
+    var fileLabel = ((document.getElementById('aiGameUploadPrompt')|| {}).textContent || '').trim();
+    var hasFile   = fileLabel && fileLabel !== 'Drop a file or click to upload';
 
-    var namePair = nextGameAISuggestion();
-    // If linked to a topic, use topic name/description as defaults
-    if (window._aiGamePendingTopic && window._aiGamePendingTopic.name) {
-        namePair = {
-            name: window._aiGamePendingTopic.name,
-            description: window._aiGamePendingTopic.description || namePair.description
-        };
+    // Extract brand from URL hostname (e.g. "https://weelee.co.za/" → "Weelee")
+    var brand = '';
+    if (url) {
+        try {
+            var host = url.replace(/https?:\/\//i, '').split('/')[0].replace(/^www\./i, '');
+            brand = host.split('.')[0];
+            brand = brand.charAt(0).toUpperCase() + brand.slice(1);
+        } catch(e) {}
     }
 
-    var suggestion = _GAME_AI_SUGGESTIONS[_aiGameGenerateIdx % _GAME_AI_SUGGESTIONS.length];
-    _aiGameGenerateIdx++;
+    // Priority: explicit prompt → URL brand → file name → body text snippet
+    var topic = prompt
+        || (brand ? brand : '')
+        || (hasFile ? fileLabel.replace(/\.[^.]+$/, '') : '')
+        || (textBody.length > 3 ? textBody.split(/\s+/).slice(0, 5).join(' ') : '');
 
-    // topicCover: the cover from the linked topic (may be empty/falsy when no topic or no cover).
-    // Only use this for the toggle default — if the topic has a cover the toggle is ON and pre-selected;
-    // otherwise the toggle is OFF (diagram: "topic image is default only if topic is linked").
-    var topicCover = (window._aiGamePendingTopic && window._aiGamePendingTopic.cover) || '';
-    // coverUrl is still resolved for any save/preview logic that needs a fallback preset,
-    // but it does NOT affect whether the toggle defaults to on or off.
-    var coverUrl = topicCover || GAME_COVER_PRESETS[(_aiGameGenerateIdx - 1) % GAME_COVER_PRESETS.length];
-
-    // ── Category logic (per diagram) ────────────────────────────────────────
-    // 1. If opted out (toggle unchecked) → no categories.
-    // 2. Topic linked with sub-topics   → use topic sub-topics as category names,
-    //    assign mock questions to each (prototype behaviour).
-    // 3. No topic / no sub-topics       → AI suggests categories (mock data).
-    var includeCatsEl = document.getElementById('aiGameIncludeCats');
-    var includeCats = !includeCatsEl || includeCatsEl.checked;
-    var topicSubs = (window._aiGamePendingTopic && window._aiGamePendingTopic.subTopics) || [];
-    var cats;
-    if (!includeCats) {
-        cats = [];
-    } else if (topicSubs.length) {
-        cats = topicSubs.map(function(sub, idx) {
-            var mockCat = suggestion.categories[idx % suggestion.categories.length];
-            return { name: sub.name, questions: mockCat.questions };
-        });
-    } else {
-        cats = suggestion.categories;
+    // Capitalise first letter of each word for display
+    function titleCase(str) {
+        return str.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
     }
-    var catCount = cats.length;
 
-    var accordionItems = cats.map(function(cat) {
+    var displayTopic = topic ? titleCase(topic) : null;
+    var displayBrand = brand || null;
+
+    return { topic: displayTopic, brand: displayBrand, hasUrl: !!url, hasFile: hasFile, hasText: !!textBody };
+}
+
+// Build context-aware category names from a topic/brand string
+function _contextCats(brand, suggestion) {
+    if (!brand) return suggestion.categories;
+    var templates = [
+        brand + ' Overview',
+        brand + ' Products & Services',
+        brand + ' Processes',
+        brand + ' Customer Experience',
+        brand + ' Compliance'
+    ];
+    return suggestion.categories.map(function(cat, i) {
+        return { name: templates[i] || cat.name, questions: cat.questions };
+    });
+}
+
+function _buildAICatsHtml(cats) {
+    if (!cats.length) {
+        return '<p style="color:#6b7280;font-size:0.85rem;padding:12px 0">No categories generated — toggle "Generate with categories &amp; questions" to include them.</p>';
+    }
+    var items = cats.map(function(cat) {
         var qCount = cat.questions.length;
         var qItems = cat.questions.map(function(q) {
             var optsHtml = q.options.map(function(opt, oi) {
@@ -2774,54 +2999,104 @@ function _renderAIGameResults() {
             '<div class="ai-game-cat-body hidden">' + qItems + '</div>' +
         '</div>';
     }).join('');
+    return '<div class="ai-sub-list">' + items + '</div>';
+}
 
-    // Difficulty ratio is fixed by the backend: 1 Easy · 1 Medium · 1 Hard per category
-    var diffRatioHtml =
-        '<div class="ai-diff-ratio">' +
-            '<span class="ai-diff-ratio-label"><i class="fas fa-sliders"></i> Difficulty mix</span>' +
-            '<div class="ai-diff-ratio-chips">' +
-                '<span class="ai-diff-chip ai-diff-easy">1 Easy</span>' +
-                '<span class="ai-diff-chip ai-diff-medium">1 Medium</span>' +
-                '<span class="ai-diff-chip ai-diff-hard">1 Hard</span>' +
-            '</div>' +
-        '</div>';
+function _renderAIGameResults(action) {
+    var gamePaneEl = document.getElementById('aiGameTabPaneGame');
+    var catsPaneEl = document.getElementById('aiGameTabPaneCats');
+    if (!gamePaneEl) return;
 
-    var attemptsHtml =
-        '<div class="form-group">' +
-            '<label>Max attempts</label>' +
-            '<div class="number-stepper">' +
-                '<button type="button" class="stepper-btn" onclick="stepGameAttempts(-1,\'aiGameMaxAttempts\')"><i class="fas fa-minus"></i></button>' +
-                '<input type="number" name="maxAttempts" id="aiGameMaxAttempts" value="1" min="1" max="99">' +
-                '<button type="button" class="stepper-btn" onclick="stepGameAttempts(1,\'aiGameMaxAttempts\')"><i class="fas fa-plus"></i></button>' +
-            '</div>' +
-        '</div>';
+    // ── Derive context from the user's actual inputs ───────────────────────
+    var ctx = _deriveAIGameContext();
 
-    step2.innerHTML =
-        '<div class="add-topic-tabs" id="aiGameTabsBar">' +
-            '<button type="button" class="add-topic-tab active" data-tab="ai-game" onclick="switchGameAITab(\'ai-game\')">Game</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="ai-cats" onclick="switchGameAITab(\'ai-cats\')">' +
-                'Categories <span class="tab-badge">' + catCount + '</span>' +
-            '</button>' +
-            '<button type="button" class="add-topic-tab" data-tab="ai-share-schedule" id="aiGameTabShareSchedule" onclick="switchGameAITab(\'ai-share-schedule\')" disabled><i class="fas fa-people-group"></i> Share &amp; Schedule</button>' +
-        '</div>' +
-        '<div class="add-topic-pane" id="aiGameTabPaneGame">' +
+    var namePair = nextGameAISuggestion();
+    if (window._aiGamePendingTopic && window._aiGamePendingTopic.name) {
+        // Linked topic always wins
+        namePair = {
+            name: window._aiGamePendingTopic.name,
+            description: window._aiGamePendingTopic.description || namePair.description
+        };
+    } else if (ctx.topic) {
+        // Shape name & description from what the user actually provided
+        namePair = {
+            name: ctx.topic + ' Knowledge Challenge',
+            description: 'Test your knowledge of ' + ctx.topic + '.'
+        };
+    }
+
+    var suggestion = _GAME_AI_SUGGESTIONS[_aiGameGenerateIdx % _GAME_AI_SUGGESTIONS.length];
+    _aiGameGenerateIdx++;
+
+    var topicCover = (window._aiGamePendingTopic && window._aiGamePendingTopic.cover) || '';
+
+    // ── Category logic ─────────────────────────────────────────────────────
+    var includeCatsEl = document.getElementById('aiGameIncludeCats');
+    var includeCats = !includeCatsEl || includeCatsEl.checked;
+    var topicSubs = (window._aiGamePendingTopic && window._aiGamePendingTopic.subTopics) || [];
+    var cats;
+    if (!includeCats) {
+        cats = [];
+    } else if (topicSubs.length) {
+        cats = topicSubs.map(function(sub, idx) {
+            var mockCat = suggestion.categories[idx % suggestion.categories.length];
+            return { name: sub.name, questions: mockCat.questions };
+        });
+    } else {
+        // Use context-aware category names if we have a brand/topic
+        cats = ctx.brand ? _contextCats(ctx.brand, suggestion) : suggestion.categories;
+    }
+    var catCount = cats.length;
+
+    // ── Rebuild panes based on action ──────────────────────────────────────
+    if (action !== 'regen-cats') {
+        // Rebuild the Game pane
+        var attemptsHtml =
+            '<div class="form-group">' +
+                '<label>Max attempts</label>' +
+                '<div class="number-stepper">' +
+                    '<button type="button" class="stepper-btn" onclick="stepGameAttempts(-1,\'aiGameMaxAttempts\')"><i class="fas fa-minus"></i></button>' +
+                    '<input type="number" name="maxAttempts" id="aiGameMaxAttempts" value="1" min="1" max="99">' +
+                    '<button type="button" class="stepper-btn" onclick="stepGameAttempts(1,\'aiGameMaxAttempts\')"><i class="fas fa-plus"></i></button>' +
+                '</div>' +
+            '</div>';
+        gamePaneEl.innerHTML =
             '<div class="form-group"><label>Cover Image</label>' + gameCoverPickerHtml(topicCover || '') + '</div>' +
             '<div class="form-group"><label>Game Name</label><input type="text" name="name" value="' + escapeAttr(namePair.name) + '" placeholder="Game name"></div>' +
             '<div class="form-group"><label>Description</label><textarea name="description" rows="3">' + escapeAttr(namePair.description) + '</textarea></div>' +
-            attemptsHtml +
-            diffRatioHtml +
-        '</div>' +
-        '<div class="add-topic-pane hidden" id="aiGameTabPaneCats">' +
-            (cats.length
-                ? '<div class="ai-sub-list">' + accordionItems + '</div>'
-                : '<p class="ai-qconfig-note" style="color:#6b7280;font-size:0.85rem;padding:12px 0">No categories generated — toggle "Generate with categories &amp; questions" to include them.</p>') +
-        '</div>' +
-        '<div class="add-topic-pane hidden" id="aiGameTabPaneShareSchedule">' + buildShareScheduleTabHtml() + '</div>';
+            attemptsHtml;
+    }
+
+    if (action !== 'regen-game') {
+        // Rebuild the Categories pane
+        if (catsPaneEl) catsPaneEl.innerHTML = _buildAICatsHtml(cats);
+
+        // Show/hide + badge the Categories tab
+        var catsTab = document.getElementById('aiGameCatsTab');
+        if (catsTab) {
+            if (catCount > 0) {
+                catsTab.classList.remove('hidden');
+                catsTab.disabled = false;
+                catsTab.innerHTML = '<i class="fas fa-list-ol"></i> Categories <span class="tab-badge">' + catCount + '</span>';
+            } else {
+                catsTab.classList.add('hidden');
+                catsTab.disabled = true;
+            }
+        }
+    }
+
+    // Enable Game tab; on first generate switch to it
+    var gameTab = document.getElementById('aiGameGameTab');
+    if (gameTab) gameTab.disabled = false;
+    if (!_aiGameHasGenerated) switchAIGameTab('ai-game');
+
+    _aiGameHasGenerated = true;
+    updateAIGameGenBtnLabel();
 
     var genBtn = document.getElementById('aiGameGenerateBtn');
-    if (genBtn) { genBtn.disabled = false; genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate'; }
+    if (genBtn) genBtn.disabled = false;
     var submitBtn = document.getElementById('gameSubmitBtn');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save'; }
+    if (submitBtn) { submitBtn.classList.remove('hidden'); submitBtn.disabled = false; submitBtn.textContent = 'Create Game'; }
 
     var ck = (_currentGameScope && _currentGameScope.companyKey) || '';
     _gameAiCreditsUsed[ck] = (_gameAiCreditsUsed[ck] || 0) + 1;
@@ -2833,67 +3108,38 @@ function _renderAIGameResults() {
     updateGameScopeCreditsDisplay();
 }
 
-function collapseAIGameStep1() {
-    var tabBar = document.getElementById('aiGameSetupTabBar');
-    var contentPane = document.getElementById('aiGameSetupPaneContent');
-    var questionsPane = document.getElementById('aiGameSetupPaneQuestions');
-    if (!tabBar && !contentPane) return;
-
-    var summaryText = 'Content provided';
-    var urlInput = document.getElementById('aiGameUrlInput');
-    var textInput = document.getElementById('aiGameTextInput');
-    if (urlInput && urlInput.value.trim()) summaryText = urlInput.value.trim().substring(0, 50) + (urlInput.value.trim().length > 50 ? '…' : '');
-    else if (textInput && textInput.value.trim()) summaryText = textInput.value.trim().substring(0, 50) + (textInput.value.trim().length > 50 ? '…' : '');
-
-    var collapsed = document.createElement('div');
-    collapsed.id = 'aiGameStep1Collapsed';
-    collapsed.className = 'ai-step1-collapsed';
-    collapsed.innerHTML =
-        '<span class="ai-step1-summary">' + escapeAttr(summaryText) + '</span>' +
-        '<button type="button" class="btn-link" onclick="expandAIGameStep1()" style="font-size:0.8rem;margin-left:auto">Edit</button>';
-
-    if (tabBar) tabBar.style.display = 'none';
-    if (contentPane) contentPane.style.display = 'none';
-    if (questionsPane) questionsPane.style.display = 'none';
-    var fields = document.getElementById('gameEditFields');
-    if (fields) fields.insertBefore(collapsed, fields.firstChild);
-}
-
-function expandAIGameStep1() {
-    var collapsed = document.getElementById('aiGameStep1Collapsed');
-    var tabBar = document.getElementById('aiGameSetupTabBar');
-    var contentPane = document.getElementById('aiGameSetupPaneContent');
-    var questionsPane = document.getElementById('aiGameSetupPaneQuestions');
-    if (collapsed) collapsed.remove();
-    if (tabBar) tabBar.style.display = '';
-    if (contentPane) contentPane.style.display = '';
-    // restore questions pane visibility based on active tab
-    if (questionsPane) {
-        var activeTab = document.querySelector('#aiGameSetupTabBar .add-topic-tab.active');
-        var isQTab = activeTab && activeTab.dataset.tab === 'questions';
-        questionsPane.style.display = '';
-        if (!isQTab) questionsPane.classList.add('hidden');
-        else questionsPane.classList.remove('hidden');
-    }
-}
-
-function switchAIGameSetupTab(tab) {
-    var tabBtns = document.querySelectorAll('#aiGameSetupTabBar .add-topic-tab');
+function switchAIGameTab(tab) {
+    var tabBtns = document.querySelectorAll('#aiGameTabBar .add-topic-tab');
     tabBtns.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
-    var contentPane = document.getElementById('aiGameSetupPaneContent');
-    var questionsPane = document.getElementById('aiGameSetupPaneQuestions');
-    if (contentPane) contentPane.classList.toggle('hidden', tab !== 'content');
-    if (questionsPane) questionsPane.classList.toggle('hidden', tab !== 'questions');
-}
-
-function switchGameAITab(tab) {
-    var tabBtns = document.querySelectorAll('#aiGameTabsBar .add-topic-tab');
-    tabBtns.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
-    var panes = { 'ai-game': 'Game', 'ai-cats': 'Cats', 'ai-share-schedule': 'ShareSchedule' };
-    Object.keys(panes).forEach(function(p) {
-        var el = document.getElementById('aiGameTabPane' + panes[p]);
+    var paneMap = { 'ai-content': 'Content', 'ai-game': 'Game', 'ai-cats': 'Cats' };
+    Object.keys(paneMap).forEach(function(p) {
+        var el = document.getElementById('aiGameTabPane' + paneMap[p]);
         if (el) el.classList.toggle('hidden', p !== tab);
     });
+    updateAIGameGenBtnLabel();
+}
+
+function updateAIGameGenBtnLabel() {
+    var genBtn   = document.getElementById('aiGameGenerateBtn');
+    var promptEl = document.getElementById('aiGamePromptText');
+    if (!genBtn) return;
+    if (!_aiGameHasGenerated) {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate Game';
+        if (promptEl) promptEl.placeholder = 'What game would you like to create today?';
+        return;
+    }
+    var activeTab = document.querySelector('#aiGameTabBar .add-topic-tab.active');
+    var tab = activeTab ? activeTab.dataset.tab : 'ai-content';
+    if (tab === 'ai-game') {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate Game';
+        if (promptEl) { promptEl.placeholder = 'What would you like to change?'; promptEl.value = ''; }
+    } else if (tab === 'ai-cats') {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate Categories';
+        if (promptEl) { promptEl.placeholder = 'What would you like to change?'; promptEl.value = ''; }
+    } else {
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+        if (promptEl) promptEl.placeholder = 'What game would you like to create today?';
+    }
 }
 
 function toggleAIGameCat(btn) {
@@ -2932,6 +3178,13 @@ function _checkPendingGame(companyKey, deptName) {
         var pending = JSON.parse(raw);
         localStorage.removeItem('gameon.pendingGame');
         if (pending.companyKey !== companyKey || pending.dept !== deptName) return;
+
+        // Route to AI generate flow or manual add depending on the toggle selection
+        if (pending.gameFlow === 'ai') {
+            addGameAI();
+            return;
+        }
+
         addGame();
         setTimeout(function() {
             if (!pending.topicName) return;

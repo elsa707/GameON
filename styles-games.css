@@ -32,13 +32,29 @@
     color: #ea580c;
 }
 
-/* ===== Scrollable fields area — topbar + actions stay pinned ===== */
+/* ===== Fields area — no inner scroll; whole panel scrolls ===== */
 #gameEditFields {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex: none;
+    overflow: visible;
     padding-bottom: 4px;
+}
+
+/* Let the detail-edit panel scroll as one unit */
+#detailEdit {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+}
+
+/* Allow edit-form to grow naturally (no clip) on the games page */
+#detailEdit .edit-form {
+    overflow: visible;
+    flex: none;
+    min-height: unset;
+}
+
+/* Allow the detail panel container to scroll on the games page */
+#detailPanel.open {
+    overflow-y: auto;
 }
 
 /* ===== Cover image drop zone ===== */
@@ -990,6 +1006,21 @@ label.ai-q-type-option:has(input:checked) {
 .ai-gen-step-done   { color: #16a34a; }
 .ai-gen-step-done i { color: #16a34a; }
 
+/* ===== AI panel — linked topic note ===== */
+.ai-topic-linked-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #2563eb;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-bottom: 8px;
+}
+.ai-topic-linked-note i { flex-shrink: 0; }
+
 /* ===== AI step-1 collapsed summary ===== */
 .ai-step1-collapsed {
     display: flex;
@@ -1268,6 +1299,62 @@ label.add-game-cover-zone:hover .add-game-cover-overlay { opacity: 1; }
     margin-left: 2px;
 }
 .add-game-advanced-body.hidden { display: none; }
+
+
+
+
+/* ===== Add Game: Content card button ===== */
+.btn-choice-full {
+    width: 100%;
+    margin: 12px 0 4px;
+}
+.btn-choice-done {
+    border-color: #16a34a !important;
+    background: #f0fdf4 !important;
+}
+.btn-choice-done i,
+.btn-choice-done .choice-label { color: #15803d !important; }
+.btn-choice-done .choice-hint  { color: #4ade80 !important; }
+.game-section-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ===== Add Game: category add section ===== */
+.game-cat-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+.game-cat-add-row input[type="text"] { flex: 1; }
+.game-add-cat-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.game-add-cat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #1f2937;
+}
+.game-add-cat-item i { color: #6366f1; font-size: 12px; }
+.game-add-cat-name { flex: 1; }
+.btn-icon-sm { padding: 2px 4px; font-size: 11px; color: #9ca3af; }
+.btn-icon-sm:hover { color: #ef4444; }
+
+/* Two-column grid for Max Attempts + Questions per Session */
+.configure-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.configure-grid input[type="number"] {
+    width: 100%;
+}
 
 /* ===== Field hint text ===== */
 .form-field-hint {
