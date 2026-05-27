@@ -105,6 +105,23 @@ Project contact: elsadr@agilebridge.co.za
 - **`styles-games.css`** — Added `.btn-choice-full { width: 100%; }` in place of the grid.
 - `script-games.js` version bumped to `?v=70` (`index-games.html`, `index-questions.html`).
 
+## [2026-05-27] — Topics: sentence-case labels + choice prompt moved outside picker
+
+### Changed
+- **`styles-topics.css`** — added `#detailEdit .form-group label` override to remove `text-transform: uppercase` and `letter-spacing` so all Add/Edit panel labels display in sentence case.
+- **`script-topics.js`** — "What would you like to add to this topic?" moved out of the `.choice-picker` block and rendered as a `<label>` in its own `form-group` above the picker.
+
+## [2026-05-27] — Topics: updated "Add sub-topics" hint text
+
+### Changed
+- **`script-topics.js`** — "Add sub-topics" hint updated to "Create multiple learning topics".
+
+## [2026-05-27] — Topics: side-by-side choice buttons + updated hint text
+
+### Changed
+- **`styles-topics.css`** — `.choice-buttons` grid changed from `1fr` to `1fr 1fr` so "Add content" and "Add sub-topics" sit side by side.
+- **`script-topics.js`** — "Add content" hint updated to "Provide a single file, video URL or text".
+
 ## [2026-05-27] — Topics: "Also create a game" toggle with inline flow picker
 
 ### Changed

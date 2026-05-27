@@ -1253,18 +1253,20 @@ function addTopic() {
                 </div>
                 ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
             </div>
+            <div class="form-group">
+                <label>What would you like to add to this topic?</label>
+            </div>
             <div class="choice-picker" id="choicePicker">
-                <p class="choice-prompt">What would you like to add to this topic?</p>
                 <div class="choice-buttons">
                     <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddContent()">
                         <i class="fas fa-upload"></i>
                         <span class="choice-label">Add content</span>
-                        <span class="choice-hint">A single PDF, image, video URL, or text</span>
+                        <span class="choice-hint">Provide a single file, video URL or text</span>
                     </button>
                     <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddSubTopic()">
                         <i class="fas fa-list-ol"></i>
                         <span class="choice-label">Add sub-topics</span>
-                        <span class="choice-hint">Break this topic into multiple pieces</span>
+                        <span class="choice-hint">Create multiple learning topics</span>
                     </button>
                 </div>
             </div>
