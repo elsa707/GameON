@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Topics: "Also create a game" toggle with inline flow picker
+
+### Changed
+- **`script-topics.js`** — renamed "Create with game" toggle to "Also create a game" for clarity.
+- **`script-topics.js`** — `createGameToggleHtml()` now wraps the toggle and a new segmented control (`Normal | AI`) in a `.create-game-row` flex container; the segmented control is hidden until the toggle is switched on (`onCreateGameToggleChange`).
+- **`script-topics.js`** — `selectGameFlow(btn)` handles Normal / AI button selection within the picker.
+- **`script-topics.js`** — `_pendingGameFlow` variable added; captured from `#gameFlowPicker` at Save time and written into `gameon.pendingGame` localStorage payload as `gameFlow`.
+- **`script-topics.js`** — `doAIGenerate` preserves and restores both the toggle state and the selected flow when the topic pane is rebuilt during AI regeneration.
+- **`styles-topics.css`** — `.create-game-row`, `.game-flow-picker`, `.game-flow-btn` styles added.
+- `script-topics.js` version bumped to `?v=52`.
+
 ## [2026-05-26] — Schedule panel: pre-fill existing dates
 
 ### Changed

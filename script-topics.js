@@ -1074,6 +1074,10 @@ function saveAdd(data) {
         showToast(`"${name}" added${subSummary}`);
         const gameToggle = document.getElementById('createGameToggle');
         _pendingCreateGame = !!(gameToggle && gameToggle.checked);
+        if (_pendingCreateGame) {
+            const activeFlowBtn = document.querySelector('#gameFlowPicker .game-flow-btn.active');
+            _pendingGameFlow = activeFlowBtn ? activeFlowBtn.dataset.flow : 'normal';
+        }
         const coverEl = document.querySelector('#editFields .cover-hidden-input');
         _pendingTopicCover = coverEl ? coverEl.value : '';
         const descEl = document.querySelector('#editFields input[name="description"]') ||
@@ -1540,11 +1544,14 @@ function doAIGenerate(action) {
     var includeSubtopics = !!(document.getElementById('aiIncludeSubtopics') &&
                               document.getElementById('aiIncludeSubtopics').checked);
 
-    // Preserve the "Create with game" toggle state before any innerHTML replacement
+    // Preserve the "Also create a game" toggle and flow picker state before any innerHTML replacement
     var gameToggleOn = false;
+    var gameFlowSelected = 'normal';
     if (action !== 'regen-subs') {
         var existingGameToggle = document.getElementById('createGameToggle');
         if (existingGameToggle) gameToggleOn = existingGameToggle.checked;
+        var existingFlowBtn = document.querySelector('#gameFlowPicker .game-flow-btn.active');
+        if (existingFlowBtn) gameFlowSelected = existingFlowBtn.dataset.flow;
     }
 
     if (action === 'regen-subs') {
@@ -1567,10 +1574,17 @@ function doAIGenerate(action) {
             '</div>' +
             createGameToggleHtml();
 
-        // Restore game toggle
+        // Restore game toggle and flow picker
         if (gameToggleOn) {
             var restoredToggle = document.getElementById('createGameToggle');
             if (restoredToggle) restoredToggle.checked = true;
+            var restoredPicker = document.getElementById('gameFlowPicker');
+            if (restoredPicker) {
+                restoredPicker.classList.remove('hidden');
+                restoredPicker.querySelectorAll('.game-flow-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.dataset.flow === gameFlowSelected);
+                });
+            }
         }
 
         if (action !== 'regen-topic') {
@@ -1701,19 +1715,39 @@ function switchAddTab(tab) {
 
 // ===== Add flow — Share step (shown after topic is saved) =====
 var _pendingCreateGame = false;  // captured at Save time from #createGameToggle
+var _pendingGameFlow   = 'normal'; // 'normal' | 'ai' — captured from #gameFlowPicker
 var _pendingTopicCover = '';
 var _pendingTopicDesc  = '';
 
 function createGameToggleHtml() {
     return '<div class="form-group create-game-toggle-row">' +
-        '<label class="ai-toggle-label create-game-toggle-label">' +
-            '<span class="ai-toggle-wrap">' +
-                '<input type="checkbox" id="createGameToggle" class="ai-toggle-input">' +
-                '<span class="ai-toggle-track"></span>' +
-            '</span>' +
-            '<span class="ai-toggle-text">Create with game</span>' +
-        '</label>' +
+        '<div class="create-game-row">' +
+            '<label class="ai-toggle-label create-game-toggle-label">' +
+                '<span class="ai-toggle-wrap">' +
+                    '<input type="checkbox" id="createGameToggle" class="ai-toggle-input" onchange="onCreateGameToggleChange(this)">' +
+                    '<span class="ai-toggle-track"></span>' +
+                '</span>' +
+                '<span class="ai-toggle-text">Also create a game</span>' +
+            '</label>' +
+            '<div class="game-flow-picker hidden" id="gameFlowPicker">' +
+                '<button type="button" class="game-flow-btn active" data-flow="normal" onclick="selectGameFlow(this)">Normal</button>' +
+                '<button type="button" class="game-flow-btn" data-flow="ai" onclick="selectGameFlow(this)"><i class="fas fa-wand-magic-sparkles"></i> AI</button>' +
+            '</div>' +
+        '</div>' +
     '</div>';
+}
+
+function onCreateGameToggleChange(checkbox) {
+    var picker = document.getElementById('gameFlowPicker');
+    if (picker) picker.classList.toggle('hidden', !checkbox.checked);
+}
+
+function selectGameFlow(btn) {
+    var picker = btn.closest('.game-flow-picker');
+    if (!picker) return;
+    picker.querySelectorAll('.game-flow-btn').forEach(function(b) {
+        b.classList.toggle('active', b === btn);
+    });
 }
 
 function _launchCreateGame(topicName) {
@@ -1723,7 +1757,8 @@ function _launchCreateGame(topicName) {
             topicCover: _pendingTopicCover || '',
             topicDesc:  _pendingTopicDesc  || '',
             companyKey: (_currentScope && _currentScope.companyKey) || '',
-            dept: (_currentScope && _currentScope.dept) || ''
+            dept: (_currentScope && _currentScope.dept) || '',
+            gameFlow: _pendingGameFlow || 'normal'
         }));
     } catch(e) {}
     window.location.href = 'index-games.html';

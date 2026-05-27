@@ -1297,6 +1297,50 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     color: var(--text-primary);
 }
 
+/* Row that holds the toggle + inline flow picker side by side */
+.create-game-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+}
+
+/* Normal | AI segmented control — revealed when toggle is on */
+.game-flow-picker {
+    display: inline-flex;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.game-flow-picker.hidden { display: none; }
+
+.game-flow-btn {
+    background: transparent;
+    border: none;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #4b5563;
+    cursor: pointer;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    line-height: 1;
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+.game-flow-btn:hover { color: #111827; }
+.game-flow-btn.active {
+    background: #fff;
+    color: #111827;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.game-flow-btn i { font-size: 10px; }
+
 .ai-model-group {
     margin-top: 12px;
 }
