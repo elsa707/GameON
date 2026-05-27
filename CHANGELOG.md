@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Topics: sentence-case labels + choice prompt moved outside picker
+
+### Changed
+- **`styles-topics.css`** — added `#detailEdit .form-group label` override to remove `text-transform: uppercase` and `letter-spacing` so all Add/Edit panel labels display in sentence case.
+- **`script-topics.js`** — "What would you like to add to this topic?" moved out of the `.choice-picker` block and rendered as a `<label>` in its own `form-group` above the picker.
+
 ## [2026-05-27] — Topics: updated "Add sub-topics" hint text
 
 ### Changed

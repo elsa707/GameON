@@ -1253,8 +1253,10 @@ function addTopic() {
                 </div>
                 ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
             </div>
+            <div class="form-group">
+                <label>What would you like to add to this topic?</label>
+            </div>
             <div class="choice-picker" id="choicePicker">
-                <p class="choice-prompt">What would you like to add to this topic?</p>
                 <div class="choice-buttons">
                     <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddContent()">
                         <i class="fas fa-upload"></i>

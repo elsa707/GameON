@@ -1,3 +1,9 @@
+/* ===== Detail panel: override global uppercase labels to sentence case ===== */
+#detailEdit .form-group label {
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 /* ===== Topics scope bar (company + department filter) ===== */
 .scope-bar {
     display: flex;
