@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Generate Game AI: Move Topic dropdown below AI Model selector
+
+### Changed
+- **`script-games.js`** — "Topic (optional)" dropdown moved from the bottom of the Content tab to immediately after the AI Model selector. Version bumped to `?v=85`.
+
+## [2026-05-27] — Add Game: Remove "Add content" card
+
+### Removed
+- **`script-games.js`** — "Add content" card button and the hidden content picker form removed from the manual Add Game panel. Version bumped to `?v=84`.
+
+## [2026-05-27] — Generate Game AI: Replace "Link to topic" toggle with plain dropdown
+
+### Changed
+- **`script-games.js`** — Replaced the "Link to a topic" toggle + hidden dropdown row with a plain `Topic (optional)` label + `Select a topic` dropdown, matching the manual Add Game panel style exactly.
+- **`script-games.js`** — `toggleAIGameTopicLink` function removed (no longer needed). Version bumped to `?v=83`.
+
 ## [2026-05-27] — Generate Game AI: Add "Link to topic" toggle to Content tab
 
 ### Added
