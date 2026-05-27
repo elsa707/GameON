@@ -207,6 +207,7 @@ function persistGamesScope() {
             active: gameRow.dataset.active !== 'false',
             scheduledDate: gameRow.dataset.scheduledDate || null,
             scheduledEndDate: gameRow.dataset.scheduledEndDate || null,
+            sharedDepts: (function() { try { return JSON.parse(gameRow.dataset.sharedDepts || '[]'); } catch(e) { return []; } })(),
             categories: cats
         });
     });
@@ -244,6 +245,18 @@ function _fmtDate(iso) {
 function _fmtDateRange(start, end) {
     if (!start) return '';
     return _fmtDate(start) + (end ? ' – ' + _fmtDate(end) : '');
+}
+
+function _buildShareChip(depts) {
+    var count = depts.length;
+    var label = count + ' share' + (count !== 1 ? 's' : '');
+    var items = depts.map(function(d) {
+        return '<span class="shares-tt-item">' + escapeAttr(d) + '</span>';
+    }).join('');
+    return '<span class="chip chip-shares" onclick="event.stopPropagation()">' +
+        label +
+        '<div class="shares-tooltip">' + items + '</div>' +
+    '</span>';
 }
 
 // easy, medium, hard are counts of questions at each level
@@ -320,6 +333,14 @@ function updateGameRowChips(gameRow) {
         }
     }
 
+    // Share count chip
+    var cellShare = gameRow.querySelector('.cell-share');
+    if (cellShare) {
+        var sd2 = [];
+        try { sd2 = JSON.parse(gameRow.dataset.sharedDepts || '[]'); } catch(e) {}
+        cellShare.innerHTML = sd2.length > 0 ? _buildShareChip(sd2) : '';
+    }
+
     // Difficulty donut — read difficulty from question row data attributes
     var easyQ = 0, medQ = 0, hardQ = 0;
     document.querySelectorAll('tr.row-q[data-game="' + gameId + '"]').forEach(function(qr) {
@@ -378,6 +399,11 @@ function gameRowHtml(game, id) {
         scheduledChip = '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + escapeAttr(dateLabel) + '</span>';
     }
 
+    var sharedDepts = game.sharedDepts || [];
+    var shareChip = sharedDepts.length > 0
+        ? _buildShareChip(sharedDepts)
+        : '';
+
     var easyQ = 0, medQ = 0, hardQ = 0;
     (game.categories || []).forEach(function(c) {
         (c.questions || []).forEach(function(q) {
@@ -398,13 +424,14 @@ function gameRowHtml(game, id) {
         '<div class="action-sep"></div>' +
         '<button type="button" class="action-item action-item-danger" onclick="actionDeleteGame(this,event)"><i class="fas fa-trash"></i> Delete</button>';
 
-    return '<tr class="' + escapeAttr(rowClass) + '" data-game="' + id + '" data-name="' + escapeAttr(game.name) + '" data-description="' + escapeAttr(game.description || '') + '" data-cover="' + escapeAttr(cover) + '" data-active="' + isActive + '" data-scheduled-date="' + escapeAttr(game.scheduledDate || '') + '" data-scheduled-end-date="' + escapeAttr(game.scheduledEndDate || '') + '" onclick="toggleGame(' + id + ')">' +
+    return '<tr class="' + escapeAttr(rowClass) + '" data-game="' + id + '" data-name="' + escapeAttr(game.name) + '" data-description="' + escapeAttr(game.description || '') + '" data-cover="' + escapeAttr(cover) + '" data-active="' + isActive + '" data-scheduled-date="' + escapeAttr(game.scheduledDate || '') + '" data-scheduled-end-date="' + escapeAttr(game.scheduledEndDate || '') + '" data-shared-depts="' + escapeAttr(JSON.stringify(sharedDepts)) + '" onclick="toggleGame(' + id + ')">' +
         '<td class="col-name"><div class="cell-row">' +
             '<span class="chevron"' + (catCount === 0 ? ' style="visibility:hidden"' : '') + '><i class="fas fa-chevron-right"></i></span>' +
             gameCoverHtml(cover) +
             '<span class="company-name">' + escapeAttr(game.name) + '</span>' +
             '<span class="row-main-chip">' + catChip + '</span>' +
             '<span class="cell-pills">' + scheduledChip + '</span>' +
+            '<span class="cell-share">' + shareChip + '</span>' +
             '<span class="row-status">' + statusChip + '</span>' +
             donutHtml +
             '<span class="row-actions"><div class="action-menu">' +
@@ -657,6 +684,48 @@ function setGamePanelMode(mode) {
     }
 }
 
+// ===== Checkbox dropdown helper =====
+function _buildShareDeptDropdown(checkboxItemsHtml, wrapperId, menuId) {
+    var menuIdAttr = menuId ? ' id="' + escapeAttr(menuId) + '"' : '';
+    return '<div class="share-dept-dropdown" id="' + escapeAttr(wrapperId) + '">' +
+        '<button type="button" class="share-dept-trigger" onclick="toggleShareDropdown(\'' + escapeAttr(wrapperId) + '\',event)">' +
+            '<span class="sdd-label">Select departments…</span>' +
+            '<i class="fas fa-chevron-down sdd-chevron"></i>' +
+        '</button>' +
+        '<div class="share-dept-menu"' + menuIdAttr + '>' +
+            checkboxItemsHtml +
+        '</div>' +
+    '</div>';
+}
+
+window.toggleShareDropdown = function(id, e) {
+    e.stopPropagation();
+    var wrapper = document.getElementById(id);
+    if (!wrapper) return;
+    var isOpen = wrapper.classList.contains('sdd-open');
+    document.querySelectorAll('.share-dept-dropdown.sdd-open').forEach(function(d) { d.classList.remove('sdd-open'); });
+    if (!isOpen) wrapper.classList.add('sdd-open');
+};
+
+window.syncShareDropdownLabel = function(id) {
+    var wrapper = document.getElementById(id);
+    if (!wrapper) return;
+    var checked = wrapper.querySelectorAll('input[type="checkbox"]:checked');
+    var label   = wrapper.querySelector('.sdd-label');
+    if (label) {
+        if (checked.length === 0)      label.textContent = 'Select departments…';
+        else if (checked.length === 1) label.textContent = checked[0].value;
+        else                           label.textContent = checked.length + ' departments selected';
+    }
+    if (typeof syncGameShareConfirmButton === 'function') syncGameShareConfirmButton();
+};
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest || !e.target.closest('.share-dept-dropdown')) {
+        document.querySelectorAll('.share-dept-dropdown.sdd-open').forEach(function(d) { d.classList.remove('sdd-open'); });
+    }
+});
+
 // ===== Share tab HTML builder =====
 function buildGameShareTabHtml() {
     var companyKey = _currentGameScope.companyKey;
@@ -669,13 +738,13 @@ function buildGameShareTabHtml() {
     if (!allDepts.length) return '<p class="share-empty">No departments to share with.</p>';
     var items = allDepts.map(function(d) {
         return '<label class="share-dept-item">' +
-            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '">' +
+            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '" onchange="syncShareDropdownLabel(\'addGameShareDropdown\')">' +
             '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
         '</label>';
     }).join('');
     return '<p class="share-panel-lead">Share this game with departments in <strong>' +
         escapeAttr(company.name) + '</strong> when saving.</p>' +
-        '<div class="share-dept-list">' + items + '</div>';
+        _buildShareDeptDropdown(items, 'addGameShareDropdown', null);
 }
 
 // ===== Schedule HTML (date range) =====
@@ -727,14 +796,16 @@ function addGame() {
     var deptShareHtml = buildGameShareTabHtml();
 
     document.getElementById('gameEditFields').innerHTML =
-        '<div class="add-game-cover-zone-wrap">' +
-            '<label class="add-game-cover-zone" id="addGameCoverZone">' +
-                '<i class="fas fa-cloud-arrow-up add-game-cover-icon"></i>' +
-                '<span class="add-game-cover-title">Drag &amp; drop or click to add cover image</span>' +
-                '<span class="add-game-cover-hint">Recommended: 1280 × 720 · JPG or PNG</span>' +
-                '<input type="file" accept="image/*" style="display:none" onchange="previewAddGameCover(this)">' +
-                '<input type="hidden" id="addGameCoverHidden" value="">' +
-            '</label>' +
+        '<div class="form-group">' +
+            '<label>Cover Image</label>' +
+            gameCoverPickerHtml(GAME_COVER_PRESETS[0]) +
+        '</div>' +
+        '<div class="form-group">' +
+            '<label for="addGameTopic">Topic <span class="form-label-optional">(optional)</span></label>' +
+            '<select id="addGameTopic" class="ai-model-select" onchange="onAddGameTopicChange(this)">' +
+                '<option value="">Select a topic</option>' +
+                (topicOpts || '') +
+            '</select>' +
         '</div>' +
         '<div class="form-group">' +
             '<label>Name <span class="required-mark">*</span></label>' +
@@ -743,13 +814,6 @@ function addGame() {
         '<div class="form-group">' +
             '<label>Description <span class="form-label-optional">(optional)</span></label>' +
             '<textarea id="addGameDesc" rows="3" placeholder="What will players learn?"></textarea>' +
-        '</div>' +
-        '<div class="form-group">' +
-            '<label for="addGameTopic">Topic <span class="form-label-optional">(optional)</span></label>' +
-            '<select id="addGameTopic" class="ai-model-select" onchange="onAddGameTopicChange(this)">' +
-                '<option value="">Select a topic</option>' +
-                (topicOpts || '') +
-            '</select>' +
         '</div>' +
         '<div class="add-game-advanced">' +
             '<button type="button" class="add-game-advanced-toggle" onclick="toggleAddGameAdvanced(this)">' +
@@ -787,82 +851,6 @@ function closeAddGameModal() {
     showGameEmpty();
 }
 
-function saveAddGameModal() {
-    var nameInput = document.getElementById('addGameName');
-    var name = nameInput ? nameInput.value.trim() : '';
-    if (!name) {
-        showGameToast('Game name is required');
-        if (nameInput) nameInput.focus();
-        return;
-    }
-
-    var descInput = document.getElementById('addGameDesc');
-    var description = descInput ? descInput.value.trim() : '';
-    var coverHidden = document.getElementById('addGameCoverHidden');
-    var cover = (coverHidden && coverHidden.value) ? coverHidden.value : randomGameCover();
-
-    var tbody = document.querySelector('#gamesTable tbody');
-    if (!tbody) return;
-
-    var newId = Date.now();
-    var gameObj = {
-        id: newId,
-        name: name,
-        description: description,
-        cover: cover,
-        active: true,
-        scheduledDate: null,
-        categories: []
-    };
-
-    var gameHtml = gameRowHtml(gameObj, newId);
-    tbody.insertAdjacentHTML('beforeend', gameHtml);
-    var gameRow = document.querySelector('tr.row-game[data-game="' + newId + '"]');
-    if (gameRow) updateGameRowChips(gameRow);
-
-    // Apply sharing if any departments checked
-    var deptNames = Array.from(document.querySelectorAll('#addGameModalBody input[name="shareDept"]:checked'))
-        .map(function(i) { return i.value; });
-    if (deptNames.length) {
-        shareGameWithDepts(_currentGameScope.companyKey, name, deptNames);
-    }
-
-    persistGamesScope();
-    updateGamesCount(document.querySelectorAll('#gamesTable tbody tr.row-game'));
-
-    var toastMsg = '"' + name + '" added';
-    if (deptNames.length) toastMsg += ' and shared to ' + deptNames.length + ' dept' + (deptNames.length !== 1 ? 's' : '');
-    showGameToast(toastMsg);
-
-    closeAddGameModal();
-}
-
-function previewAddGameCover(input) {
-    var file = input.files && input.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var dataUrl = e.target.result;
-        var hidden = document.getElementById('addGameCoverHidden');
-        if (hidden) hidden.value = dataUrl;
-        var zone = document.getElementById('addGameCoverZone');
-        if (!zone) return;
-        // Clear non-input children, show preview
-        Array.from(zone.childNodes).forEach(function(n) {
-            if (n.nodeName !== 'INPUT') zone.removeChild(n);
-        });
-        var img = document.createElement('img');
-        img.src = dataUrl;
-        img.alt = 'Cover';
-        img.className = 'add-game-cover-preview';
-        var overlay = document.createElement('span');
-        overlay.className = 'add-game-cover-overlay';
-        overlay.innerHTML = '<i class="fas fa-cloud-arrow-up"></i> Change';
-        zone.insertBefore(overlay, zone.firstChild);
-        zone.insertBefore(img, zone.firstChild);
-    };
-    reader.readAsDataURL(file);
-}
 
 function toggleAddGameAdvanced(btn) {
     var body = document.getElementById('addGameAdvancedBody');
@@ -870,6 +858,37 @@ function toggleAddGameAdvanced(btn) {
     var isOpen = !body.classList.contains('hidden');
     body.classList.toggle('hidden', isOpen);
     btn.classList.toggle('open', !isOpen);
+}
+
+function _setAddGameCoverPreview(src) {
+    var picker = document.querySelector('#gameEditFields .cover-picker');
+    if (!picker) return;
+    // Try to find a matching preset tile first
+    var matched = null;
+    picker.querySelectorAll('.cover-tile:not(.cover-tile-upload)').forEach(function(t) {
+        if (t.dataset.cover === src) matched = t;
+    });
+    if (matched) {
+        selectGameCoverTile(matched);
+        return;
+    }
+    // Treat as custom image — populate the upload tile and select it
+    var uploadTile = picker.querySelector('.cover-tile-upload');
+    if (!uploadTile) return;
+    uploadTile.dataset.cover = src;
+    var empty = uploadTile.querySelector('.cover-upload-empty');
+    if (empty) empty.remove();
+    var img = uploadTile.querySelector('img');
+    if (!img) {
+        img = document.createElement('img');
+        img.alt = 'Custom cover';
+        uploadTile.insertBefore(img, uploadTile.firstChild);
+    }
+    img.src = src;
+    if (!uploadTile.querySelector('.cover-tile-overlay')) {
+        uploadTile.insertAdjacentHTML('beforeend', '<span class="cover-tile-overlay"><i class="fas fa-camera"></i></span>');
+    }
+    selectGameCoverTile(uploadTile);
 }
 
 function onAddGameTopicChange(select) {
@@ -881,25 +900,7 @@ function onAddGameTopicChange(select) {
         if (nameInput && !nameInput.value.trim()) nameInput.value = t.name || '';
         var descInput = document.getElementById('addGameDesc');
         if (descInput && !descInput.value.trim()) descInput.value = t.description || '';
-        if (t.cover) {
-            var hidden = document.getElementById('addGameCoverHidden');
-            if (hidden) hidden.value = t.cover;
-            var zone = document.getElementById('addGameCoverZone');
-            if (zone) {
-                Array.from(zone.childNodes).forEach(function(n) {
-                    if (n.nodeName !== 'INPUT') zone.removeChild(n);
-                });
-                var img = document.createElement('img');
-                img.src = t.cover;
-                img.alt = 'Cover';
-                img.className = 'add-game-cover-preview';
-                var overlay = document.createElement('span');
-                overlay.className = 'add-game-cover-overlay';
-                overlay.innerHTML = '<i class="fas fa-camera"></i> Change';
-                zone.insertBefore(overlay, zone.firstChild);
-                zone.insertBefore(img, zone.firstChild);
-            }
-        }
+        if (t.cover) _setAddGameCoverPreview(t.cover);
     } catch(e) {}
 }
 
@@ -1059,8 +1060,7 @@ function saveGameAdd(event) {
         }
         var descInput = document.getElementById('addGameDesc');
         var description = descInput ? descInput.value.trim() : '';
-        var coverHidden = document.getElementById('addGameCoverHidden');
-        var cover = (coverHidden && coverHidden.value) ? coverHidden.value : randomGameCover();
+        var cover = readGameCoverPicker() || randomGameCover();
 
         var tbody = document.querySelector('#gamesTable tbody');
         if (!tbody) return;
@@ -1328,7 +1328,16 @@ function shareGameWithDepts(companyKey, gameName, deptNames) {
     var visible = collectGamesForScope(companyKey, _currentGameScope.dept);
     var sourceGame = visible.find ? visible.find(function(g) { return g.name === gameName; }) : null;
     if (!sourceGame) return;
+
+    // Track which departments the source game is shared to
+    if (!sourceGame.sharedDepts) sourceGame.sharedDepts = [];
+
     deptNames.forEach(function(dn) {
+        // Add to source game's share list (deduped)
+        if (sourceGame.sharedDepts.indexOf(dn) === -1) {
+            sourceGame.sharedDepts.push(dn);
+        }
+
         var key = (companyKey || '') + '|' + dn;
         var bucket = GAMES_BY_SCOPE[key];
         if (!bucket) {
@@ -1338,10 +1347,23 @@ function shareGameWithDepts(companyKey, gameName, deptNames) {
         }
         if (!bucket.some(function(g) { return g.name === gameName; })) {
             var copy = JSON.parse(JSON.stringify(sourceGame));
-            copy.sharedDate = new Date().toISOString();
+            copy.sharedDate  = new Date().toISOString();
+            copy.sharedDepts = []; // copies don't carry the parent's share list
             bucket.push(copy);
         }
     });
+
+    // Sync the DOM row dataset so the chip updates immediately
+    var gameRow = document.querySelector('tr.row-game[data-name="' + CSS.escape ? gameName.replace(/"/g,'&quot;') : gameName + '"]');
+    if (!gameRow) {
+        document.querySelectorAll('tr.row-game').forEach(function(r) {
+            if (r.dataset.name === gameName) gameRow = r;
+        });
+    }
+    if (gameRow) {
+        gameRow.dataset.sharedDepts = JSON.stringify(sourceGame.sharedDepts);
+        updateGameRowChips(gameRow);
+    }
 }
 
 // ===== Schedule panel confirm (kebab-menu flow for existing games) =====
@@ -1381,16 +1403,16 @@ function openGameSharePanel(gameRow) {
 
     var items = allDepts.map(function(d) {
         return '<label class="share-dept-item">' +
-            '<input type="checkbox" value="' + escapeAttr(d.name) + '">' +
+            '<input type="checkbox" value="' + escapeAttr(d.name) + '" onchange="syncShareDropdownLabel(\'sharePanelDropdown\')">' +
             '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
         '</label>';
-    }).join('') || '<div class="share-empty">No departments to share with.</div>';
+    }).join('') || '<p class="share-empty">No departments to share with.</p>';
 
     document.getElementById('gameShareTitle').textContent = 'Share Game';
     document.getElementById('gameShareSubtitle').textContent = getGamesScopeSubtitle();
     document.getElementById('gameShareBody').innerHTML =
         '<p class="share-panel-lead"><strong>' + escapeAttr(name) + '</strong></p>' +
-        '<div class="share-dept-list" id="gameShareDeptList">' + items + '</div>';
+        _buildShareDeptDropdown(items, 'sharePanelDropdown', 'gameShareDeptList');
 
     var list = document.getElementById('gameShareDeptList');
     if (list) list.addEventListener('change', syncGameShareConfirmButton);
@@ -2912,41 +2934,35 @@ function _checkPendingGame(companyKey, deptName) {
         if (pending.companyKey !== companyKey || pending.dept !== deptName) return;
         addGame();
         setTimeout(function() {
-            // Populate the modal fields opened by addGame()
-            if (pending.topicName) {
-                var nameInput = document.getElementById('addGameName');
-                if (nameInput) nameInput.value = pending.topicName;
-            }
+            if (!pending.topicName) return;
+            var topicSel = document.getElementById('addGameTopic');
+            if (!topicSel) return;
 
-            if (pending.topicDesc) {
-                var descInput = document.getElementById('addGameDesc');
-                if (descInput) descInput.value = pending.topicDesc;
-            }
-
-            if (pending.topicCover) {
-                var hidden = document.getElementById('addGameCoverHidden');
-                if (hidden) hidden.value = pending.topicCover;
-                var zone = document.getElementById('addGameCoverZone');
-                if (zone) {
-                    Array.from(zone.childNodes).forEach(function(n) {
-                        if (n.nodeName !== 'INPUT') zone.removeChild(n);
-                    });
-                    var img = document.createElement('img');
-                    img.src = pending.topicCover;
-                    img.alt = 'Cover';
-                    img.className = 'add-game-cover-preview';
-                    var overlay = document.createElement('span');
-                    overlay.className = 'add-game-cover-overlay';
-                    overlay.innerHTML = '<i class="fas fa-camera"></i> Change';
-                    zone.insertBefore(overlay, zone.firstChild);
-                    zone.insertBefore(img, zone.firstChild);
+            // Find existing option by display text
+            var targetOpt = null;
+            for (var i = 0; i < topicSel.options.length; i++) {
+                if (topicSel.options[i].text === pending.topicName) {
+                    targetOpt = topicSel.options[i];
+                    break;
                 }
             }
+
+            // Not in list — inject it so it always lands in the dropdown, never the Name field
+            if (!targetOpt) {
+                targetOpt = document.createElement('option');
+                targetOpt.value = JSON.stringify({
+                    name: pending.topicName,
+                    description: pending.topicDesc || '',
+                    cover: pending.topicCover || '',
+                    subTopics: []
+                });
+                targetOpt.textContent = pending.topicName;
+                topicSel.insertBefore(targetOpt, topicSel.options[1] || null);
+            }
+
+            topicSel.value = targetOpt.value;
+            onAddGameTopicChange(topicSel);
         }, 0);
     } catch(e) {}
 }
 
-// ===== Init =====
-$(function() {
-    // Close menus on outside click — already wired above via document.addEventListener
-});

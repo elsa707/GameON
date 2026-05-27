@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
-## [2026-05-27] — Topics: "Also create a game" toggle with inline flow picker
+## [2026-05-26] — Topics: "Also create a game" toggle with inline flow picker
 
 ### Changed
 - **`script-topics.js`** — renamed "Create with game" toggle to "Also create a game" for clarity.
@@ -15,6 +15,72 @@ Project contact: elsadr@agilebridge.co.za
 - **`script-topics.js`** — `doAIGenerate` preserves and restores both the toggle state and the selected flow when the topic pane is rebuilt during AI regeneration.
 - **`styles-topics.css`** — `.create-game-row`, `.game-flow-picker`, `.game-flow-btn` styles added.
 - `script-topics.js` version bumped to `?v=52`.
+
+## [2026-05-27] — Add Game: topic always pre-selected in dropdown when arriving from Topics page
+
+### Fixed
+- **`script-games.js`** — `_checkPendingGame()` no longer falls back to filling the Name field with the topic name. Instead, if the topic isn't already in the dropdown options, a new option is injected and selected — so the topic name always appears selected in the TOPIC dropdown.
+- `script-games.js` version bumped to `?v=45`.
+
+## [2026-05-27] — Add Game: cover image swatch picker replaces drag-drop zone
+
+### Changed
+- **`script-games.js`** — `addGame()` form layout updated: "Cover Image" section (swatch picker with 3 gradient presets + Upload tile) now appears first, matching the Add Topic panel; Topic dropdown is immediately below it.
+- **`script-games.js`** — `_setAddGameCoverPreview(src)` rewritten to drive the swatch picker: selects the matching preset tile when the cover is a preset gradient, otherwise populates and selects the upload tile.
+- **`script-games.js`** — `saveGameAdd()` now reads the cover via `readGameCoverPicker()` (`.cover-hidden-input`) instead of the old `#addGameCoverHidden` element.
+
+### Removed
+- **`script-games.js`** — Dead `saveAddGameModal()` function (never called — form submits to `saveGameAdd`).
+- **`script-games.js`** — Dead `previewAddGameCover()` function (belonged to the old drag-drop zone).
+- `script-games.js` version bumped to `?v=44`.
+
+## [2026-05-27] — Simplify: script-games.js cleanup
+
+### Changed
+- **`script-games.js`** — `_checkPendingGame()` refactored: merged double `if (pending.topicName)` block into a single `topicFound` flag; fallback branch only runs when the topic was not found in the dropdown. Replaced inline cover-zone DOM manipulation with `_setAddGameCoverPreview()`.
+- **`script-games.js`** — Topic option scan converted from `Array.from().forEach()` to a `for/break` loop for early exit once a match is found.
+- **`script-games.js`** — Removed empty `$(function(){})` Init block (comment noted it was already handled by a `document.addEventListener` above).
+- `script-games.js` version bumped to `?v=43`.
+
+## [2026-05-27] — Add Game panel: topic at top + pre-selected from topics page
+
+### Changed
+- **`script-games.js`** — `addGame()` form reordered: TOPIC dropdown is now the first field (above cover zone, Name, Description) so selecting a topic auto-fills the rest.
+- **`script-games.js`** — `_checkPendingGame()` now pre-selects the matching topic option in `#addGameTopic` and fires `onAddGameTopicChange()` to auto-fill name/description/cover; falls back to manual field fill if the topic isn't in the dropdown.
+- `script-games.js` version bumped to `?v=42`.
+
+## [2026-05-27] — Games page: share chip hover shows department names
+
+### Added
+- **`script-games.js`** — `_buildShareChip(depts)` helper renders the share pill with an inline hover tooltip listing each shared department name.
+- **`styles-games.css`** — `.shares-tooltip` and `.shares-tt-item` — tooltip panel that appears below the chip on hover.
+
+### Changed
+- `script-games.js` version bumped to `?v=41`.
+
+## [2026-05-27] — Games page: share count pill on game rows
+
+### Added
+- **`script-games.js`** — `shareGameWithDepts` now appends each target department to `sourceGame.sharedDepts[]` (deduped); shared copies get an empty `sharedDepts: []` so they don't carry the parent's share list.
+- **`script-games.js`** — `gameRowHtml` reads `game.sharedDepts`, stores it in `data-shared-depts`, and renders a `chip-shares` pill ("1 share" / "N shares") between the date chip and the Active chip.
+- **`script-games.js`** — `updateGameRowChips` refreshes the `cell-share` span from `data-shared-depts` after any chip update.
+- **`script-games.js`** — `persistGamesScope` saves `sharedDepts` from `data-shared-depts` so the count survives page refresh.
+- **`styles-games.css`** — `.chip-shares` — grey neutral chip matching the live site "1 share" style.
+- `script-games.js` version bumped to `?v=40`.
+
+## [2026-05-26] — Share departments: checkbox dropdown component
+
+### Added
+- **`script-games.js`** — `_buildShareDeptDropdown(items, wrapperId, menuId)` helper builds a reusable checkbox-dropdown: trigger button with chevron, collapsible menu, label reflects selection count.
+- **`script-games.js`** — `window.toggleShareDropdown(id, e)` opens/closes a dropdown by ID; closes any other open dropdowns automatically.
+- **`script-games.js`** — `window.syncShareDropdownLabel(id)` updates the trigger label ("Select departments…" / single name / "N departments selected") and re-syncs the Share confirm button.
+- **`script-games.js`** — document `click` listener closes all open share dropdowns when clicking outside.
+- **`styles-games.css`** — `.share-dept-dropdown`, `.share-dept-trigger`, `.share-dept-menu`, `.sdd-label`, `.sdd-chevron` — full dropdown component styles with open/close transitions.
+
+### Changed
+- **`script-games.js`** — `buildGameShareTabHtml()` now renders the dropdown instead of a fixed scrollable list; checkboxes retain `name="shareDept"` so save logic is unchanged.
+- **`script-games.js`** — `openGameSharePanel()` now renders the dropdown with `id="gameShareDeptList"` on the menu element so existing confirm-button sync still works.
+- `script-games.js` version bumped to `?v=39`.
 
 ## [2026-05-26] — Schedule panel: pre-fill existing dates
 
