@@ -1264,7 +1264,7 @@ function addTopic() {
                     <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddSubTopic()">
                         <i class="fas fa-list-ol"></i>
                         <span class="choice-label">Add sub-topics</span>
-                        <span class="choice-hint">Break this topic into multiple pieces</span>
+                        <span class="choice-hint">Create multiple learning topics</span>
                     </button>
                 </div>
             </div>

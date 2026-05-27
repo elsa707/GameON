@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Topics: updated "Add sub-topics" hint text
+
+### Changed
+- **`script-topics.js`** — "Add sub-topics" hint updated to "Create multiple learning topics".
+
 ## [2026-05-27] — Topics: side-by-side choice buttons + updated hint text
 
 ### Changed
