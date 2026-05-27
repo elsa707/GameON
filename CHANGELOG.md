@@ -5,6 +5,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Games page: share chip hover shows department names
+
+### Added
+- **`script-games.js`** — `_buildShareChip(depts)` helper renders the share pill with an inline hover tooltip listing each shared department name.
+- **`styles-games.css`** — `.shares-tooltip` and `.shares-tt-item` — tooltip panel that appears below the chip on hover.
+
+### Changed
+- `script-games.js` version bumped to `?v=41`.
+
+## [2026-05-27] — Games page: share count pill on game rows
+
+### Added
+- **`script-games.js`** — `shareGameWithDepts` now appends each target department to `sourceGame.sharedDepts[]` (deduped); shared copies get an empty `sharedDepts: []` so they don't carry the parent's share list.
+- **`script-games.js`** — `gameRowHtml` reads `game.sharedDepts`, stores it in `data-shared-depts`, and renders a `chip-shares` pill ("1 share" / "N shares") between the date chip and the Active chip.
+- **`script-games.js`** — `updateGameRowChips` refreshes the `cell-share` span from `data-shared-depts` after any chip update.
+- **`script-games.js`** — `persistGamesScope` saves `sharedDepts` from `data-shared-depts` so the count survives page refresh.
+- **`styles-games.css`** — `.chip-shares` — grey neutral chip matching the live site "1 share" style.
+- `script-games.js` version bumped to `?v=40`.
+
+## [2026-05-26] — Share departments: checkbox dropdown component
+
+### Added
+- **`script-games.js`** — `_buildShareDeptDropdown(items, wrapperId, menuId)` helper builds a reusable checkbox-dropdown: trigger button with chevron, collapsible menu, label reflects selection count.
+- **`script-games.js`** — `window.toggleShareDropdown(id, e)` opens/closes a dropdown by ID; closes any other open dropdowns automatically.
+- **`script-games.js`** — `window.syncShareDropdownLabel(id)` updates the trigger label ("Select departments…" / single name / "N departments selected") and re-syncs the Share confirm button.
+- **`script-games.js`** — document `click` listener closes all open share dropdowns when clicking outside.
+- **`styles-games.css`** — `.share-dept-dropdown`, `.share-dept-trigger`, `.share-dept-menu`, `.sdd-label`, `.sdd-chevron` — full dropdown component styles with open/close transitions.
+
+### Changed
+- **`script-games.js`** — `buildGameShareTabHtml()` now renders the dropdown instead of a fixed scrollable list; checkboxes retain `name="shareDept"` so save logic is unchanged.
+- **`script-games.js`** — `openGameSharePanel()` now renders the dropdown with `id="gameShareDeptList"` on the menu element so existing confirm-button sync still works.
+- `script-games.js` version bumped to `?v=39`.
+
 ## [2026-05-26] — Schedule panel: pre-fill existing dates
 
 ### Changed

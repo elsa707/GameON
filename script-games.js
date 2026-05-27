@@ -207,6 +207,7 @@ function persistGamesScope() {
             active: gameRow.dataset.active !== 'false',
             scheduledDate: gameRow.dataset.scheduledDate || null,
             scheduledEndDate: gameRow.dataset.scheduledEndDate || null,
+            sharedDepts: (function() { try { return JSON.parse(gameRow.dataset.sharedDepts || '[]'); } catch(e) { return []; } })(),
             categories: cats
         });
     });
@@ -244,6 +245,18 @@ function _fmtDate(iso) {
 function _fmtDateRange(start, end) {
     if (!start) return '';
     return _fmtDate(start) + (end ? ' – ' + _fmtDate(end) : '');
+}
+
+function _buildShareChip(depts) {
+    var count = depts.length;
+    var label = count + ' share' + (count !== 1 ? 's' : '');
+    var items = depts.map(function(d) {
+        return '<span class="shares-tt-item">' + escapeAttr(d) + '</span>';
+    }).join('');
+    return '<span class="chip chip-shares" onclick="event.stopPropagation()">' +
+        label +
+        '<div class="shares-tooltip">' + items + '</div>' +
+    '</span>';
 }
 
 // easy, medium, hard are counts of questions at each level
@@ -320,6 +333,14 @@ function updateGameRowChips(gameRow) {
         }
     }
 
+    // Share count chip
+    var cellShare = gameRow.querySelector('.cell-share');
+    if (cellShare) {
+        var sd2 = [];
+        try { sd2 = JSON.parse(gameRow.dataset.sharedDepts || '[]'); } catch(e) {}
+        cellShare.innerHTML = sd2.length > 0 ? _buildShareChip(sd2) : '';
+    }
+
     // Difficulty donut — read difficulty from question row data attributes
     var easyQ = 0, medQ = 0, hardQ = 0;
     document.querySelectorAll('tr.row-q[data-game="' + gameId + '"]').forEach(function(qr) {
@@ -378,6 +399,11 @@ function gameRowHtml(game, id) {
         scheduledChip = '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + escapeAttr(dateLabel) + '</span>';
     }
 
+    var sharedDepts = game.sharedDepts || [];
+    var shareChip = sharedDepts.length > 0
+        ? _buildShareChip(sharedDepts)
+        : '';
+
     var easyQ = 0, medQ = 0, hardQ = 0;
     (game.categories || []).forEach(function(c) {
         (c.questions || []).forEach(function(q) {
@@ -398,13 +424,14 @@ function gameRowHtml(game, id) {
         '<div class="action-sep"></div>' +
         '<button type="button" class="action-item action-item-danger" onclick="actionDeleteGame(this,event)"><i class="fas fa-trash"></i> Delete</button>';
 
-    return '<tr class="' + escapeAttr(rowClass) + '" data-game="' + id + '" data-name="' + escapeAttr(game.name) + '" data-description="' + escapeAttr(game.description || '') + '" data-cover="' + escapeAttr(cover) + '" data-active="' + isActive + '" data-scheduled-date="' + escapeAttr(game.scheduledDate || '') + '" data-scheduled-end-date="' + escapeAttr(game.scheduledEndDate || '') + '" onclick="toggleGame(' + id + ')">' +
+    return '<tr class="' + escapeAttr(rowClass) + '" data-game="' + id + '" data-name="' + escapeAttr(game.name) + '" data-description="' + escapeAttr(game.description || '') + '" data-cover="' + escapeAttr(cover) + '" data-active="' + isActive + '" data-scheduled-date="' + escapeAttr(game.scheduledDate || '') + '" data-scheduled-end-date="' + escapeAttr(game.scheduledEndDate || '') + '" data-shared-depts="' + escapeAttr(JSON.stringify(sharedDepts)) + '" onclick="toggleGame(' + id + ')">' +
         '<td class="col-name"><div class="cell-row">' +
             '<span class="chevron"' + (catCount === 0 ? ' style="visibility:hidden"' : '') + '><i class="fas fa-chevron-right"></i></span>' +
             gameCoverHtml(cover) +
             '<span class="company-name">' + escapeAttr(game.name) + '</span>' +
             '<span class="row-main-chip">' + catChip + '</span>' +
             '<span class="cell-pills">' + scheduledChip + '</span>' +
+            '<span class="cell-share">' + shareChip + '</span>' +
             '<span class="row-status">' + statusChip + '</span>' +
             donutHtml +
             '<span class="row-actions"><div class="action-menu">' +
@@ -657,6 +684,48 @@ function setGamePanelMode(mode) {
     }
 }
 
+// ===== Checkbox dropdown helper =====
+function _buildShareDeptDropdown(checkboxItemsHtml, wrapperId, menuId) {
+    var menuIdAttr = menuId ? ' id="' + escapeAttr(menuId) + '"' : '';
+    return '<div class="share-dept-dropdown" id="' + escapeAttr(wrapperId) + '">' +
+        '<button type="button" class="share-dept-trigger" onclick="toggleShareDropdown(\'' + escapeAttr(wrapperId) + '\',event)">' +
+            '<span class="sdd-label">Select departments…</span>' +
+            '<i class="fas fa-chevron-down sdd-chevron"></i>' +
+        '</button>' +
+        '<div class="share-dept-menu"' + menuIdAttr + '>' +
+            checkboxItemsHtml +
+        '</div>' +
+    '</div>';
+}
+
+window.toggleShareDropdown = function(id, e) {
+    e.stopPropagation();
+    var wrapper = document.getElementById(id);
+    if (!wrapper) return;
+    var isOpen = wrapper.classList.contains('sdd-open');
+    document.querySelectorAll('.share-dept-dropdown.sdd-open').forEach(function(d) { d.classList.remove('sdd-open'); });
+    if (!isOpen) wrapper.classList.add('sdd-open');
+};
+
+window.syncShareDropdownLabel = function(id) {
+    var wrapper = document.getElementById(id);
+    if (!wrapper) return;
+    var checked = wrapper.querySelectorAll('input[type="checkbox"]:checked');
+    var label   = wrapper.querySelector('.sdd-label');
+    if (label) {
+        if (checked.length === 0)      label.textContent = 'Select departments…';
+        else if (checked.length === 1) label.textContent = checked[0].value;
+        else                           label.textContent = checked.length + ' departments selected';
+    }
+    if (typeof syncGameShareConfirmButton === 'function') syncGameShareConfirmButton();
+};
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest || !e.target.closest('.share-dept-dropdown')) {
+        document.querySelectorAll('.share-dept-dropdown.sdd-open').forEach(function(d) { d.classList.remove('sdd-open'); });
+    }
+});
+
 // ===== Share tab HTML builder =====
 function buildGameShareTabHtml() {
     var companyKey = _currentGameScope.companyKey;
@@ -669,13 +738,13 @@ function buildGameShareTabHtml() {
     if (!allDepts.length) return '<p class="share-empty">No departments to share with.</p>';
     var items = allDepts.map(function(d) {
         return '<label class="share-dept-item">' +
-            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '">' +
+            '<input type="checkbox" name="shareDept" value="' + escapeAttr(d.name) + '" onchange="syncShareDropdownLabel(\'addGameShareDropdown\')">' +
             '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
         '</label>';
     }).join('');
     return '<p class="share-panel-lead">Share this game with departments in <strong>' +
         escapeAttr(company.name) + '</strong> when saving.</p>' +
-        '<div class="share-dept-list">' + items + '</div>';
+        _buildShareDeptDropdown(items, 'addGameShareDropdown', null);
 }
 
 // ===== Schedule HTML (date range) =====
@@ -1328,7 +1397,16 @@ function shareGameWithDepts(companyKey, gameName, deptNames) {
     var visible = collectGamesForScope(companyKey, _currentGameScope.dept);
     var sourceGame = visible.find ? visible.find(function(g) { return g.name === gameName; }) : null;
     if (!sourceGame) return;
+
+    // Track which departments the source game is shared to
+    if (!sourceGame.sharedDepts) sourceGame.sharedDepts = [];
+
     deptNames.forEach(function(dn) {
+        // Add to source game's share list (deduped)
+        if (sourceGame.sharedDepts.indexOf(dn) === -1) {
+            sourceGame.sharedDepts.push(dn);
+        }
+
         var key = (companyKey || '') + '|' + dn;
         var bucket = GAMES_BY_SCOPE[key];
         if (!bucket) {
@@ -1338,10 +1416,23 @@ function shareGameWithDepts(companyKey, gameName, deptNames) {
         }
         if (!bucket.some(function(g) { return g.name === gameName; })) {
             var copy = JSON.parse(JSON.stringify(sourceGame));
-            copy.sharedDate = new Date().toISOString();
+            copy.sharedDate  = new Date().toISOString();
+            copy.sharedDepts = []; // copies don't carry the parent's share list
             bucket.push(copy);
         }
     });
+
+    // Sync the DOM row dataset so the chip updates immediately
+    var gameRow = document.querySelector('tr.row-game[data-name="' + CSS.escape ? gameName.replace(/"/g,'&quot;') : gameName + '"]');
+    if (!gameRow) {
+        document.querySelectorAll('tr.row-game').forEach(function(r) {
+            if (r.dataset.name === gameName) gameRow = r;
+        });
+    }
+    if (gameRow) {
+        gameRow.dataset.sharedDepts = JSON.stringify(sourceGame.sharedDepts);
+        updateGameRowChips(gameRow);
+    }
 }
 
 // ===== Schedule panel confirm (kebab-menu flow for existing games) =====
@@ -1381,16 +1472,16 @@ function openGameSharePanel(gameRow) {
 
     var items = allDepts.map(function(d) {
         return '<label class="share-dept-item">' +
-            '<input type="checkbox" value="' + escapeAttr(d.name) + '">' +
+            '<input type="checkbox" value="' + escapeAttr(d.name) + '" onchange="syncShareDropdownLabel(\'sharePanelDropdown\')">' +
             '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
         '</label>';
-    }).join('') || '<div class="share-empty">No departments to share with.</div>';
+    }).join('') || '<p class="share-empty">No departments to share with.</p>';
 
     document.getElementById('gameShareTitle').textContent = 'Share Game';
     document.getElementById('gameShareSubtitle').textContent = getGamesScopeSubtitle();
     document.getElementById('gameShareBody').innerHTML =
         '<p class="share-panel-lead"><strong>' + escapeAttr(name) + '</strong></p>' +
-        '<div class="share-dept-list" id="gameShareDeptList">' + items + '</div>';
+        _buildShareDeptDropdown(items, 'sharePanelDropdown', 'gameShareDeptList');
 
     var list = document.getElementById('gameShareDeptList');
     if (list) list.addEventListener('change', syncGameShareConfirmButton);
