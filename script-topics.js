@@ -1259,7 +1259,7 @@ function addTopic() {
                     <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddContent()">
                         <i class="fas fa-upload"></i>
                         <span class="choice-label">Add content</span>
-                        <span class="choice-hint">A single PDF, image, video URL, or text</span>
+                        <span class="choice-hint">Provide a single file, video URL or text</span>
                     </button>
                     <button type="button" class="btn btn-outline btn-choice" onclick="chooseAddSubTopic()">
                         <i class="fas fa-list-ol"></i>

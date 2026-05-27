@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Topics: side-by-side choice buttons + updated hint text
+
+### Changed
+- **`styles-topics.css`** — `.choice-buttons` grid changed from `1fr` to `1fr 1fr` so "Add content" and "Add sub-topics" sit side by side.
+- **`script-topics.js`** — "Add content" hint updated to "Provide a single file, video URL or text".
+
 ## [2026-05-27] — Topics: "Also create a game" toggle with inline flow picker
 
 ### Changed
