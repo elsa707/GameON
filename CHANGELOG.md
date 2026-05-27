@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
-## [2026-05-26] — Topics: "Also create a game" toggle with inline flow picker
+## [2026-05-27] — Topics: "Also create a game" toggle with inline flow picker
 
 ### Changed
 - **`script-topics.js`** — renamed "Create with game" toggle to "Also create a game" for clarity.
