@@ -796,14 +796,16 @@ function addGame() {
     var deptShareHtml = buildGameShareTabHtml();
 
     document.getElementById('gameEditFields').innerHTML =
-        '<div class="add-game-cover-zone-wrap">' +
-            '<label class="add-game-cover-zone" id="addGameCoverZone">' +
-                '<i class="fas fa-cloud-arrow-up add-game-cover-icon"></i>' +
-                '<span class="add-game-cover-title">Drag &amp; drop or click to add cover image</span>' +
-                '<span class="add-game-cover-hint">Recommended: 1280 × 720 · JPG or PNG</span>' +
-                '<input type="file" accept="image/*" style="display:none" onchange="previewAddGameCover(this)">' +
-                '<input type="hidden" id="addGameCoverHidden" value="">' +
-            '</label>' +
+        '<div class="form-group">' +
+            '<label>Cover Image</label>' +
+            gameCoverPickerHtml(GAME_COVER_PRESETS[0]) +
+        '</div>' +
+        '<div class="form-group">' +
+            '<label for="addGameTopic">Topic <span class="form-label-optional">(optional)</span></label>' +
+            '<select id="addGameTopic" class="ai-model-select" onchange="onAddGameTopicChange(this)">' +
+                '<option value="">Select a topic</option>' +
+                (topicOpts || '') +
+            '</select>' +
         '</div>' +
         '<div class="form-group">' +
             '<label>Name <span class="required-mark">*</span></label>' +
@@ -812,13 +814,6 @@ function addGame() {
         '<div class="form-group">' +
             '<label>Description <span class="form-label-optional">(optional)</span></label>' +
             '<textarea id="addGameDesc" rows="3" placeholder="What will players learn?"></textarea>' +
-        '</div>' +
-        '<div class="form-group">' +
-            '<label for="addGameTopic">Topic <span class="form-label-optional">(optional)</span></label>' +
-            '<select id="addGameTopic" class="ai-model-select" onchange="onAddGameTopicChange(this)">' +
-                '<option value="">Select a topic</option>' +
-                (topicOpts || '') +
-            '</select>' +
         '</div>' +
         '<div class="add-game-advanced">' +
             '<button type="button" class="add-game-advanced-toggle" onclick="toggleAddGameAdvanced(this)">' +
@@ -856,82 +851,6 @@ function closeAddGameModal() {
     showGameEmpty();
 }
 
-function saveAddGameModal() {
-    var nameInput = document.getElementById('addGameName');
-    var name = nameInput ? nameInput.value.trim() : '';
-    if (!name) {
-        showGameToast('Game name is required');
-        if (nameInput) nameInput.focus();
-        return;
-    }
-
-    var descInput = document.getElementById('addGameDesc');
-    var description = descInput ? descInput.value.trim() : '';
-    var coverHidden = document.getElementById('addGameCoverHidden');
-    var cover = (coverHidden && coverHidden.value) ? coverHidden.value : randomGameCover();
-
-    var tbody = document.querySelector('#gamesTable tbody');
-    if (!tbody) return;
-
-    var newId = Date.now();
-    var gameObj = {
-        id: newId,
-        name: name,
-        description: description,
-        cover: cover,
-        active: true,
-        scheduledDate: null,
-        categories: []
-    };
-
-    var gameHtml = gameRowHtml(gameObj, newId);
-    tbody.insertAdjacentHTML('beforeend', gameHtml);
-    var gameRow = document.querySelector('tr.row-game[data-game="' + newId + '"]');
-    if (gameRow) updateGameRowChips(gameRow);
-
-    // Apply sharing if any departments checked
-    var deptNames = Array.from(document.querySelectorAll('#addGameModalBody input[name="shareDept"]:checked'))
-        .map(function(i) { return i.value; });
-    if (deptNames.length) {
-        shareGameWithDepts(_currentGameScope.companyKey, name, deptNames);
-    }
-
-    persistGamesScope();
-    updateGamesCount(document.querySelectorAll('#gamesTable tbody tr.row-game'));
-
-    var toastMsg = '"' + name + '" added';
-    if (deptNames.length) toastMsg += ' and shared to ' + deptNames.length + ' dept' + (deptNames.length !== 1 ? 's' : '');
-    showGameToast(toastMsg);
-
-    closeAddGameModal();
-}
-
-function previewAddGameCover(input) {
-    var file = input.files && input.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var dataUrl = e.target.result;
-        var hidden = document.getElementById('addGameCoverHidden');
-        if (hidden) hidden.value = dataUrl;
-        var zone = document.getElementById('addGameCoverZone');
-        if (!zone) return;
-        // Clear non-input children, show preview
-        Array.from(zone.childNodes).forEach(function(n) {
-            if (n.nodeName !== 'INPUT') zone.removeChild(n);
-        });
-        var img = document.createElement('img');
-        img.src = dataUrl;
-        img.alt = 'Cover';
-        img.className = 'add-game-cover-preview';
-        var overlay = document.createElement('span');
-        overlay.className = 'add-game-cover-overlay';
-        overlay.innerHTML = '<i class="fas fa-cloud-arrow-up"></i> Change';
-        zone.insertBefore(overlay, zone.firstChild);
-        zone.insertBefore(img, zone.firstChild);
-    };
-    reader.readAsDataURL(file);
-}
 
 function toggleAddGameAdvanced(btn) {
     var body = document.getElementById('addGameAdvancedBody');
@@ -939,6 +858,37 @@ function toggleAddGameAdvanced(btn) {
     var isOpen = !body.classList.contains('hidden');
     body.classList.toggle('hidden', isOpen);
     btn.classList.toggle('open', !isOpen);
+}
+
+function _setAddGameCoverPreview(src) {
+    var picker = document.querySelector('#gameEditFields .cover-picker');
+    if (!picker) return;
+    // Try to find a matching preset tile first
+    var matched = null;
+    picker.querySelectorAll('.cover-tile:not(.cover-tile-upload)').forEach(function(t) {
+        if (t.dataset.cover === src) matched = t;
+    });
+    if (matched) {
+        selectGameCoverTile(matched);
+        return;
+    }
+    // Treat as custom image — populate the upload tile and select it
+    var uploadTile = picker.querySelector('.cover-tile-upload');
+    if (!uploadTile) return;
+    uploadTile.dataset.cover = src;
+    var empty = uploadTile.querySelector('.cover-upload-empty');
+    if (empty) empty.remove();
+    var img = uploadTile.querySelector('img');
+    if (!img) {
+        img = document.createElement('img');
+        img.alt = 'Custom cover';
+        uploadTile.insertBefore(img, uploadTile.firstChild);
+    }
+    img.src = src;
+    if (!uploadTile.querySelector('.cover-tile-overlay')) {
+        uploadTile.insertAdjacentHTML('beforeend', '<span class="cover-tile-overlay"><i class="fas fa-camera"></i></span>');
+    }
+    selectGameCoverTile(uploadTile);
 }
 
 function onAddGameTopicChange(select) {
@@ -950,25 +900,7 @@ function onAddGameTopicChange(select) {
         if (nameInput && !nameInput.value.trim()) nameInput.value = t.name || '';
         var descInput = document.getElementById('addGameDesc');
         if (descInput && !descInput.value.trim()) descInput.value = t.description || '';
-        if (t.cover) {
-            var hidden = document.getElementById('addGameCoverHidden');
-            if (hidden) hidden.value = t.cover;
-            var zone = document.getElementById('addGameCoverZone');
-            if (zone) {
-                Array.from(zone.childNodes).forEach(function(n) {
-                    if (n.nodeName !== 'INPUT') zone.removeChild(n);
-                });
-                var img = document.createElement('img');
-                img.src = t.cover;
-                img.alt = 'Cover';
-                img.className = 'add-game-cover-preview';
-                var overlay = document.createElement('span');
-                overlay.className = 'add-game-cover-overlay';
-                overlay.innerHTML = '<i class="fas fa-camera"></i> Change';
-                zone.insertBefore(overlay, zone.firstChild);
-                zone.insertBefore(img, zone.firstChild);
-            }
-        }
+        if (t.cover) _setAddGameCoverPreview(t.cover);
     } catch(e) {}
 }
 
@@ -1128,8 +1060,7 @@ function saveGameAdd(event) {
         }
         var descInput = document.getElementById('addGameDesc');
         var description = descInput ? descInput.value.trim() : '';
-        var coverHidden = document.getElementById('addGameCoverHidden');
-        var cover = (coverHidden && coverHidden.value) ? coverHidden.value : randomGameCover();
+        var cover = readGameCoverPicker() || randomGameCover();
 
         var tbody = document.querySelector('#gamesTable tbody');
         if (!tbody) return;
@@ -3003,41 +2934,35 @@ function _checkPendingGame(companyKey, deptName) {
         if (pending.companyKey !== companyKey || pending.dept !== deptName) return;
         addGame();
         setTimeout(function() {
-            // Populate the modal fields opened by addGame()
-            if (pending.topicName) {
-                var nameInput = document.getElementById('addGameName');
-                if (nameInput) nameInput.value = pending.topicName;
-            }
+            if (!pending.topicName) return;
+            var topicSel = document.getElementById('addGameTopic');
+            if (!topicSel) return;
 
-            if (pending.topicDesc) {
-                var descInput = document.getElementById('addGameDesc');
-                if (descInput) descInput.value = pending.topicDesc;
-            }
-
-            if (pending.topicCover) {
-                var hidden = document.getElementById('addGameCoverHidden');
-                if (hidden) hidden.value = pending.topicCover;
-                var zone = document.getElementById('addGameCoverZone');
-                if (zone) {
-                    Array.from(zone.childNodes).forEach(function(n) {
-                        if (n.nodeName !== 'INPUT') zone.removeChild(n);
-                    });
-                    var img = document.createElement('img');
-                    img.src = pending.topicCover;
-                    img.alt = 'Cover';
-                    img.className = 'add-game-cover-preview';
-                    var overlay = document.createElement('span');
-                    overlay.className = 'add-game-cover-overlay';
-                    overlay.innerHTML = '<i class="fas fa-camera"></i> Change';
-                    zone.insertBefore(overlay, zone.firstChild);
-                    zone.insertBefore(img, zone.firstChild);
+            // Find existing option by display text
+            var targetOpt = null;
+            for (var i = 0; i < topicSel.options.length; i++) {
+                if (topicSel.options[i].text === pending.topicName) {
+                    targetOpt = topicSel.options[i];
+                    break;
                 }
             }
+
+            // Not in list — inject it so it always lands in the dropdown, never the Name field
+            if (!targetOpt) {
+                targetOpt = document.createElement('option');
+                targetOpt.value = JSON.stringify({
+                    name: pending.topicName,
+                    description: pending.topicDesc || '',
+                    cover: pending.topicCover || '',
+                    subTopics: []
+                });
+                targetOpt.textContent = pending.topicName;
+                topicSel.insertBefore(targetOpt, topicSel.options[1] || null);
+            }
+
+            topicSel.value = targetOpt.value;
+            onAddGameTopicChange(topicSel);
         }, 0);
     } catch(e) {}
 }
 
-// ===== Init =====
-$(function() {
-    // Close menus on outside click — already wired above via document.addEventListener
-});

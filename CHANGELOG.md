@@ -5,6 +5,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-27] — Add Game: topic always pre-selected in dropdown when arriving from Topics page
+
+### Fixed
+- **`script-games.js`** — `_checkPendingGame()` no longer falls back to filling the Name field with the topic name. Instead, if the topic isn't already in the dropdown options, a new option is injected and selected — so the topic name always appears selected in the TOPIC dropdown.
+- `script-games.js` version bumped to `?v=45`.
+
+## [2026-05-27] — Add Game: cover image swatch picker replaces drag-drop zone
+
+### Changed
+- **`script-games.js`** — `addGame()` form layout updated: "Cover Image" section (swatch picker with 3 gradient presets + Upload tile) now appears first, matching the Add Topic panel; Topic dropdown is immediately below it.
+- **`script-games.js`** — `_setAddGameCoverPreview(src)` rewritten to drive the swatch picker: selects the matching preset tile when the cover is a preset gradient, otherwise populates and selects the upload tile.
+- **`script-games.js`** — `saveGameAdd()` now reads the cover via `readGameCoverPicker()` (`.cover-hidden-input`) instead of the old `#addGameCoverHidden` element.
+
+### Removed
+- **`script-games.js`** — Dead `saveAddGameModal()` function (never called — form submits to `saveGameAdd`).
+- **`script-games.js`** — Dead `previewAddGameCover()` function (belonged to the old drag-drop zone).
+- `script-games.js` version bumped to `?v=44`.
+
+## [2026-05-27] — Simplify: script-games.js cleanup
+
+### Changed
+- **`script-games.js`** — `_checkPendingGame()` refactored: merged double `if (pending.topicName)` block into a single `topicFound` flag; fallback branch only runs when the topic was not found in the dropdown. Replaced inline cover-zone DOM manipulation with `_setAddGameCoverPreview()`.
+- **`script-games.js`** — Topic option scan converted from `Array.from().forEach()` to a `for/break` loop for early exit once a match is found.
+- **`script-games.js`** — Removed empty `$(function(){})` Init block (comment noted it was already handled by a `document.addEventListener` above).
+- `script-games.js` version bumped to `?v=43`.
+
+## [2026-05-27] — Add Game panel: topic at top + pre-selected from topics page
+
+### Changed
+- **`script-games.js`** — `addGame()` form reordered: TOPIC dropdown is now the first field (above cover zone, Name, Description) so selecting a topic auto-fills the rest.
+- **`script-games.js`** — `_checkPendingGame()` now pre-selects the matching topic option in `#addGameTopic` and fires `onAddGameTopicChange()` to auto-fill name/description/cover; falls back to manual field fill if the topic isn't in the dropdown.
+- `script-games.js` version bumped to `?v=42`.
+
 ## [2026-05-27] — Games page: share chip hover shows department names
 
 ### Added
