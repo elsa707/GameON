@@ -5,11 +5,110 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Rename stepper step 2 label from "Upload" to "Content"
+
+### Changed
+- **`script-games-stepper.js`** (v22) — all stepper label arrays updated: `'Upload'` → `'Content'` in both the 3-step manual stepper and the 4-step AI stepper, including the committed re-renders in `_gsGoBackToStep2`, `_gsOpenShareStep`, and `_gsAIOpenShareStep`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=22`.
+
+## [2026-05-28] — AI flow: remove placeholder note from review step
+
+### Changed
+- **`script-games-stepper.js`** (v21) — removed the "Placeholder questions — real AI generation will populate this list." note from `_gsAIBuildReviewPane()`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=21`.
+
+## [2026-05-28] — AI flow: review step — Keep lock + Regenerate for individual questions
+
+### Changed
+- **`script-games-stepper.js`** (v20):
+  - Each question row now has a **Keep** button (🔓 lock-open icon) on the right side. Clicking it locks the question (🔒 lock icon, green tint, `gs-review-kept` class on the item). Clicking again unlocks it.
+  - As soon as any question is kept, a **✦ Regenerate** button (AI-styled) appears above the note row.
+  - `window.gsReviewRegenerate()` — replaces all non-kept questions with questions from `_GS_MOCK_QUESTIONS_EXTRA` (5 extra placeholder MCQs), cycling with `_gsRegenIdx`. Shows a spinner on unlocked questions for 1.5 s before swapping content.
+  - `window.gsReviewKeep(btn)` — toggles kept state and shows/hides the regenerate bar.
+  - `_gsReviewItemHtml(q, i)` helper extracted so both initial render and regeneration reuse the same HTML builder.
+  - `_gsRegenIdx` reset to 0 on new AI flow start.
+- **`styles-games.css`** — added `.gs-review-q-row` (flex row), `.gs-review-keep-btn` (right-side keep button, locked/hover states), `.gs-review-item.gs-review-kept` (green border + background), `.gs-review-regen-bar` (right-aligned container, hidden until a question is kept).
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=20`.
+
+## [2026-05-28] — AI flow: step 2 action bar — replace Next with AI-themed Generate button
+
+### Changed
+- **`script-games-stepper.js`** (v19) — `_gsAISetActions(2)`: replaced the "Next →" primary button with `<button class="btn btn-ai" id="gsAINextBtn">✦ Generate</button>`. Button is still disabled until a question type is selected; clicking it triggers the 2-second generation spinner and auto-advances to step 3.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=19`.
+
+## [2026-05-28] — AI flow: step 3 is now the review; generation fires from step 2 Next button
+
+### Changed
+- **`script-games-stepper.js`** (v18):
+  - Step 3 pane no longer pre-renders the upload form. Clicking **Next** on step 2 (question type picker) now triggers generation inline: the Next button shows a `fa-spinner` and "Generating…" for 2 seconds, then `_gsAIBuildReviewPane()` populates step 3 and the stepper advances automatically.
+  - `_gsAISetActions(3)` simplified — step 3 is always reached post-generation so it unconditionally renders Cancel / ← Back / Next →.
+  - The `_gsAIPane3Html()` upload form function is kept in code but is no longer injected into the stepper HTML.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=18`.
+
+## [2026-05-28] — AI flow: step 3 review panel — accordion questions with answers
+
+### Changed
+- **`script-games-stepper.js`** (v17):
+  - `_gsAIBuildReviewPane()` completely rewritten. Step 3 now shows 5 MCQ placeholder questions in collapsible accordion cards. Each card shows the question text and a chevron; clicking opens the answers panel revealing all 4 options — correct answer highlighted in green with a ✓ icon, wrong answers in light grey with a ○ icon. A question-count chip (`5 questions`) appears next to the game name in the header.
+  - `window.gsReviewToggle(btn)` added — toggles the `.hidden` class on the answers panel and the `.open` class on the item for chevron rotation.
+  - `_GS_MOCK_QUESTIONS` array holds 5 realistic MCQ training questions (placeholder until real AI generation).
+- **`styles-games.css`** — replaced flat `.gs-ai-review-*` rules with full accordion styles: `.gs-review-item`, `.gs-review-q-btn`, `.gs-review-q-num`, `.gs-review-q-text`, `.gs-review-chevron`, `.gs-review-answers`, `.gs-review-answer`, `.gs-review-answer--correct`, `.gs-review-answer--wrong`, `.gs-review-note`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=17`.
+
+## [2026-05-28] — AI flow: credit estimate starts at 0; shown on steps 1, 2, and 3
+
+### Changed
+- **`script-games-stepper.js`** (v16):
+  - Credit estimate chip now initialises to `~0 credits` on all three panes (steps 1, 2, 3).
+  - `gsAIUpdateCreditEstimate()` uses a multiplier of `0` when no question type has been selected yet, so the displayed cost is 0 until the user picks a type card. Once a type is picked the cost updates immediately to `base × multiplier`.
+  - Credit estimate chip added to step 2 (question-type picker pane) so it is visible and updates as the user selects a type.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=16`.
+
+## [2026-05-28] — AI flow: step 2 matches manual flow; step 3 = Upload; dynamic credit estimate
+
+### Changed
+- **`script-games-stepper.js`** (v15):
+  - **Step 2 (Upload)** in the AI 4-step flow now looks identical to the manual flow: question-type card picker, Import Bulk button (hidden until a type is selected), Cancel / ← Back / Next → action bar. The Next button is disabled until a type card is picked.
+  - **Step 3 (Review)** now holds the upload zone, URL, text, prompt, and Generate button (previously on step 2). Action bar shows Cancel + ← Back before generating; Cancel + ← Back + Next → once generation completes.
+  - **Step reachability** updated: step 3 dot becomes clickable once a question type is selected; step 4 dot only after generation completes.
+  - **Dynamic credit estimate** — `window.gsAIUpdateCreditEstimate()` reads the selected AI Model (`#gsAIModel`) and question type (`_gsSelectedQType`) and updates every `.gs-credit-estimate-value` element in real-time. Model costs: Haiku ~20, Sonnet ~50, Opus ~150, GPT-4o ~75, Gemini ~40. Question-type multipliers: MCQ ×1.0, Fill blank ×1.2, Statement blanking ×1.2, Select on image ×1.5, Match terms ×1.3, Word bucket ×1.4, Crossword ×2.0. Called on model `onchange` and after each type-card click.
+  - `_gsCreditEstimateHtml()` marks the estimate `<strong>` with class `gs-credit-estimate-value` so all chips can be updated together.
+  - Resets `_gsSelectedQType` on new AI flow start so stale type from a previous session does not pollute step reachability.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=15`.
+
 ## [2026-05-28] — Questions page: disable Done until 5 questions added
 
 ### Changed
 - **`script-questions.js`** (v2) — "Done" button in `#questionsDoneBar` is now rendered disabled when fewer than 5 questions exist, and re-enables as soon as the 5th question is saved. Tooltip `"Add at least 5 questions to continue"` appears on the disabled button; it clears once the threshold is met. This mirrors the existing orange warning banner (which already hides at 5) and fires on every `renderQuestionsPage()` call so the state is always current.
 - **`index-questions-v2.html`**, **`index-questions.html`** — bumped `script-questions.js` to `?v=2`.
+
+## [2026-05-28] — Games: AI flow — Configure 2×2 grid, step 2 type picker, credit estimates
+
+### Changed
+- **`script-games-stepper.js`** (v14):
+  - **Configure grid** — Pass Threshold moved inside `.configure-grid` so all four fields (Max attempts, Questions for game, Pass Threshold, AI Model) share the same 2-column equal-width grid. Removed `style="width:100px"` from Pass Threshold; the grid's existing `1fr 1fr` CSS handles sizing. For the regular manual flow, only 3 cells are present; grid places Pass Threshold in the left column of the second row.
+  - **AI step 2 (Upload)** — rebuilt to match the regular flow: compact 2-column question-type card picker (`#gsAIQTypePicker`) at the top ("Choose the type of questions…"), followed by file upload, URL, text area, and the prompt + Generate button below. `gsAIPickQType()` handles card selection and tracks `_gsSelectedQType`.
+  - **Credit estimates** — amber "Estimated cost: ~50 credits" chip added to the bottom of step 1 (Game Setup), step 2 (Upload), and step 3 (Review) in the AI flow via `_gsCreditEstimateHtml()`.
+- **`styles-games.css`** — added `.gs-credit-estimate` amber chip styles.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=14`.
+
+## [2026-05-28] — Games: AI flow — move AI Model picker into Configure (step 1)
+
+### Changed
+- **`script-games-stepper.js`** (v13) — AI Model dropdown moved from step 2 (Upload) into the **Configure** collapsible block on step 1 (Game Setup), below Pass Threshold. It only appears in the AI flow — `_gsPane1Html` now accepts an optional `extraConfigHtml` argument injected at the bottom of the Configure block; the regular manual flow passes nothing so its Configure section is unchanged. `_gsAIModelPickerHtml()` helper builds the select, and `_gsAIPane2Html` no longer renders it.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=13`.
+
+## [2026-05-28] — Games: AI flow 4-step stepper (Generate with AI on index-games.html)
+
+### Added
+- **`script-games-stepper.js`** (v12) — overrides `window.addGameAI` to launch a 4-step stepper: **Game Setup → Upload → Review → Share**.
+  - **Step 1 (Game Setup)**: identical to the regular manual flow (Cover image, Topic, Game name *, Description, Configure). Uses the same `_gsPane1Html()` so field IDs and validation are shared.
+  - **Step 2 (Upload)**: AI content panel — AI Model picker, file upload zone (drag-and-drop), URL field, rich-text area, and prompt input with a "Generate →" button. Clicking Generate shows a loading spinner, then advances to Review after a 2-second simulated delay.
+  - **Step 3 (Review)**: shows the AI-generated questions list (placeholder mock questions for now). Action bar: Cancel | ← Back | Next →.
+  - **Step 4 (Share)**: same department checkboxes + from/to schedule picker as the regular flow. Action bar: Cancel | Share.
+  - Stepper dots are clickable with the same rules as the regular 3-step stepper: backward always allowed; step 2 reachable once a name is entered; step 3 reachable only after generation; step 4 reachable after reviewing. `gsUpdateStepAccess()` now updates both `#gsStepper` (regular) and `#gsAIStepper` (AI) in one call.
+- **`styles-games.css`** — added `.gs-ai-stepper .add-step-label` (font-size 0.68rem so 4 nodes fit); `#gsAIStepper` click-interaction rules; `.gs-ai-review-list/item/num/text/note` styles for the Review step question list.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=12`.
 
 ## [2026-05-28] — Games stepper: "← Change type" returns to stepper step 2
 
