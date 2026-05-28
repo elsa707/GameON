@@ -74,7 +74,15 @@
         if (warning) warning.hidden = questions.length >= 5;
 
         var doneBar = document.getElementById('questionsDoneBar');
-        if (doneBar) doneBar.hidden = false;
+        if (doneBar) {
+            doneBar.hidden = false;
+            var doneBtn = doneBar.querySelector('button');
+            if (doneBtn) {
+                var hasEnough = questions.length >= 5;
+                doneBtn.disabled = !hasEnough;
+                doneBtn.title = hasEnough ? '' : 'Add at least 5 questions to continue';
+            }
+        }
 
         var listEl = document.getElementById('questionsList');
         if (listEl) {

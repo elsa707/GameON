@@ -1795,8 +1795,6 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     display: flex;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border, #e5e7eb);
 }
 .add-step {
     display: flex;

@@ -124,23 +124,26 @@
 
     <script src="games-data.js?v=1"></script>
     <script src="topics-data.js?v=1"></script>
-    <script src="script-games.js?v=96"></script>
-    <script src="script-questions.js?v=1"></script>
+    <script src="script-games.js?v=97"></script>
+    <script src="script-questions.js?v=2"></script>
     <!-- Intent-first override — must load after both script-games.js and script-questions.js -->
     <script src="script-games-v2-intent.js?v=36"></script>
     <script src="script-games-sidebar-scope.js?v=1"></script>
     <script src="script-sidebar-scope.js"></script>
     <script>
-        // Override goBackToGames so "Done" returns to Games v2 and opens the
-        // share/schedule panel for the game that was just set up.
+        // Override goBackToGames so "Done" returns to the originating games page
+        // and opens the share step for the game that was just set up.
+        // returnTo defaults to 'index-games-v2.html' so the v2 flow is unchanged.
         window.goBackToGames = function () {
+            var returnTo = 'index-games-v2.html';
             try {
                 var nav = JSON.parse(localStorage.getItem('gameon.questionsNav') || '{}');
                 if (nav.gameId) {
                     localStorage.setItem('gameon.pendingShare', JSON.stringify({ gameId: nav.gameId }));
                 }
+                if (nav.returnTo) returnTo = nav.returnTo;
             } catch (e) {}
-            window.location.href = 'index-games-v2.html';
+            window.location.href = returnTo;
         };
     </script>
 </body>

@@ -1360,6 +1360,40 @@ label.add-game-cover-zone:hover .add-game-cover-overlay { opacity: 1; }
     margin-top: 0;
 }
 
+/* ===== Games stepper — Import Bulk bar (step 2) ===== */
+.gs-import-bulk-bar {
+    margin-top: 16px;
+}
+.gs-import-bulk-bar.hidden { display: none; }
+
+/* ===== Games stepper — clickable step navigation ===== */
+/* Locked future steps: greyed, not clickable */
+#gsStepper .add-step:not(.done):not(.active):not(.gs-step-reachable) {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+/* Done (past) steps: always clickable */
+#gsStepper .add-step.done {
+    cursor: pointer;
+}
+/* Next step made reachable once current step's required fields are filled */
+#gsStepper .add-step.gs-step-reachable {
+    opacity: 1;
+    cursor: pointer;
+    pointer-events: auto;
+}
+/* Hover highlight on the circle for done/reachable steps */
+#gsStepper .add-step.done:hover .add-step-num,
+#gsStepper .add-step.gs-step-reachable:hover .add-step-num {
+    filter: brightness(0.85);
+}
+/* Committed step (game already saved) — looks done but is not re-navigable */
+#gsStepper .add-step.gs-step-committed {
+    cursor: default;
+    pointer-events: none;
+}
+
 /* ===== AI flow — step 2 question count sliders ===== */
 .ai-qcount-group { margin-top: 16px; }
 .ai-qcount-group label { display: flex; align-items: center; margin-bottom: 6px; font-size: 13px; color: #374151; }

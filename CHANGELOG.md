@@ -5,6 +5,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Questions page: disable Done until 5 questions added
+
+### Changed
+- **`script-questions.js`** (v2) — "Done" button in `#questionsDoneBar` is now rendered disabled when fewer than 5 questions exist, and re-enables as soon as the 5th question is saved. Tooltip `"Add at least 5 questions to continue"` appears on the disabled button; it clears once the threshold is met. This mirrors the existing orange warning banner (which already hides at 5) and fires on every `renderQuestionsPage()` call so the state is always current.
+- **`index-questions-v2.html`**, **`index-questions.html`** — bumped `script-questions.js` to `?v=2`.
+
+## [2026-05-28] — Games stepper: "← Change type" returns to stepper step 2
+
+### Fixed
+- **`script-games-stepper.js`** (v11) — clicking "← Change type" in the question form now returns to the stepper's compact step 2 type-picker (same 2-column grid) instead of the old full-panel large-card picker. Previously selected type is pre-highlighted and the "Next →" button is pre-enabled. Picking a new type and clicking "Next →" reuses the already-saved game and category — no duplicate rows are created. Step 1 ("Game Setup") shows as a committed (non-clickable) completed step since the game is already saved. Cancelling from any point restores the original `backToQTypePicker` so normal question flows on other games are unaffected.
+- **`styles-games.css`** — added `#gsStepper .add-step.gs-step-committed` rule (`cursor: default; pointer-events: none`) for the non-navigable step 1 when the game is already saved.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=11`.
+
+## [2026-05-28] — Games stepper: clickable step navigation
+
+### Added
+- **`script-games-stepper.js`** (v10) — stepper dots are now interactive:
+  - Each dot has `onclick="gsStepClick(N)"`.
+  - **Backward**: clicking any completed (green ✓) step always navigates back to it; the question-type selection on step 2 is preserved and the Next button is re-enabled if a type was already chosen.
+  - **Forward**: clicking the next step dot is only allowed when the current step's required fields are filled — clicking step 2 from step 1 validates the game name (same logic as the "Next →" button); clicking step 3 from step 2 saves the game (same as "Next →" on step 2, which then navigates to the questions page). Step 3 cannot be reached by clicking the dot directly — it is only opened via the full save → questions → return flow.
+  - `gsUpdateStepAccess()` is called on every name keypress and after every step transition to toggle the `gs-step-reachable` class on step 2, making it visually clickable only when a game name is present.
+- **`styles-games.css`** — added `#gsStepper`-scoped CSS: locked future steps (`opacity: 0.45`, `cursor: not-allowed`, `pointer-events: none`); reachable next step (full opacity, `cursor: pointer`); done steps (`cursor: pointer`); hover brightness on done/reachable step circles.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=10`.
+
+## [2026-05-28] — Games stepper: rename step 1 label to "Game Setup"
+
+### Changed
+- **`script-games-stepper.js`** (v9) — step 1 label changed from "Game" to "Game Setup" in both the active stepper (`_gsStepperHtml`) and the completed stepper shown on step 3 (`_gsOpenShareStep`).
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=9`.
+
+## [2026-05-28] — Games: restore scheduled-date chip on game list rows
+
+### Added
+- **`script-games.js`** (v97) — added `_buildScheduleChip(startDate, endDate)` helper that returns a `<span class="chip chip-scheduled">` showing the date range (e.g. "30 May – 5 Jun '26"), or empty string when no start date is set. Used by `gameRowHtml()` (via `.cell-sched` wrapper) and `updateGameRowChips()` so the chip appears on first render and updates whenever the schedule changes.
+- **`index-games.html`**, **`index-games-v2.html`**, **`index-questions-v2.html`** — bumped `script-games.js` to `?v=97`.
+
+## [2026-05-28] — Games stepper (index-games.html): labels, Upload step, cross-page navigation, share step fixes
+
+### Added
+- **`script-games-stepper.js`** (v8) — step 2 renamed from "Questions" to "Upload"; step 2 shows an **Import Bulk** button (`gsImportBulk`) once a question type card is selected; clicking **Next** on step 2 opens the Add Question form in the right-hand panel (calls `openAddQuestionForm`) rather than immediately going to step 3; `_navigateToQuestionsPage` stores `returnTo: 'index-games.html'` in `gameon.questionsNav` so "Done" on the questions page navigates back to `index-games.html`; `_gsOpenShareStep` now calls `setGamePanelMode('add')` + `showGameEdit()` **before** assigning custom action-bar HTML, preventing the default "Create Game" submit button from re-appearing; step 3 includes a `buildScheduleBodyHtml` date-range picker (from/to); `gsConfirmShare` reads `scheduleStartDate` / `scheduleEndDate` values and writes them to the game row's `data-scheduled-date` / `data-scheduled-end-date` attributes, then calls `updateGameRowChips`.
+- **`styles-games.css`** — added `.gs-import-bulk-bar` and `.gs-import-bulk-bar.hidden` for the Import Bulk bar shown on step 2.
+- **`index-questions-v2.html`** — inline `goBackToGames` override now reads `nav.returnTo` from `gameon.questionsNav` and redirects to that URL (defaults to `index-games-v2.html`), enabling the v1 stepper to return to `index-games.html`.
+
+### Changed
+- **`script-games-stepper.js`** — step labels changed to **Game / Upload / Share**; "Name" field label changed to "Game name *"; "Topic" and "Description" labels no longer include "(optional)".
+
+### Fixed
+- **`script-games-stepper.js`** — `_gsOpenShareStep` action bar ordering bug: `setGamePanelMode('add')` is now always called before `actions.innerHTML` is overwritten so the Share button is never replaced by a default "Create Game" submit button.
+
+## [2026-05-28] — Games: 3-step stepper on regular Add Game panel; stepper border removed
+
+### Added
+- **`script-games-stepper.js`** (v1) — new script for `index-games.html` that wraps `addGame()` to deliver the same 3-step stepper flow (Game → Questions → Share) as Games v2. Step 1 uses the same field IDs (`addGameName`, `addGameDesc`, etc.) as the original form so the rest of `script-games.js` stays unchanged. Step 2 shows a compact 7-card question-type picker; clicking Next saves the game and advances to step 3. Step 3 renders an inline department share checklist backed by `confirmGameSharePanel()`.
+- **`index-games.html`** — loads `script-games-stepper.js?v=1` after `script-games.js`; also upgraded `script-games.js` reference from `?v=85` to `?v=96` so it matches the other pages.
+
+### Fixed
+- **`styles-topics.css`** — removed `border-bottom: 1px solid var(--border)` and `padding-bottom: 16px` from `.add-stepper`. These produced a visible horizontal divider line below the stepper row on every panel that uses the stepper (AI game flow, manual flow, topics).
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — bumped `script-games-v2-intent.js` to `?v=36` to deliver the `setGamePanelMode` ordering fix (actions bar no longer overwritten on AI step 2).
+
 ## [2026-05-28] — Games v2: fix "Game name is required" on AI step 2 Next
 
 ### Fixed
