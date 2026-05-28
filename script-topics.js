@@ -200,6 +200,63 @@ function updateAIGenerateBtn() {
     if (genBtn) genBtn.disabled = false;
 }
 
+// ── Multi-URL input helpers ───────────────────────────────────────────────────
+
+// Show a green ✓ or red ✗ inside the input based on whether the value is a
+// well-formed URL.  Called oninput on every .ai-url-input field.
+function aiUrlValidate(input) {
+    var val  = input.value.trim();
+    var wrap = input.closest('.ai-url-input-wrap');
+    var icon = wrap && wrap.querySelector('.ai-url-status-icon');
+    if (!icon) return;
+    if (!val) {
+        icon.className = 'ai-url-status-icon fas';
+        input.classList.remove('ai-url-valid', 'ai-url-invalid');
+    } else {
+        var valid = /^https?:\/\/.{3,}/.test(val);
+        icon.className = 'ai-url-status-icon fas ' + (valid ? 'fa-check' : 'fa-times');
+        input.classList.toggle('ai-url-valid',   valid);
+        input.classList.toggle('ai-url-invalid', !valid);
+    }
+}
+
+// Append a new URL row and focus its input.
+function aiUrlAdd() {
+    var list = document.getElementById('aiUrlList');
+    if (!list) return;
+    var row = document.createElement('div');
+    row.className = 'ai-url-row';
+    row.innerHTML =
+        '<div class="ai-url-input-wrap">' +
+            '<input type="url" class="ai-text-input ai-url-input" placeholder="https://…" ' +
+                   'oninput="aiUrlValidate(this); updateAIGenerateBtn()">' +
+            '<i class="ai-url-status-icon fas"></i>' +
+        '</div>' +
+        '<button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL">' +
+            '<i class="fas fa-times"></i>' +
+        '</button>';
+    list.appendChild(row);
+    row.querySelector('input').focus();
+    _aiUrlSyncRemoveBtns();
+}
+
+// Remove a URL row; hide the remove button again if only one row remains.
+function aiUrlRemove(btn) {
+    var row = btn.closest('.ai-url-row');
+    if (row) row.remove();
+    _aiUrlSyncRemoveBtns();
+    updateAIGenerateBtn();
+}
+
+// The first row is never removable; only rows added after it get the × button.
+function _aiUrlSyncRemoveBtns() {
+    var rows = document.querySelectorAll('#aiUrlList .ai-url-row');
+    rows.forEach(function (row, index) {
+        var btn = row.querySelector('.ai-url-remove-btn');
+        if (btn) btn.hidden = (index === 0);
+    });
+}
+
 function onContentFileChange(input) {
     const file = input.files[0];
     if (!file) return;
@@ -1717,8 +1774,21 @@ function addTopicAI() {
             </div>
             <div class="form-group" id="aiUrlSection">
                 <label>URL</label>
-                <input type="url" id="aiUrlInput" class="ai-text-input"
-                       placeholder="https://…" oninput="updateAIGenerateBtn()">
+                <div class="ai-url-list" id="aiUrlList">
+                    <div class="ai-url-row">
+                        <div class="ai-url-input-wrap">
+                            <input type="url" class="ai-text-input ai-url-input" placeholder="https://…"
+                                   oninput="aiUrlValidate(this); updateAIGenerateBtn()">
+                            <i class="ai-url-status-icon fas"></i>
+                        </div>
+                        <button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL" hidden>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="ai-url-add-btn" onclick="aiUrlAdd()">
+                    <i class="fas fa-plus"></i> Add URL
+                </button>
             </div>
             <div class="form-group" id="aiTextSection">
                 <label>Text</label>

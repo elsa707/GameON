@@ -5,6 +5,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Topics AI panel: first URL row is never removable
+
+### Fixed
+- **`script-topics.js`** (v55) — `_aiUrlSyncRemoveBtns` now hides the × button on the first row unconditionally (`index === 0`), regardless of how many rows exist. Only rows added via "+ Add URL" ever show their × button.
+- **`index-topics-v2.html`**, **`index-topics.html`** — bumped `script-topics.js` to `?v=55`.
+
+## [2026-05-28] — Topics AI panel: fix remove button visible on first URL row
+
+### Fixed
+- **`styles-topics.css`** — added `.ai-url-remove-btn[hidden] { display: none; }` so the `hidden` HTML attribute is not overridden by the `display: flex` rule on the button. The × button on the first row now stays hidden until a second URL is added.
+
+## [2026-05-28] — Topics AI panel: multi-URL input with inline validation
+
+### Added
+- **`script-topics.js`** (v54) — four new global helpers for the multi-URL field:
+  - `aiUrlValidate(input)` — runs on every keystroke; tests `^https?://` and sets a `fa-check` (green) or `fa-times` (red) icon inside the input. Clears icon when the field is empty.
+  - `aiUrlAdd()` — appends a new URL row to `#aiUrlList`, focuses its input, then calls `_aiUrlSyncRemoveBtns`.
+  - `aiUrlRemove(btn)` — removes the row, syncs remove-button visibility.
+  - `_aiUrlSyncRemoveBtns()` — shows the × button on all rows when there are 2+; hides it when only one row remains.
+- **`styles-topics.css`** — added `.ai-url-list`, `.ai-url-row`, `.ai-url-input-wrap`, `.ai-url-status-icon` (`.fa-check` green / `.fa-times` red), `.ai-url-remove-btn` (red hover), `.ai-url-add-btn` (indigo dashed border).
+
+### Changed
+- **`script-topics.js`** (v54) — replaced single `<input id="aiUrlInput">` with the multi-row URL list (first row pre-rendered with a hidden remove button).
+- **`script-topics-add-intent.js`** (v14) — same HTML change for the v2 AI flow; updated `hasUrl` check in `v2AIGenerate` to read all `.ai-url-input` values via `querySelectorAll` instead of `getElementById('aiUrlInput')`.
+- **`index-topics-v2.html`** — bumped `script-topics.js` to `?v=54`, `script-topics-add-intent.js` to `?v=14`.
+- **`index-topics.html`** — bumped `script-topics.js` to `?v=54`.
+
 ## [2026-05-28] — Rename stepper step 2 label from "Upload" to "Content"
 
 ### Changed

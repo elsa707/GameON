@@ -293,8 +293,21 @@ function v2PaneHtml(step) {
             '</div>',
             '<div class="form-group" id="aiUrlSection">',
             '  <label>URL</label>',
-            '  <input type="url" id="aiUrlInput" class="ai-text-input"',
-            '         placeholder="https://…" oninput="updateAIGenerateBtn()">',
+            '  <div class="ai-url-list" id="aiUrlList">',
+            '    <div class="ai-url-row">',
+            '      <div class="ai-url-input-wrap">',
+            '        <input type="url" class="ai-text-input ai-url-input" placeholder="https://…"',
+            '               oninput="aiUrlValidate(this); updateAIGenerateBtn()">',
+            '        <i class="ai-url-status-icon fas"></i>',
+            '      </div>',
+            '      <button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL" hidden>',
+            '        <i class="fas fa-times"></i>',
+            '      </button>',
+            '    </div>',
+            '  </div>',
+            '  <button type="button" class="ai-url-add-btn" onclick="aiUrlAdd()">',
+            '    <i class="fas fa-plus"></i> Add URL',
+            '  </button>',
             '</div>',
             '<div class="form-group" id="aiTextSection">',
             '  <label>Text</label>',
@@ -598,7 +611,9 @@ function v2AIGenerate() {
     // Require at least one input source before generating.
     var hasFile   = !!(document.getElementById('aiUploadZone') &&
                        document.getElementById('aiUploadZone').classList.contains('has-file'));
-    var hasUrl    = ((document.getElementById('aiUrlInput')   || {}).value || '').trim();
+    var hasUrl    = Array.from(document.querySelectorAll('#aiUrlList .ai-url-input')).some(function (el) {
+                       return el.value.trim().length > 0;
+                   });
     var hasText   = ((document.getElementById('aiTextInput')  || {}).textContent || '').trim();
     var hasPrompt = ((document.getElementById('aiPromptText') || {}).value || '').trim();
     if (!hasFile && !hasUrl && !hasText && !hasPrompt) {
