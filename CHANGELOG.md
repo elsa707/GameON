@@ -32,6 +32,12 @@ Project contact: elsadr@agilebridge.co.za
 - **`index-topics-v2.html`** — bumped `script-topics.js` to `?v=54`, `script-topics-add-intent.js` to `?v=14`.
 - **`index-topics.html`** — bumped `script-topics.js` to `?v=54`.
 
+## [2026-05-28] — AI flow: remove Import Bulk button from step 2
+
+### Changed
+- **`script-games-stepper.js`** (v23) — Import Bulk bar removed from `_gsAIPane2Html()` (not shown in the AI flow). Corresponding show/hide references removed from `gsAIPickQType()` and `_gsAIActivateStep()`. The Import Bulk button remains in the manual 3-step flow (step 2) unchanged.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=23`.
+
 ## [2026-05-28] — Rename stepper step 2 label from "Upload" to "Content"
 
 ### Changed

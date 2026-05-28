@@ -744,11 +744,6 @@
         return (
             '<p class="step-pane-lead">Choose the type of questions for this game:</p>' +
             '<div class="q-type-picker q-type-picker--sm" id="gsAIQTypePicker">' + cards + '</div>' +
-            '<div id="gsAIImportBulkBar" class="gs-import-bulk-bar hidden">' +
-                '<button type="button" class="btn btn-outline" onclick="gsImportBulk()">' +
-                    '<i class="fas fa-file-import"></i> Import Bulk' +
-                '</button>' +
-            '</div>' +
             _gsCreditEstimateHtml()
         );
     }
@@ -799,8 +794,6 @@
         _gsSelectedQType = btn.dataset.qtype;
         var nextBtn = document.getElementById('gsAINextBtn');
         if (nextBtn) nextBtn.disabled = false;
-        var importBar = document.getElementById('gsAIImportBulkBar');
-        if (importBar) importBar.classList.remove('hidden');
         gsAIUpdateCreditEstimate();
     };
 
@@ -847,8 +840,6 @@
             var selectedCard = document.querySelector('#gsAIQTypePicker .q-type-card.selected');
             var aiNextBtn = document.getElementById('gsAINextBtn');
             if (selectedCard && aiNextBtn) aiNextBtn.disabled = false;
-            var importBar = document.getElementById('gsAIImportBulkBar');
-            if (importBar) importBar.classList.toggle('hidden', !selectedCard);
         }
 
         // Sync credit estimate text whenever we enter a pane that has one
