@@ -1352,9 +1352,76 @@ label.add-game-cover-zone:hover .add-game-cover-overlay { opacity: 1; }
     grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
-.configure-grid input[type="number"] {
+.configure-grid input[type="number"],
+.configure-grid select {
     width: 100%;
 }
+.configure-grid .form-group {
+    margin-top: 0;
+}
+
+/* ===== AI flow — step 2 question count sliders ===== */
+.ai-qcount-group { margin-top: 16px; }
+.ai-qcount-group label { display: flex; align-items: center; margin-bottom: 6px; font-size: 13px; color: #374151; }
+.ai-qcount-val { min-width: 18px; text-align: right; }
+.ai-qcount-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: #ddd6fe;
+    outline: none;
+    cursor: pointer;
+}
+.ai-qcount-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #7c3aed;
+    cursor: pointer;
+}
+.ai-qcount-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #7c3aed;
+    cursor: pointer;
+    border: none;
+}
+
+/* ===== AI panel — Game Categories block ===== */
+.ai-game-cats-info {
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+.ai-game-cats-list {
+    margin: 0 0 8px 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+.ai-game-cats-list li + li { margin-top: 4px; }
+.ai-game-cats-list .ai-cats-subtopic-list {
+    list-style: none;
+    color: #6d28d9;
+    font-style: italic;
+    font-size: 12px;
+}
+.ai-game-cats-optout {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+}
+.ai-game-cats-optout input[type="checkbox"] { cursor: pointer; }
 
 /* ===== Field hint text ===== */
 .form-field-hint {
@@ -1614,4 +1681,76 @@ button.q-type-card:hover .q-type-card-icon {
     accent-color: #3b82f6;
     cursor: pointer;
     flex-shrink: 0;
+}
+
+/* ===== Question-type selector cards (AI panel — small horizontal) ===== */
+.ai-qtype-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 4px;
+}
+.ai-qtype-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #374151;
+    background: #fff;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    user-select: none;
+}
+.ai-qtype-card input[type="radio"] {
+    display: none;
+}
+.ai-qtype-card:has(input:checked) {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.ai-qtype-card i {
+    font-size: 0.9rem;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* ===== Question-type picker — compact 2-column grid (stepper panels) ===== */
+.q-type-picker--sm {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.q-type-picker--sm button.q-type-card {
+    padding: 12px 8px;
+    gap: 6px;
+    border-radius: 10px;
+}
+.q-type-picker--sm .q-type-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+}
+.q-type-picker--sm .q-type-card-title {
+    font-size: 0.78rem;
+}
+.q-type-picker--sm .q-type-card-desc {
+    display: none;
+}
+button.q-type-card.selected,
+button.q-type-card.selected:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.15);
+}
+button.q-type-card.selected .q-type-card-icon {
+    background: #bfdbfe;
+    color: #1d4ed8;
+}
+button.q-type-card.selected .q-type-card-title {
+    color: #1d4ed8;
 }

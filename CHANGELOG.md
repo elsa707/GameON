@@ -14,6 +14,236 @@ Project contact: elsadr@agilebridge.co.za
 - **`script-topics.js`** — `confirmShare()`: replaced `refreshTopics()` with `updateTopicShareChip(target.name)`. Share badge now appears in the topic row immediately after confirming the share panel.
 - **`script-topics-add-intent.js`** (v13) — `v2Commit()`: calls `updateTopicShareChip(name)` after sharing so the badge is visible on the new row straight away.
 
+## [2026-05-28] — Games v2: fix "Game name is required" on AI step 2 Next
+
+### Fixed
+- **`script-games-v2-intent.js`** (v35) — `_gv2AIShowQuestionsStep()` was replacing `gameEditFields.innerHTML`, destroying `#aiGameTabPaneGame` and `#aiGameTabPaneCats` before `saveGameAdd()` could read the generated name, description, and category items. Fix: detach both panes from the DOM before the innerHTML swap, then re-append them with the `hidden` class so they remain accessible to `saveGameAdd()` without appearing on screen.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=35`.
+
+## [2026-05-28] — Games v2: Back button on AI step 2 (Questions)
+
+### Added
+- **`script-games-v2-intent.js`** (v34) — `_gv2AIShowQuestionsStep()` action bar now includes a `← Back` button between Cancel and Next. Clicking it calls `gv2AIGoBack()` which re-runs `_gv2AIFlow()` to return to step 1 of the AI game form.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=34`.
+
+## [2026-05-28] — Games v2: AI flow step 2 — question type + count after generation
+
+### Added
+- **`script-games-v2-intent.js`** (v33) — `_gv2AIFlow()` now wraps `window._renderAIGameResults` once. After the original renders the generated game data (hidden panes), `_gv2AIShowQuestionsStep()` is called instead of the tab switch, advancing the stepper to step 2. Step 2 shows: compact question-type card grid (`#aiQTypePicker`), a "Total questions" range slider (1–10, default 10), and a "Questions per attempt" range slider (1–10, default 5). "Next" button is enabled only after a type card is selected; clicking it calls `gv2AISaveAndShare()` which saves the AI game (via `saveGameAdd`) and intercepts `showAddGameShareStep` to open `_gv2OpenShareStep` (step 3) instead of the original tab-based share pane.
+- **`styles-games.css`** — Added `.ai-qcount-slider` (purple range input) and `.ai-qcount-group` / `.ai-qcount-val` helper styles.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=33`.
+
+## [2026-05-28] — Games v2: remove opt-out checkbox from Game Categories block
+
+### Removed
+- **`script-games-v2-intent.js`** (v32) — Removed the "Opt out of AI-suggested categories" checkbox and label from the Game Categories block entirely — both from the initial injected HTML and from `_gv2UpdateAIGameCats`.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=32`.
+
+## [2026-05-28] — Games v2: remove "Topic sub-topics will be used as game categories" note from AI panel
+
+### Removed
+- **`script-games-v2-intent.js`** (v31) — `_gv2AIFlow()` now also removes `#aiGameContentSkipNote` (the blue "Topic sub-topics will be used as game categories" info box rendered by the original AI panel). This information is already conveyed by the Game Categories block.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=31`.
+
+## [2026-05-28] — Games v2: Game Categories — no AI suggestion when topic has no sub-topics
+
+### Changed
+- **`script-games-v2-intent.js`** (v30) — `_gv2UpdateAIGameCats` now has three states: (1) no topic selected → "Select a topic — its sub-topics will be used as game categories" + opt-out hidden; (2) topic with sub-topics → count + italic name list + opt-out visible; (3) topic with no sub-topics → "This topic has no sub-topics — no game categories will be added" + opt-out hidden. Removed the "AI will suggest categories" fallback entirely. Initial HTML also starts with state 1 and opt-out hidden.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=30`.
+
+## [2026-05-28] — Games v2: Game Categories block shows topic sub-topics dynamically
+
+### Changed
+- **`script-games-v2-intent.js`** (v29) — `gv2OnAITopicChange` now calls `_gv2UpdateAIGameCats(topic)` on every topic selection. When the selected topic has sub-topics, the bullet list updates to: "This topic has N sub-topic(s) that will be used as game categories" + an italic comma-separated list of their names. When no sub-topics exist (or no topic selected), it falls back to the original two-bullet AI-suggest message.
+- **`styles-games.css`** — Added `.ai-cats-subtopic-list` to style the sub-topic name list in purple italic.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=29`.
+
+## [2026-05-28] — Games v2: Configure accordion moved above Generate section on AI panel
+
+### Changed
+- **`script-games-v2-intent.js`** (v28) — `_gv2AIFlow()` now inserts the Configure accordion before `.ai-generate-block` (the prompt input + Generate Game button) using `insertAdjacentHTML('beforebegin')`, with a fallback to `beforeend` if the block isn't found. Previously it was appended after the generate section.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=28`.
+
+## [2026-05-28] — Games v2: Game Categories block on AI panel
+
+### Added
+- **`script-games-v2-intent.js`** (v27) — `_gv2AIFlow()` now injects a **Game Categories** form group directly after the Topic select. The block shows: (1) categories will match the selected topic's categories; (2) if no topic categories exist, AI will suggest them unless opted out — with an "Opt out of AI-suggested categories" checkbox (`#aiGameCatsOptOut`).
+- **`styles-games.css`** — Added `.ai-game-cats-info`, `.ai-game-cats-list`, `.ai-game-cats-optout` styles for the purple-tinted info card.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=27`.
+
+## [2026-05-28] — Games v2: remove "(optional)" from Topic label on AI panel
+
+### Changed
+- **`script-games-v2-intent.js`** (v26) — `_gv2AIFlow()` now removes the `.form-label-optional` span from the Topic label after the original AI panel renders, so the label reads "Topic" instead of "Topic (optional)".
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=26`.
+
+## [2026-05-28] — Games v2: remove Upload/URL/Text from AI game panel
+
+### Removed
+- **`script-games-v2-intent.js`** (v25) — `_gv2AIFlow()` now removes `#aiGameUploadSection`, `#aiGameUrlSection`, and `#aiGameTextSection` after the original AI panel renders. Content is sourced from the selected topic; manual upload/URL/text entry is not needed in this flow.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=25`.
+
+## [2026-05-28] — Games v2: fix configure-grid alignment
+
+### Fixed
+- **`script-games-v2-intent.js`** (v24) — `_gv2AIFlow()` now discards the `.ai-model-group` element (which carries `margin-top:12px` from `styles-topics.css`) and rebuilds the AI Model form-group as a plain `div.form-group`, so all four cells in the configure-grid sit flush at the top.
+- **`styles-games.css`** — Added `.configure-grid select { width: 100% }` so the AI Model dropdown stretches to fill its cell like the number inputs do. Added `.configure-grid .form-group { margin-top: 0 }` to neutralise any inherited top-margin on grid cells.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=24`.
+
+## [2026-05-28] — Games v2: Back button on share step (step 3)
+
+### Added
+- **`script-games-v2-intent.js`** (v23) — `_gv2OpenShareStep()` action bar now includes a `← Back` button between Cancel and Share. Clicking it navigates back to `index-questions-v2.html`; `gameon.questionsNav` is still in localStorage so the questions page restores correctly.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=23`.
+
+## [2026-05-28] — Games v2: Configure accordion on AI game panel
+
+### Changed
+- **`script-games-v2-intent.js`** (v22) — `_gv2AIFlow()` now appends a Configure accordion at the bottom of the AI panel. The AI Model select (`.ai-model-group`) is extracted from its original position and embedded as the first cell of a 2-column `.configure-grid`, alongside Max attempts, Questions for this game, and Pass Threshold — four fields in a 2×2 layout, matching the manual flow's Configure section.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=22`.
+
+## [2026-05-28] — Games v2: share department list inline in stepper (step 3)
+
+### Changed
+- **`script-games-v2-intent.js`** (v21) — Added `_gv2OpenShareStep(gameRow)`: renders the department checklist inside `#detailEdit` under the stepper header (steps 1+2 marked done, step 3 "Share" active) instead of opening the separate `#detailShare` panel. Populates `_currentGameShareTarget` identically to `openGameSharePanel` so the existing `confirmGameSharePanel()` function handles the actual share write unchanged. Updated the pending-share `$(function(){})` handler to call `_gv2OpenShareStep` instead of `openGameSharePanel` when returning from the questions page via "Done".
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=21`.
+
+## [2026-05-28] — Games v2: remove Content/Game tab bar from AI flow
+
+### Removed
+- **`script-games-v2-intent.js`** (v20) — `_gv2AIFlow()` now removes the `#aiGameTabBar` (Content / Game tabs) after the original AI panel renders. The tab bar is redundant in the v2 flow where the cover image and topic fields are injected directly without tabbed navigation.
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — script bumped to `?v=20`.
+
+## [2026-05-28] — Games v2: "Done" on questions page opens share panel on return
+
+### Added
+- **`script-games-v2-intent.js`** (v19) — Added a jQuery ready handler inside the IIFE that reads `gameon.pendingShare` from localStorage on page load. If present (written by `goBackToGames` on the questions page) it wraps `renderGamesForScope` once: after the game list renders it locates the target game row and calls `openGameSharePanel(row, { isNew: true })`, completing the Game → Questions → Share wizard flow. The wrap is self-removing so subsequent scope changes use the original function.
+- **`index-questions-v2.html`** — inline `goBackToGames` override now saves `{ gameId }` to `gameon.pendingShare` before navigating to `index-games-v2.html`. Script bumped to `?v=19`.
+- **`index-games-v2.html`** — script bumped to `?v=19`.
+
+## [2026-05-28] — Games v2: AI panel stepper + toggle removed; questions page uses compact picker
+
+### Changed
+- **`script-games-v2-intent.js`** (v18) — `_gv2AIFlow()` now prepends the stepper header (step 1 "Game" active, matching the manual flow labels) above the cover picker in the AI panel. Also removes the "Generate with categories & questions" toggle from that panel. Added `openAddQuestion` override: when `script-questions.js` has already run (i.e. on `index-questions-v2.html`), wraps the function so the compact 2-column card grid is shown instead of the full-size single-column picker.
+- **`index-questions-v2.html`** — reordered scripts so `script-games-v2-intent.js` loads after `script-questions.js`, enabling the `openAddQuestion` override to take effect. Version bumped to `?v=18`.
+- **`index-games-v2.html`** — script bumped to `?v=18`.
+
+## [2026-05-28] — Games v2: question save lands on v2 questions page
+
+### Added
+- **`index-questions-v2.html`** (new) — Copy of `index-questions.html` with "Games v2" as the active sidebar item, back button pointing to `index-games-v2.html`, and `script-games-v2-intent.js` loaded so the compact question-type picker is used. Inline script overrides `goBackToGames()` so the "Done" button also returns to Games v2.
+- **`script-games-v2-intent.js`** (v17) — Overrides `window._navigateToQuestionsPage` so that after a question is saved via the v2 flow, the browser navigates to `index-questions-v2.html` instead of `index-questions.html`.
+- **`index-games-v2.html`** — script bumped to `?v=17`.
+
+## [2026-05-28] — Games v2: AI flow adds cover picker + topic auto-fill
+
+### Added
+- **`script-games-v2-intent.js`** (v16) — "Generate with AI" now goes through `_gv2AIFlow()` instead of calling the original `addGameAI()` directly. The wrapper: (1) syncs user-created topics from localStorage; (2) calls the original to render the full AI panel (tabs, generate button, etc.); (3) injects a cover image picker (preset gradients + upload) above the content tabs; (4) replaces the topic dropdown options with the full uncapped list; (5) swaps the topic select's `onchange` to `gv2OnAITopicChange`, which runs the original handler then also calls `_setAddGameCoverPreview` so the cover auto-fills when a topic is selected.
+- **`index-games-v2.html`** — script bumped to `?v=16`.
+
+## [2026-05-28] — Games v2: Add Question uses compact card picker
+
+### Changed
+- **`script-games-v2-intent.js`** (v15) — Overrides `actionAddQuestion` so that clicking "Add Question" from a category's action menu (and the "+ Add Question" button on the questions view) now shows the compact 2-column `.q-type-picker--sm` grid instead of the original full-size single-column cards. Extracted shared `_gv2CompactQTypePickerHtml(gameId, catId)` helper reused by both `actionAddQuestion` and `_gv2ShowTypeChangePanel`.
+- **`index-games-v2.html`** — script bumped to `?v=15`.
+
+## [2026-05-28] — Games v2: remove "Finish without questions" button
+
+### Removed
+- **`script-games-v2-intent.js`** (v14) — Removed "Finish without questions" button from both the step-2 action bar and the change-type return panel. Step 2 now only shows Cancel + Back; the change-type panel shows only Cancel.
+- **`index-games-v2.html`** — script bumped to `?v=14`.
+
+## [2026-05-28] — Games v2: "← Change type" returns to step-2 card picker
+
+### Added
+- **`script-games-v2-intent.js`** (v13) — Overrides `backToQTypePicker` so that clicking "← Change type" in the Add Question form (when the game was created via the v2 flow) returns to the compact step-2 question-type card grid rather than the original full-screen picker. Stores `_gv2ActiveGameId` / `_gv2ActiveCatId` when `_gv2OpenQuestionForm` runs; the override only intercepts calls for that specific game. Cards rendered in the return view call `openAddQuestionForm` directly (the category already exists — no duplicate is created). Action bar shows Cancel + "Finish without questions".
+- **`index-games-v2.html`** — script bumped to `?v=13`.
+
+## [2026-05-28] — Games v2: move Configure back to Step 1
+
+### Changed
+- **`script-games-v2-intent.js`** (v12) — Configure accordion (Max attempts, Questions for this game, Pass Threshold) moved from Step 2 "Questions" back to Step 1 "Game", appearing below the Content picker. Removed from Step 2 entirely.
+- **`index-games-v2.html`** — script bumped to `?v=12`.
+
+## [2026-05-28] — Games v2: question type card click opens Add Question form
+
+### Changed
+- **`script-games-v2-intent.js`** (v11) — Step 2 question-type cards no longer have a default selection. Clicking a card is now the action: it saves the game, creates Category 1 silently, and opens the Add Question form for that type directly (no extra "Next" → Step 3 needed). A quiet "Finish without questions" button is provided for users who want to save the game without adding a question right away.
+- Extracted shared `_gv2DoSave(questionType)` helper used by both `gv2PickQType` (card click) and the new `gv2FinishWithoutQuestions()`.
+- `_gv2SetStepActions`: step 2 now renders "Finish without questions" instead of the "Next →" primary button.
+- **`index-games-v2.html`** — script bumped to `?v=11`.
+
+## [2026-05-28] — Games v2: Topic dropdown shows all user-created topics
+
+### Fixed
+- **`script-games-v2-intent.js`** (v10) — The Topic dropdown in Step 1 now shows all topics created on the Topics page. Root cause: the games page never loaded `localStorage['gameon.topics.scope']` (where the Topics page persists additions/edits) into the in-memory `TOPICS_BY_SCOPE` global. Added `_gv2SyncTopicsFromStorage()` to merge that localStorage key into `TOPICS_BY_SCOPE` each time the step-1 pane renders. Also replaced the `getAIGameTopicOptions()` call with a local `_gv2TopicOptions()` that has no 30-topic cap.
+- **`index-games-v2.html`** — script bumped to `?v=10`.
+
+## [2026-05-28] — Games v2: open question form after game creation
+
+### Added
+- **`script-games-v2-intent.js`** (v9) — Added `_gv2OpenQuestionForm(gameId, gameName, questionType)`. After a new single game is saved (and the share step is confirmed or skipped), this function silently creates "Category 1" for the game, then calls `openAddQuestionForm()` directly with the question type chosen in Step 2 — bypassing the type-picker panel and landing the user straight in the question setup form.
+- **`index-games-v2.html`** — script bumped to `?v=9`.
+
+## [2026-05-28] — Topics v2: swap intent screen row order
+
+### Changed
+- **`script-topics-add-intent.js`** (v13) — Intent screen now shows "How would you like to create it?" (Manually / Generate with AI) as the first row, and "What are you building?" (Single topic / With sub-topics) as the second row.
+- **`index-topics-v2.html`** — script bumped to `?v=13`.
+
+## [2026-05-28] — Games v2: question-type cards use q-type-card style
+
+### Changed
+- **`script-games-v2-intent.js`** (v8) — Step 2 "Questions" now uses the existing `.q-type-card` visual style (icon circle + title) in a compact 2-column grid (`q-type-picker--sm`). Single-select via `gv2PickQType()` which toggles the `.selected` class. Descriptions hidden in compact view.
+- **`styles-games.css`** — Added `.q-type-picker--sm` grid modifier, compact card sizing overrides, and `.q-type-card.selected` highlight state (blue border, tinted background, coloured icon).
+
+## [2026-05-28] — Games v2: move Configure to Questions step
+
+### Changed
+- **`script-games-v2-intent.js`** (v6) — Configure accordion (Max attempts, Questions for this game, Pass Threshold) moved from Step 1 "Game" to Step 2 "Questions", sitting below the question-type cards.
+
+## [2026-05-28] — Games v2: question-type card styles
+
+### Added
+- **`styles-games.css`** — Added `.ai-qtype-grid` (2-column grid) and `.ai-qtype-card` styles: hidden radio input, bordered card with icon + label, blue highlight on `:has(input:checked)` for the selected card.
+
+## [2026-05-28] — Games v2: remove Generate with AI header button
+
+### Removed
+- **`index-games-v2.html`** — Removed the "Generate with AI" (`btn-ai`) button from the page header. The AI flow is now accessible from the intent screen via the Add Game button.
+
+## [2026-05-28] — Games v2: Questions step with question-type cards
+
+### Changed
+- **`script-games-v2-intent.js`** (v5) — Stepper expanded from 2 to 3 steps: **Game → Questions → Share**. Step 2 "Questions" shows 7 single-select question-type cards (Multiple Choice, Fill in the Blanks, Statement Blanking, Select on Image, Match the Terms, Word Bucket, Crossword) using the existing `.ai-qtype-grid` / `.ai-qtype-card` styles. Only one card can be selected at a time (radio group `gv2QType`). Selected question type is saved on the game object.
+
+## [2026-05-28] — Games v2: Configure accordion on manual single step 1
+
+### Changed
+- **`script-games-v2-intent.js`** (v4) — Step 1 now includes a Configure accordion (Max attempts, Questions for this game, Pass Threshold) at the bottom, matching the existing manual Add Game panel. Configure values are read on save and stored on the game object.
+
+## [2026-05-28] — Games v2: topic dropdown + auto-fill in manual single stepper
+
+### Changed
+- **`script-games-v2-intent.js`** (v3) — Step 1 now includes a Topic dropdown (pulled from live scope data via `getAIGameTopicOptions()`). Selecting a topic auto-fills Game name and Description if empty, and pre-sets the cover image from the topic cover. New `gv2OnTopicChange()` handler.
+
+## [2026-05-28] — Games v2: manual single-game 2-step stepper
+
+### Added
+- **`script-games-v2-intent.js`** (v2) — Manually + Single game path now opens a 2-step stepper (Game → Share) matching the Topics v2 manual flow. Step 1 shows Cover image picker, Game name, Description, and a Content picker (Upload / Web URL / Text tabs). Step 2 shows the Share screen. "Create Game" on step 2 saves and opens the share panel then the question-type picker. Back on step 1 returns to the intent screen.
+
+## [2026-05-28] — Games v2: intent-first Add Game screen
+
+### Added
+- **`script-games-v2-intent.js`** (v1) — Intent-first Add Game screen for Games v2 only. Overrides `addGame()` and `addGameAI()` from `script-games.js`. Shows "How would you like to create it?" (Manually / Generate with AI) as the first row. The second row ("What are you building?" — Single game / With categories) is hidden and only revealed after the user selects a method. Next button is disabled until row 1 is clicked. Clicking Next routes to the original manual or AI flow.
+- **`index-games-v2.html`** — Loads `script-games-v2-intent.js?v=1` after `script-games.js`. Script-games bumped to `?v=96`.
+
+## [2026-05-28] — Games v2: new page + sidebar nav link on all pages
+
+### Added
+- **`index-games-v2.html`** — New page (copy of `index-games.html`) with "Games v2" as the active nav item; uses `script-games.js?v=95`.
+- **All sidebar pages** (`index-games.html`, `index-questions.html`, `index-topics.html`, `index-topics-v2.html`, `companies.html`, `index-users-dept-grid.html`) — Added "Games v2" nav link after the Games link in the sidebar.
+
 ## [2026-05-28] — Topics v2: remove Generate-with-AI option; grip-handle reorder; label fixes
 
 ### Removed
