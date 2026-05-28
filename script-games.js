@@ -805,29 +805,6 @@ function addGame() {
             '<label>Description <span class="form-label-optional">(optional)</span></label>' +
             '<textarea id="addGameDesc" rows="3" placeholder="What will players learn?"></textarea>' +
         '</div>' +
-        // ── Content section ───────────────────────────────────────────────────
-        '<div id="gameAddChoiceSection">' +
-
-            // Card (default view)
-            '<div id="gameChoiceCards">' +
-                '<button type="button" class="btn-choice btn-choice-full" id="gameContentCardBtn" onclick="openGameContentForm()">' +
-                    '<i class="fas fa-upload"></i>' +
-                    '<span class="choice-label">Add content</span>' +
-                    '<span class="choice-hint">PDF, image, video URL, or text</span>' +
-                '</button>' +
-            '</div>' +
-
-            // Content form
-            '<div class="hidden" id="gameContentForm">' +
-                _gameContentPickerHtml() +
-                '<div class="game-section-actions">' +
-                    '<button type="button" class="btn btn-outline" onclick="cancelGameContentForm()">Cancel</button>' +
-                    '<button type="button" class="btn btn-primary" onclick="saveGameContentForm()">Save content</button>' +
-                '</div>' +
-            '</div>' +
-
-        '</div>' +
-
         '<div class="add-game-advanced">' +
             '<button type="button" class="add-game-advanced-toggle" onclick="toggleAddGameAdvanced(this)" data-body="addGameAdvancedBody">' +
                 'Configure <i class="fas fa-chevron-down add-game-advanced-icon"></i>' +
@@ -2487,18 +2464,6 @@ function getAIGameTopicOptions() {
     }).join('');
 }
 
-function toggleAIGameTopicLink(checkbox) {
-    var row = document.getElementById('aiGameTopicRow');
-    if (!row) return;
-    if (checkbox.checked) {
-        row.classList.remove('hidden');
-    } else {
-        row.classList.add('hidden');
-        var sel = document.getElementById('aiGameTopicSelect');
-        if (sel) sel.value = '';
-        onAIGameTopicChange(null);
-    }
-}
 
 function onAIGameTopicChange(select) {
     window._aiGamePendingTopic = null;
@@ -2672,6 +2637,17 @@ function addGameAI() {
                     '<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>' +
                 '</select>' +
             '</div>' +
+            // ── Topic (optional) ──────────────────────────────────────────────
+            '<div class="form-group">' +
+                '<label for="aiGameTopicSelect">Topic <span class="form-label-optional">(optional)</span></label>' +
+                '<select id="aiGameTopicSelect" class="ai-model-select" onchange="onAIGameTopicChange(this)">' +
+                    '<option value="">Select a topic</option>' +
+                    (getAIGameTopicOptions() || '') +
+                '</select>' +
+            '</div>' +
+            '<div class="hidden ai-topic-linked-note" id="aiGameContentSkipNote">' +
+                '<i class="fas fa-circle-info"></i> Topic sub-topics will be used as game categories' +
+            '</div>' +
             '<div class="form-group" id="aiGameUploadSection">' +
                 '<label>Upload</label>' +
                 '<div class="ai-upload-zone" id="aiGameUploadZone"' +
@@ -2710,28 +2686,6 @@ function addGameAI() {
                     '</span>' +
                     '<span class="ai-toggle-text">Generate with categories &amp; questions</span>' +
                 '</label>' +
-            '</div>' +
-
-            // ── Link to topic (optional) ──────────────────────────────────────
-            '<div class="ai-subtopics-option">' +
-                '<label class="ai-toggle-label">' +
-                    '<span class="ai-toggle-wrap">' +
-                        '<input type="checkbox" id="aiGameLinkTopicToggle" class="ai-toggle-input" onchange="toggleAIGameTopicLink(this)">' +
-                        '<span class="ai-toggle-track"></span>' +
-                    '</span>' +
-                    '<span class="ai-toggle-text">Link to a topic</span>' +
-                '</label>' +
-            '</div>' +
-            '<div class="hidden" id="aiGameTopicRow">' +
-                '<div class="form-group" style="margin-top:8px">' +
-                    '<select id="aiGameTopicSelect" class="ai-model-select" onchange="onAIGameTopicChange(this)">' +
-                        '<option value="">Select a topic</option>' +
-                        (getAIGameTopicOptions() || '') +
-                    '</select>' +
-                '</div>' +
-                '<div class="hidden ai-topic-linked-note" id="aiGameContentSkipNote">' +
-                    '<i class="fas fa-circle-info"></i> Topic sub-topics will be used as game categories' +
-                '</div>' +
             '</div>' +
 
         '</div>' +

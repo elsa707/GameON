@@ -149,6 +149,22 @@ Project contact: elsadr@agilebridge.co.za
 - **`addTopic()`** — "Also create a game" toggle and Normal/AI segmented control removed from the normal add flow (they remain in the AI flow via `createGameToggleHtml()`). Game creation is now handled by the Step 3 option cards.
 - **`addTopic()`** — "Topic" tab removed; the two-tab layout is gone from the normal add flow (AI flow tabs unchanged).
 
+## [2026-05-27] — Generate Game AI: Move Topic dropdown below AI Model selector
+
+### Changed
+- **`script-games.js`** — "Topic (optional)" dropdown moved from the bottom of the Content tab to immediately after the AI Model selector. Version bumped to `?v=85`.
+
+## [2026-05-27] — Add Game: Remove "Add content" card
+
+### Removed
+- **`script-games.js`** — "Add content" card button and the hidden content picker form removed from the manual Add Game panel. Version bumped to `?v=84`.
+
+## [2026-05-27] — Generate Game AI: Replace "Link to topic" toggle with plain dropdown
+
+### Changed
+- **`script-games.js`** — Replaced the "Link to a topic" toggle + hidden dropdown row with a plain `Topic (optional)` label + `Select a topic` dropdown, matching the manual Add Game panel style exactly.
+- **`script-games.js`** — `toggleAIGameTopicLink` function removed (no longer needed). Version bumped to `?v=83`.
+
 ## [2026-05-27] — Generate Game AI: Add "Link to topic" toggle to Content tab
 
 ### Added
