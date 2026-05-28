@@ -1125,6 +1125,25 @@ function saveAdd(data) {
 }
 
 // ===== Re-render a topic row's chip area =====
+// Update only the share chip (.cell-pills) for every row whose data-name matches topicName.
+// Safer than refreshTopics() because it doesn't rebuild the whole table (which would drop
+// rows added by v2Commit that live only in the DOM, not in TOPICS_BY_SCOPE).
+function updateTopicShareChip(topicName) {
+    const sharedDepts = getSharedDepartments(_currentScope.companyKey, topicName);
+    const shareCount  = sharedDepts.length;
+    const nameAttr    = escapeAttr(topicName);
+    const chipHtml    = shareCount >= 1
+        ? `<span class="chip chip-shares" onclick="event.stopPropagation();openShareInPanel({kind:'topic',name:'${nameAttr}'})">` +
+          `<i class="fas fa-people-group"></i> ${shareCount} share${shareCount !== 1 ? 's' : ''}` +
+          `<span class="chip-tooltip">${sharedDepts.map(d => escapeAttr(d)).join(', ')}</span></span>`
+        : '';
+    document.querySelectorAll('#topicsTable tr[data-topic]').forEach(row => {
+        if (row.dataset.name !== topicName) return;
+        const cellPills = row.querySelector('.cell-pills');
+        if (cellPills) cellPills.innerHTML = chipHtml;
+    });
+}
+
 function updateTopicRowChips(row) {
     const modCount = document.querySelectorAll(`tr[data-parent="${row.dataset.topic}"]`).length;
     const mainChip = row.querySelector('.row-main-chip');
@@ -2553,7 +2572,7 @@ function confirmShare() {
         if (toShare.length)   parts.push(`shared with ${toShare.length}`);
         if (toUnshare.length) parts.push(`unshared from ${toUnshare.length}`);
         if (parts.length) showToast(`"${target.name}" ${parts.join(', ')} department${total !== 1 ? 's' : ''}`);
-        refreshTopics();
+        updateTopicShareChip(target.name);
     } else {
         showToast(`Updated sharing for "${target.name}"`);
     }

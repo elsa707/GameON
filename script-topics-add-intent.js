@@ -936,6 +936,7 @@ function v2Commit(createGame) {
         if (toShare.length) {
             shareTopicWithDepartments(companyKey, name, toShare);
             persistTopicsScope();
+            updateTopicShareChip(name);
         }
     }
 

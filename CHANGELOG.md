@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Fix: share badge appears immediately after sharing a topic
+
+### Added
+- **`script-topics.js`** (v54) — `updateTopicShareChip(topicName)` — finds every `tr[data-topic]` whose `data-name` matches and updates only its `.cell-pills` with the current share chip (count + dept tooltip). Replaces the previous `refreshTopics()` rebuild which was unsafe: topics added by the v2 flow live only in the DOM, not in `TOPICS_BY_SCOPE`, and would vanish when the table was rebuilt from the data source.
+
+### Fixed
+- **`script-topics.js`** — `confirmShare()`: replaced `refreshTopics()` with `updateTopicShareChip(target.name)`. Share badge now appears in the topic row immediately after confirming the share panel.
+- **`script-topics-add-intent.js`** (v13) — `v2Commit()`: calls `updateTopicShareChip(name)` after sharing so the badge is visible on the new row straight away.
+
 ## [2026-05-28] — Topics v2: remove Generate-with-AI option; grip-handle reorder; label fixes
 
 ### Removed
