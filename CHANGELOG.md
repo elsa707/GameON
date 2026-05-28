@@ -5,6 +5,150 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Topics v2: remove Generate-with-AI option; grip-handle reorder; label fixes
+
+### Removed
+- **`script-topics-add-intent.js`** — "How would you like to create it?" method group removed from the intent screen. The "Generate with AI" card (and the "Manually" card beside it) no longer appear; the intent screen now asks only "What are you building?" Method defaults to `'manual'` in `v2Proceed()` since no method card is present.
+- **`script-topics-add-intent.js`** — `v2MoveSubItem()` removed; replaced by `v2ReindexSubItems()`.
+- **`styles-topics.css`** — `.ai-sub-move` / `.ai-sub-move:hover` removed.
+
+### Added
+- **`script-topics-add-intent.js`** (v12) — `var _v2DragSrc = null` global for HTML5 drag state.
+- **`script-topics-add-intent.js`** — `v2ReindexSubItems(list)` — re-indexes `data-idx` and `data-field` on all sub-topic accordion items after a drag-drop, and rebuilds `_v2KeepFields` sub-* keys from the `.kept` class.
+- **`styles-topics.css`** — `.ai-sub-grip` (drag handle button, right of Keep, `cursor:grab`), `.ai-sub-dragging` (opacity:0.4 while dragging), `.ai-sub-drag-over` (accent border when hovered as drop target).
+
+### Changed
+- **`script-topics-add-intent.js`** — `v2AddSubAccordionItem`: ↑/↓ arrow buttons replaced with a `fa-grip-vertical` drag handle (`.ai-sub-grip`) positioned after the Keep button. HTML5 drag events wired per item — drag only activates when mousedown on the grip, so clicks inside the contenteditable name and RTE body work normally.
+- **`script-topics-add-intent.js`** — Stepper label "Sub-Topic" renamed to "Sub-topics" in all flows.
+- **`script-topics-add-intent.js`** — `v2BackToIntent()`: removed AI method-card restoration (no method cards in the DOM anymore).
+- **`index-topics-v2.html`** — script bumped to `?v=12`.
+
+## [2026-05-28] — Topics v2: restore Manually / Generate with AI choice on intent screen
+
+### Added
+- **`script-topics-add-intent.js`** (v12) — Restored the **"How would you like to create it?"** question group to `v2IntentHtml()` with Manually (default selected) and Generate with AI cards. This was accidentally removed in an earlier session when the standalone header button was added.
+- **`script-topics-add-intent.js`** — `v2BackToIntent()` now also restores the previous method card selection (in addition to structure) when the user navigates back to the intent screen.
+
+## [2026-05-28] — Topics v2: remove standalone Generate with AI header button
+
+### Removed
+- **`index-topics-v2.html`** — Removed the separate "Generate with AI" (`btn-ai`) button from the page header. The Add Topic button already opens the intent screen where the user chooses between Manually and Generate with AI.
+
+### Changed
+- **`index-topics-v2.html`** — Add Topic button icon changed from `fa-layer-group` to `fa-plus` for consistency.
+
+## [2026-05-28] — Topics v2: action bar pin on Sub-Topic step + unified stepper labels
+
+### Changed
+- **`script-topics-add-intent.js`** (v11) — `v2SwitchTo`: `v2-review-active` class is now toggled for both `ai-review` **and** `ai-subtopics` steps, so the flex-scroll chain keeps the action bar visible on the Sub-Topic step.
+- **`styles-topics.css`** — Added `.v2-review-active #v2AiSubtopicsContent { flex:1; min-height:0; overflow-y:auto }` so the accordion list scrolls internally while the stepper and Cancel/Back/Next bar stay pinned at the bottom of the panel.
+- **`script-topics-add-intent.js`** — All stepper labels updated to a consistent naming pattern:
+  - Manual single: **Topic → Share**
+  - Manual sub-topics: **Topic → Sub-Topic → Share**
+  - AI single: **Create → Topic → Share**
+  - AI sub-topics: **Create → Topic → Sub-Topic → Share**
+- **`index-topics-v2.html`** — script bumped to `?v=11`.
+
+## [2026-05-28] — Topics v2: sub-topics accordion — one-at-a-time, RTE toolbar, reorder
+
+### Added
+- **`script-topics-add-intent.js`** (v10) — `v2MoveSubItem(btn, direction)` — up/down arrow buttons in each sub-topic header reorder the accordion items. After a move all `data-idx` and `data-field` attributes are re-indexed in DOM order, and `_v2KeepFields` sub-* keys are rebuilt from each item's `.kept` class so locks survive reordering.
+
+### Changed
+- **`script-topics-add-intent.js`** — `v2AddSubAccordionItem`: header now includes ↑ / ↓ move buttons (`btn-icon ai-sub-move`) between the name and the Keep button; body now contains a full RTE toolbar (`.ai-sub-rte-toolbar`) above the `contenteditable` wysiwyg area.
+- **`script-topics-add-intent.js`** — `v2ToggleSubItem`: adopts one-at-a-time accordion behaviour — when opening an item it first collapses every sibling (body `hidden`, chevron reset); clicking the already-open item's toggle still closes it.
+- **`styles-topics.css`** — `.ai-sub-body` now `display:flex; flex-direction:column` so toolbar and editor stack correctly with no extra padding wrapper. New `.ai-sub-rte-toolbar` scopes the toolbar border-radius to zero inside the body. New `.ai-sub-move` styles the tiny up/down icon buttons. `.ai-sub-body .ai-wysiwyg` overrides the generic wysiwyg to `min-height:220px; max-height:420px` with inner padding, giving the editor comfortable room.
+- **`index-topics-v2.html`** — script bumped to `?v=10`.
+
+## [2026-05-28] — Topics v2: AI + sub-topics 4-step flow with expandable accordion
+
+### Added
+- **`script-topics-add-intent.js`** (v9) — AI + sub-topics flow now has **4 steps**: Content → Review → Sub-topics → Share (was 3 steps with sub-topics embedded in the Review pane).
+- **`script-topics-add-intent.js`** — New `'ai-subtopics'` step type: `v2PaneHtml` returns `<div id="v2AiSubtopicsContent">` which `v2SwitchTo` lazily fills via `v2FillAISubtopics()`.
+- **`script-topics-add-intent.js`** — `v2FillAISubtopics()` — builds an expandable accordion (`.ai-sub-list` / `.ai-sub-item`) from `_v2AISuggestion.subtopics`. Each item has a chevron-toggle, an editable name span, and a **Keep** button wired to `v2ToggleKeep()` with key `'sub-N'`.
+- **`script-topics-add-intent.js`** — `v2AddSubAccordionItem(container, sub, idx)` — creates and appends one accordion entry (reuses existing `.ai-sub-*` + `.ai-wysiwyg` CSS classes).
+- **`script-topics-add-intent.js`** — `v2ToggleSubItem(btn)` — expands/collapses the `.ai-sub-body` and rotates the chevron icon.
+- **`script-topics-add-intent.js`** — `v2AIRegenerateSubs()` — regenerates sub-topic names and content in-place, skipping any entry whose `'sub-N'` keep-lock is set. Wired to the **Regenerate** (`btn-ai`) button on the Sub-topics step. Updates AI credit counter.
+- **`script-topics-add-intent.js`** — `readAISubtopics()` — reads name + HTML content from the accordion for `v2Commit()`.
+
+### Changed
+- **`script-topics-add-intent.js`** — `v2Proceed()`: detects `method === 'ai' && structure === 'subtopics'` first and assigns the 4-step config.
+- **`script-topics-add-intent.js`** — `v2SetActions()`: added `'ai-subtopics'` case — Regenerate (`btn-ai`) + Next buttons.
+- **`script-topics-add-intent.js`** — `v2FillAIReview()`: removed the embedded sub-topics list. For AI+subtopics the Review step now shows only Name + Description (sub-topic content reviewed on the next step).
+- **`script-topics-add-intent.js`** — `v2AIRegenerate()`: removed the `cfg.structure === 'subtopics'` branch; only updates `#v2AiContent` (single-topic RTE). Sub-topic regeneration is handled by `v2AIRegenerateSubs()`.
+- **`script-topics-add-intent.js`** — `v2Commit()`: routes AI+subtopics to `readAISubtopics()` instead of `readListedSubs()` (both for sub-row creation and for the toast sub-count).
+- **`index-topics-v2.html`** — script bumped to `?v=9`.
+
+## [2026-05-28] — Topics v2: setup screen clean-up, last-step game action, step labels
+
+### Changed
+- **`script-topics-add-intent.js`** — Intent/setup screen: removed the "Also create a game?" question group entirely. Game creation is now offered at the end of every flow via dedicated action buttons on the last stepper step (Sharing).
+- **`script-topics-add-intent.js`** — Intent/setup screen: removed the AI model selector from the setup screen. It now lives inside the `ai-generate-block` on the Content (Prompt) step so model choice is made in context, right next to the Generate button.
+- **`script-topics-add-intent.js`** — First stepper label is now **Content** across all three flows (was "Prompt" for AI, "Topic" for manual sub-topics; single was already "Content").
+- **`script-topics-add-intent.js`** — Last step action bar changed to **Cancel | Back | Create Game | Done** in all flows. `v2Commit(createGame)` accepts a boolean; "Create Game" passes `true`, "Done" passes `false`.
+
+## [2026-05-27] — Topics v2: promote to first-class nav item; polish AI Review buttons
+
+### Changed
+- **`index-topics-v2.html`** — removed the "Prototype review" sticky banner; the page is now a proper app page. Nav updated: Topics links to `index-topics.html` (not active), and a new **Topics v2** item links to `index-topics-v2.html` (active).
+- **All other pages** (`index-topics.html`, `index-games.html`, `index-users-dept-grid.html`, `all-users.html`, `companies.html`, `reports.html`, `settings.html`, `index.html`, `index-questions.html`) — **Topics v2** nav item added immediately below Topics in every sidebar so the flow is reachable from anywhere.
+- **`script-topics-add-intent.js`** — Regenerate button on the AI Review step now uses `btn-ai` (gradient pill, same as Generate Topic / Generate with AI) instead of `btn-outline`.
+
+## [2026-05-27] — Add Topic v2: AI Review — no-scroll panel, RTE full-screen modal
+
+### Changed
+- **`script-topics-add-intent.js`** (v8) — AI Review step (step 2 of the AI flow):
+  - Removed the "AI-generated — review and edit before saving" info banner from the Review pane.
+  - Added `v2-review-active` CSS class toggle on `#detailEdit` when entering/leaving the `ai-review` step (also cleared in `addTopic()` and `v2BackToIntent()`). This activates a flex-column chain through `#editFields` → visible `.add-step-pane` → `#v2AiReviewContent` so the panel header/stepper/action bar are always visible and never scroll off-screen.
+  - Single-topic content form-group gains class `v2-rte-form-group` which fills the remaining height inside the chain. The `#v2AiContent` RTE is the only scrollable element (`flex: 1; overflow-y: auto`).
+  - Added a full-screen expand button (`fa-expand-alt`) in the RTE label row. Opens a DevExtreme `dxPopup` (72 vw × 80 vh, draggable, resizable) with a full toolbar + larger editing surface. Content syncs back to `#v2AiContent` automatically when the popup closes.
+- **`styles-topics.css`** — removed `.ai-review-banner` block; added `.v2-review-active` flex-chain rules (for `#editFields`, `#v2Stepper`, `.add-step-pane:not(.hidden)`, `#v2AiReviewContent`), `.v2-rte-form-group` layout, `.v2-rte-expand-btn` icon button, and `.v2-rte-modal-body` styles for the full-screen editing surface.
+- **`index-topics-v2.html`** — `script-topics-add-intent.js` version bumped to `?v=8`.
+
+## [2026-05-27] — Add Topic v2: intent-first flow (prototype review page)
+
+### Added
+- **`index-topics-v2.html`** — duplicate of the topics page with a dark "prototype review" banner and a "Back to current" link. Loads all the same scripts as `index-topics.html` plus `script-topics-add-intent.js` last so it shadows `addTopic()`.
+- **`script-topics-add-intent.js`** (v2) — intent-first `addTopic()` override. Opens an intent screen asking two questions upfront — *What are you building?* (Single topic / With sub-topics) and *How?* (Manually / Generate with AI) — before showing a focused stepper. Steps differ by structure choice:
+  - Single (3 steps): Content (name + description + cover + content picker combined) → Sharing → Game
+  - Sub-topics (4 steps): Details → Sub-topics → Sharing → Game
+  - AI (either): delegates to existing `addTopicAI()` unchanged.
+  - Also overrides `expandTopicForm()` so that cancelling an empty sub editor in the sub-topics step re-shows the "Add sub-topic" button rather than silently doing nothing.
+- **`styles-topics.css`** — `.v2-banner`, `.v2-banner-back`, `.intent-screen`, `.intent-group-label`, `.intent-cards`, `.intent-card`, `.intent-icon`, `.intent-body`, `.intent-title`, `.intent-desc`, `.intent-check` styles for the review page banner and intent picker.
+
+### Changed
+- **`script-topics-add-intent.js`** (v7) — AI Review step redesigned: name, description, and content (single) / sub-topics (sub-topics) each have a green **Keep** button that locks that field against regeneration. "Generate Topic" moves to the action bar (replacing Next on the Prompt step). Prompt step gains a cover image picker (user-chosen, not AI-generated). Review step action bar: Cancel | Back | Regenerate | Next — Regenerate calls `v2AIRegenerate()` which updates only un-locked fields in-place. Cancel on any stepper step now shows a DevExtreme confirmation dialog warning the user their work will be lost.
+- **`script-topics-add-intent.js`** (v6) — AI flow restored to full fidelity with the original `addTopicAI` content: AI model dropdown appears on the intent screen when "Generate with AI" is selected (not on the stepper); Prompt step carries the exact Upload zone / URL / Text RTE / prompt-text + "Generate Topic" button from the original flow. "Generate Topic" uses the same `nextAISuggestion` + `_AI_SUGGESTIONS` pools, updates the credit counter, and auto-advances to the Review step. Review step shows the AI-pool–generated name, description, cover, and rich sub-topic content (with `htmlToMarkdown` conversion), all editable. Back-to-intent from step 1 restores method and model-group visibility. Full flows:
+  - Manual single: Content → Sharing (2 steps)
+  - Manual sub-topics: Topic → Sub-topics → Sharing (3 steps)
+  - AI single: Prompt → Review → Share (3 steps)
+  - AI sub-topics: Prompt → Review (with pre-populated sub-topics) → Share (3 steps)
+- **`script-topics-add-intent.js`** (v4) — Game intent moved to the intent screen as a third question: "Also create a game for this topic?" (Not now / Yes, create a game). This means all decisions are declared upfront before the stepper begins. The final button on the last step automatically reads the intent: **Continue to game →** if Yes was chosen, **Done** if not. No split-button decision at the end. Flows are now:
+  - Single: Content → Sharing (2 steps)
+  - Sub-topics: Details → Sub-topics → Sharing (3 steps)
+- **`script-topics-add-intent.js`** — Single topic flow merged its "Details" and "Content" steps into one combined "Content" step. The `stepTypes` architecture (`'content-single'` / `'details'` / `'subtopics'` / `'sharing'`) ensures `v2PaneHtml`, `v2SwitchTo`, `v2Validate`, and `v2Commit` all find the content picker in the correct pane dynamically.
+
+## [2026-05-27] — Add Topic: 3-step stepper replaces tab layout
+
+### Changed
+- **`script-topics.js`** (v53) — `addTopic()` rebuilt around a 3-step stepper (Content → Sharing → Game) replacing the old Topic/Sub-topics tab layout.
+  - Step 1 (Content): topic name/description/cover + the existing "Add content" / "Add sub-topics" choice cards. Choosing sub-topics now collapses the topic form into a `.topic-mini` card with an edit pencil, keeping the panel tidy while the sub-topic list builds up.
+  - Step 2 (Sharing): inline department checkboxes — current department pre-checked, others opt-in. Sharing is applied directly when "Done" is clicked so the old post-save share panel is no longer needed in the normal add flow.
+  - Step 3 (Game): three option cards — "No game" (default, selected), "Create a game" (normal flow), "Generate with AI". Selecting a game option and clicking Done launches the game-creation flow; "No game" closes the panel.
+- **`script-topics.js`** — New stepper helper functions added: `getCurrentStepperStep`, `setupStepperActions`, `goStepNext`, `goStepBack`, `switchToStep`, `validateStep1`, `showTopicMiniCard`, `expandTopicForm`, `buildStep2`, `buildStep3`, `selectGameOption`, `commitAllSteps`.
+- **`script-topics.js`** — `saveAdd()` now has a stepper intercept at the top: if the stepper is present (Enter key pressed in a text field), it calls `goStepNext()` and returns instead of jumping to commit.
+- **`script-topics.js`** — `removeTopicContent()`: also un-hides `#choicePromptLabel` when restoring the picker.
+- **`script-topics.js`** — `cancelSubEditor()` and `removeSubItem()`: no-subs revert path now calls `expandTopicForm()` instead of `switchAddTab('topic')`, and un-hides `#choicePromptLabel`.
+
+### Fixed
+- **`script-topics.js`** — `expandTopicForm()`: no longer clears the sub-topics list when the user clicks the edit-pencil on the topic mini-card. The sub-topics remain intact; only the mini-card is hidden and the full form is restored. The "no subs" cleanup that was here is handled by the callers (`cancelSubEditor`, `removeSubItem`) which run it only when the count actually drops to zero.
+- **`styles-topics.css`** — Added `.add-stepper`, `.add-step`, `.add-step-num`, `.add-step-label`, `.add-step-connector`, `.add-step-pane`, `.step-pane-lead`, `.game-option-cards`, `.game-option-card`, `.goc-icon`, `.goc-body`, `.goc-title`, `.goc-desc` styles for the stepper and game-option cards.
+- **`index-topics.html`** — `script-topics.js` version bumped to `?v=53`.
+
+### Removed
+- **`addTopic()`** — "Also create a game" toggle and Normal/AI segmented control removed from the normal add flow (they remain in the AI flow via `createGameToggleHtml()`). Game creation is now handled by the Step 3 option cards.
+- **`addTopic()`** — "Topic" tab removed; the two-tab layout is gone from the normal add flow (AI flow tabs unchanged).
+
 ## [2026-05-27] — Generate Game AI: Add "Link to topic" toggle to Content tab
 
 ### Added

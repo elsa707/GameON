@@ -1608,16 +1608,50 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
 }
 .ai-sub-body {
     border-top: 1px solid #e5e7eb;
-    padding: 10px 12px;
     background: #fff;
+    display: flex;
+    flex-direction: column;
+}
+.ai-sub-rte-toolbar {
+    border-radius: 0;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+/* Drag-to-reorder grip handle — right-aligned after the Keep button */
+.ai-sub-grip {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #d1d5db;
+    cursor: grab;
+    flex-shrink: 0;
+}
+.ai-sub-grip:hover { color: #6b7280; background: #f3f4f6; }
+.ai-sub-grip:active { cursor: grabbing; }
+/* Visual feedback during drag */
+.ai-sub-dragging { opacity: 0.4; }
+.ai-sub-drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px #dbeafe;
 }
 .ai-wysiwyg {
-    max-height: 260px;
     overflow-y: auto;
     font-size: 13px;
     line-height: 1.6;
     color: #374151;
     outline: none;
+}
+/* Wysiwyg inside a sub-topic body gets padding and a generous min-height */
+.ai-sub-body .ai-wysiwyg {
+    min-height: 220px;
+    max-height: 420px;
+    padding: 10px 12px;
 }
 .ai-wysiwyg:focus {
     outline: 2px solid var(--accent);
@@ -1755,3 +1789,443 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
 }
 .ai-generate-block .form-group { margin-bottom: 10px; }
 .ai-generate-block .btn-full { width: 100%; }
+
+/* ===== Add Topic — 3-step stepper ===== */
+.add-stepper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.add-step {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+}
+.add-step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    background: #e5e7eb;
+    color: #6b7280;
+    flex-shrink: 0;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.add-step.active .add-step-num {
+    background: #2563eb;
+    color: #fff;
+}
+.add-step.done .add-step-num {
+    background: #22c55e;
+    color: #fff;
+}
+.add-step-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    white-space: nowrap;
+}
+.add-step.active .add-step-label {
+    color: #2563eb;
+    font-weight: 600;
+}
+.add-step.done .add-step-label {
+    color: #16a34a;
+}
+.add-step-connector {
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+    margin: 0 8px;
+    min-width: 12px;
+}
+.add-step-pane.hidden { display: none; }
+
+/* v2 stepper: left-aligned, compact connectors (doesn't stretch to fill panel width) */
+#v2Stepper {
+    justify-content: flex-start;
+}
+#v2Stepper .add-step-connector {
+    flex: none;
+    width: 28px;
+}
+
+/* AI model selector on intent screen */
+.intent-ai-model {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+}
+.intent-ai-model .intent-group-label {
+    margin: 0;
+}
+
+/* AI review: field + Keep button rows */
+.v2-field-with-keep {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.v2-field-with-keep input,
+.v2-field-with-keep textarea {
+    flex: 1;
+    min-width: 0;
+}
+.v2-keep-label-row {
+    align-items: center;
+    margin-bottom: 6px;
+}
+.v2-keep-label-row label {
+    flex: 1;
+    margin: 0;
+}
+.v2-keep-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    color: #9ca3af;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.v2-keep-btn:hover {
+    border-color: #22c55e;
+    color: #22c55e;
+}
+.v2-keep-btn.kept {
+    border-color: #22c55e;
+    background: #22c55e;
+    color: #fff;
+}
+
+/* Step pane lead text */
+.step-pane-lead {
+    font-size: 13px;
+    color: #4b5563;
+    margin: 0 0 12px;
+    line-height: 1.45;
+}
+
+/* ===== Step 3 — game option cards ===== */
+.game-option-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+.game-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    box-sizing: border-box;
+}
+.game-option-card:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.game-option-card.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.goc-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    background: #f3f4f6;
+    color: #6b7280;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.game-option-card.selected .goc-icon {
+    background: #dbeafe;
+    color: #2563eb;
+}
+.goc-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 1px;
+}
+.goc-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+.goc-desc {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+/* ===== v2 prototype — page banner ===== */
+.v2-banner {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 20px;
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 12.5px;
+    font-weight: 500;
+}
+.v2-banner i { color: #60a5fa; }
+.v2-banner span { flex: 1; color: #e2e8f0; }
+.v2-banner-back {
+    color: #94a3b8;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.v2-banner-back:hover { color: #e2e8f0; border-color: #60a5fa; }
+
+/* ===== v2 — Intent screen ===== */
+.intent-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.intent-group-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 10px;
+}
+.intent-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.intent-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 12px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    box-sizing: border-box;
+}
+.intent-card:hover {
+    border-color: #2563eb;
+    background: #f8faff;
+}
+.intent-card.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.intent-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.intent-card.selected .intent-icon {
+    background: #dbeafe;
+    color: #2563eb;
+}
+.intent-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.intent-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+.intent-desc {
+    font-size: 11px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+.intent-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #fff;
+    font-size: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.intent-card.selected .intent-check { display: flex; }
+
+/* ===== AI Review + Sub-topics steps: flex chain so content scrolls, action bar stays put ===== */
+/*
+ * When #detailEdit carries .v2-review-active (set by v2SwitchTo for the
+ * ai-review and ai-subtopics steps), the chain below propagates flex-column
+ * layout down to the scrollable content area so it fills the remaining panel
+ * height and scrolls internally — the topbar, header, stepper, and action bar
+ * never scroll off-screen.
+ */
+
+/* editFields becomes a flex column so step panes can fill it */
+.v2-review-active #editFields {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Stepper stays at its natural height */
+.v2-review-active #v2Stepper {
+    flex-shrink: 0;
+}
+
+/* The visible step pane fills the remaining editFields space */
+.v2-review-active .add-step-pane:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Review content area fills the step pane */
+.v2-review-active #v2AiReviewContent {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    /* default for sub-topics: allow scroll if the list is long */
+    overflow-y: auto;
+}
+
+/* Single-topic path: a .v2-rte-form-group is present → contain strictly */
+.v2-review-active #v2AiReviewContent:has(.v2-rte-form-group) {
+    overflow: hidden;
+}
+
+/* Name/description form-groups never shrink */
+.v2-review-active #v2AiReviewContent > .form-group:not(.v2-rte-form-group) {
+    flex-shrink: 0;
+}
+
+/* Sub-topics accordion step: the .ai-sub-list scrolls; action bar stays anchored */
+.v2-review-active #v2AiSubtopicsContent {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* The content/RTE form-group grows to fill remaining review space */
+.v2-rte-form-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+.v2-rte-form-group > .v2-field-with-keep {
+    flex-shrink: 0;
+}
+.v2-rte-form-group > .rte-toolbar {
+    flex-shrink: 0;
+}
+
+/* RTE fills remaining content form-group space and scrolls internally */
+.v2-rte-form-group > #v2AiContent {
+    flex: 1;
+    min-height: 100px;
+    overflow-y: auto;
+}
+
+/* Expand-to-modal icon button (sits in the RTE label row) */
+.v2-rte-expand-btn {
+    color: #9ca3af;
+    font-size: 11px;
+}
+.v2-rte-expand-btn:hover {
+    color: #2563eb;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+/* Full-screen RTE modal: body fills the popup content area */
+.v2-rte-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+    outline: none;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    background: #fff;
+}
+.v2-rte-modal-body:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+}
+.v2-rte-modal-body p       { margin: 0 0 10px; }
+.v2-rte-modal-body h3      { font-size: 14px; font-weight: 700; margin: 0 0 8px; color: #111827; }
+.v2-rte-modal-body ul,
+.v2-rte-modal-body ol      { margin: 0 0 10px; padding-left: 22px; }
+.v2-rte-modal-body li      { margin-bottom: 4px; }
+.v2-rte-modal-body strong  { font-weight: 700; }
+.v2-rte-modal-body em      { font-style: italic; }

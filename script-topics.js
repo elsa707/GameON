@@ -279,11 +279,14 @@ function chooseAddContent() {
     const picker = document.getElementById('choicePicker');
     picker.classList.add('hidden');
     picker.classList.remove('error');
+    const choicePrompt = document.getElementById('choicePromptLabel');
+    if (choicePrompt) choicePrompt.classList.add('hidden');
     document.getElementById('topicContentSection').classList.remove('hidden');
 }
 
 function chooseAddSubTopic() {
-    const nameInput = document.querySelector('#editFields input[name="name"]');
+    const nameInput = document.querySelector('#topicFullForm input[name="name"]') ||
+                      document.querySelector('#editFields input[name="name"]');
     if (!nameInput || !nameInput.value.trim()) {
         if (nameInput) {
             nameInput.classList.add('input-error');
@@ -295,11 +298,11 @@ function chooseAddSubTopic() {
     }
     nameInput.classList.remove('input-error');
     const picker = document.getElementById('choicePicker');
-    picker.classList.add('hidden');
-    picker.classList.remove('error');
-    const subsTab = document.getElementById('addTabSubs');
-    if (subsTab) { subsTab.hidden = false; subsTab.disabled = false; }
-    switchAddTab('subs');
+    if (picker) { picker.classList.add('hidden'); picker.classList.remove('error'); }
+    const choicePrompt = document.getElementById('choicePromptLabel');
+    if (choicePrompt) choicePrompt.classList.add('hidden');
+    // Collapse topic details into mini-card and reveal sub-topics area
+    showTopicMiniCard();
     openSubEditor('new');
 }
 
@@ -320,6 +323,8 @@ function removeTopicContent() {
         const label = picker.querySelector('.cp-detected'); if (label) label.innerHTML = '';
     }
     document.getElementById('choicePicker').classList.remove('hidden');
+    const choicePromptLabelEl = document.getElementById('choicePromptLabel');
+    if (choicePromptLabelEl) choicePromptLabelEl.classList.remove('hidden');
 }
 
 // ===== Inline sub-topic list + editor (used inside Add Topic) =====
@@ -404,11 +409,12 @@ function cancelSubEditor() {
     if (hasSubs) {
         document.getElementById('addSubTopicBtnRow').classList.remove('hidden');
     } else {
-        // No subs — revert to Tab 1 and re-offer the two choices.
-        const subsTab = document.getElementById('addTabSubs');
-        if (subsTab) { subsTab.hidden = true; subsTab.disabled = true; }
-        switchAddTab('topic');
-        document.getElementById('choicePicker').classList.remove('hidden');
+        // No subs — expand the full topic form and re-offer the two choices.
+        expandTopicForm();
+        const choicePicker = document.getElementById('choicePicker');
+        if (choicePicker) choicePicker.classList.remove('hidden');
+        const choicePromptLabelEl = document.getElementById('choicePromptLabel');
+        if (choicePromptLabelEl) choicePromptLabelEl.classList.remove('hidden');
     }
 }
 
@@ -542,11 +548,12 @@ function removeSubItem(btn) {
         document.getElementById('addSubTopicBtnRow').classList.add('hidden');
         const editor = document.getElementById('subEditor');
         if (editor.classList.contains('hidden')) {
-            // Revert to Tab 1 and re-offer the two choices.
-            const subsTab = document.getElementById('addTabSubs');
-            if (subsTab) { subsTab.hidden = true; subsTab.disabled = true; }
-            switchAddTab('topic');
-            document.getElementById('choicePicker').classList.remove('hidden');
+            // Expand the full topic form and re-offer the two choices.
+            expandTopicForm();
+            const choicePicker = document.getElementById('choicePicker');
+            if (choicePicker) choicePicker.classList.remove('hidden');
+            const choicePromptLabelEl = document.getElementById('choicePromptLabel');
+            if (choicePromptLabelEl) choicePromptLabelEl.classList.remove('hidden');
         }
     }
 }
@@ -937,6 +944,10 @@ function readListedSubs() {
 
 // ===== Save new (add mode) =====
 function saveAdd(data) {
+    // Stepper intercept: if the stepper is active (Enter key pressed in a text field),
+    // advance the stepper instead of jumping straight to commit.
+    if (document.getElementById('addStepper')) { goStepNext(); return; }
+
     const tbody = document.querySelector('.data-table tbody');
 
     if (currentEditType === 'topic') {
@@ -1214,9 +1225,9 @@ function setPanelMode(mode) {
 }
 
 // ===== Add Topic =====
-// Default flow: topic name + description + content (single piece).
-// "Add sub-topic" at the bottom opens an inline sub-topic editor; the first
-// committed sub-topic promotes the topic's content to sub-topic 1.
+// Uses a 3-step stepper: Step 1 Content, Step 2 Sharing, Step 3 Game.
+// Choosing "Add sub-topics" in Step 1 collapses the topic form into a mini-card
+// at the top and reveals the inline sub-topic editor below.
 function addTopic() {
     clearSelection();
     currentEditRow = null;
@@ -1228,24 +1239,52 @@ function addTopic() {
     document.getElementById('editSubtitle').textContent = getScopeSubtitle();
 
     document.getElementById('editFields').innerHTML = `
-        <div class="add-topic-tabs">
-            <button type="button" class="add-topic-tab active" data-tab="topic" onclick="switchAddTab('topic')"><i class="fas fa-layer-group"></i> Topic</button>
-            <button type="button" class="add-topic-tab" data-tab="subs" id="addTabSubs" onclick="switchAddTab('subs')" hidden><i class="fas fa-list-ol"></i> Sub-topics <span class="tab-badge hidden" id="addTabSubsBadge"></span></button>
+        <div class="add-stepper" id="addStepper">
+            <div class="add-step active" data-step="1">
+                <span class="add-step-num">1</span>
+                <span class="add-step-label">Content</span>
+            </div>
+            <div class="add-step-connector"></div>
+            <div class="add-step" data-step="2">
+                <span class="add-step-num">2</span>
+                <span class="add-step-label">Sharing</span>
+            </div>
+            <div class="add-step-connector"></div>
+            <div class="add-step" data-step="3">
+                <span class="add-step-num">3</span>
+                <span class="add-step-label">Game</span>
+            </div>
         </div>
 
-        <div class="add-topic-pane" id="tabPaneTopic">
-            <div class="form-group">
-                <label>Cover Image</label>
-                ${coverPickerHtml('')}
+        <div class="add-step-pane" id="stepPane1">
+            <div class="topic-mini hidden" id="topicMiniCard">
+                <img class="topic-mini-cover" id="topicMiniThumb" src="" alt="">
+                <div class="topic-mini-text">
+                    <div class="topic-mini-label">Topic</div>
+                    <div class="topic-mini-name" id="topicMiniName"></div>
+                </div>
+                <div class="topic-mini-actions">
+                    <button type="button" class="btn-icon" onclick="expandTopicForm()" title="Edit topic details">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Topic Name</label>
-                <input type="text" name="name" value="" required placeholder="Topic name">
+
+            <div id="topicFullForm">
+                <div class="form-group">
+                    <label>Cover image</label>
+                    ${coverPickerHtml('')}
+                </div>
+                <div class="form-group">
+                    <label>Topic name</label>
+                    <input type="text" name="name" value="" required placeholder="Topic name">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" name="description" value="" placeholder="Topic description">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Description</label>
-                <input type="text" name="description" value="" placeholder="Topic description">
-            </div>
+
             <div class="form-group hidden" id="topicContentSection">
                 <div class="content-section-head">
                     <label>Content</label>
@@ -1253,7 +1292,8 @@ function addTopic() {
                 </div>
                 ${contentPickerHtml('topic-content', { kind: 'upload', mediaType: 'PDF', mediaName: '' })}
             </div>
-            <div class="form-group">
+
+            <div class="form-group" id="choicePromptLabel">
                 <label>What would you like to add to this topic?</label>
             </div>
             <div class="choice-picker" id="choicePicker">
@@ -1270,10 +1310,7 @@ function addTopic() {
                     </button>
                 </div>
             </div>
-            ${createGameToggleHtml()}
-        </div>
 
-        <div class="add-topic-pane hidden" id="tabPaneSubs">
             <div class="sub-list-section hidden" id="subsListSection">
                 <div class="sub-list-head">
                     <label>Sub-topics</label>
@@ -1289,10 +1326,349 @@ function addTopic() {
             </div>
         </div>
 
+        <div class="add-step-pane hidden" id="stepPane2"></div>
+        <div class="add-step-pane hidden" id="stepPane3"></div>
     `;
 
     setPanelMode('add');
+    setupStepperActions(1);
     showEdit();
+}
+
+// ===== Stepper helpers (normal Add Topic flow only) =====
+
+function getCurrentStepperStep() {
+    var steps = document.querySelectorAll('#addStepper .add-step');
+    for (var i = 0; i < steps.length; i++) {
+        if (steps[i].classList.contains('active')) return parseInt(steps[i].dataset.step);
+    }
+    return 1;
+}
+
+function setupStepperActions(step) {
+    var actions = document.querySelector('#detailEdit .edit-actions');
+    if (!actions) return;
+    var backBtn = step > 1
+        ? '<button type="button" class="btn btn-outline" onclick="goStepBack()"><i class="fas fa-arrow-left"></i> Back</button>'
+        : '';
+    var fwdBtn = step < 3
+        ? '<button type="button" class="btn btn-primary" onclick="goStepNext()">Next <i class="fas fa-arrow-right"></i></button>'
+        : '<button type="button" class="btn btn-primary" onclick="commitAllSteps()"><i class="fas fa-check"></i> Done</button>';
+    actions.innerHTML =
+        '<button type="button" class="btn btn-outline" onclick="cancelEdit()">Cancel</button>' +
+        backBtn +
+        fwdBtn;
+}
+
+function goStepNext() {
+    var stepper = document.getElementById('addStepper');
+    if (!stepper) return;
+    var current = getCurrentStepperStep();
+    if (current === 1) {
+        if (!validateStep1()) return;
+        buildStep2();
+        switchToStep(2);
+    } else if (current === 2) {
+        buildStep3();
+        switchToStep(3);
+    }
+    // Step 3 has no next — "Done" calls commitAllSteps() directly.
+}
+
+function goStepBack() {
+    var current = getCurrentStepperStep();
+    if (current > 1) switchToStep(current - 1);
+}
+
+function switchToStep(step) {
+    document.querySelectorAll('#addStepper .add-step').forEach(function(s) {
+        var n = parseInt(s.dataset.step);
+        s.classList.remove('active', 'done');
+        if (n < step) s.classList.add('done');
+        else if (n === step) s.classList.add('active');
+    });
+    for (var i = 1; i <= 3; i++) {
+        var pane = document.getElementById('stepPane' + i);
+        if (pane) pane.classList.toggle('hidden', i !== step);
+    }
+    setupStepperActions(step);
+}
+
+function validateStep1() {
+    // If the mini-card is showing, sub-topics mode is active.
+    var miniCard = document.getElementById('topicMiniCard');
+    var isMiniMode = miniCard && !miniCard.classList.contains('hidden');
+
+    if (isMiniMode) {
+        // Auto-commit any open sub editor first.
+        var subEditorEl = document.getElementById('subEditor');
+        if (subEditorEl && !subEditorEl.classList.contains('hidden')) {
+            var draftName = (subEditorEl.querySelector('.sub-edit-name') || {}).value || '';
+            if (draftName.trim()) {
+                if (!commitSubEditor(true)) return false;
+            } else {
+                cancelSubEditor();
+            }
+        }
+        var hasSubs = document.querySelectorAll('#subsList .sub-list-item').length > 0;
+        if (!hasSubs) {
+            showToast('Add at least one sub-topic before continuing');
+            return false;
+        }
+        return true;
+    }
+
+    // Full form is showing.
+    var nameInput = document.querySelector('#topicFullForm input[name="name"]');
+    if (!nameInput || !nameInput.value.trim()) {
+        if (nameInput) { nameInput.classList.add('input-error'); nameInput.focus(); }
+        showToast('Please enter a topic name');
+        return false;
+    }
+    nameInput.classList.remove('input-error');
+
+    var contentSection = document.getElementById('topicContentSection');
+    var contentVisible = contentSection && !contentSection.classList.contains('hidden');
+    var hasSubs2 = document.querySelectorAll('#subsList .sub-list-item').length > 0;
+
+    if (!contentVisible && !hasSubs2) {
+        var choicePicker = document.getElementById('choicePicker');
+        if (choicePicker) {
+            choicePicker.classList.add('error');
+            choicePicker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        showToast('Please add content or sub-topics before continuing');
+        return false;
+    }
+
+    if (contentVisible) {
+        var picker = contentSection ? contentSection.querySelector('.content-picker') : null;
+        if (picker && !validateContentPicker(picker)) {
+            showToast('Add content (file, video URL, or text) before continuing');
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function showTopicMiniCard() {
+    var nameInput = document.querySelector('#topicFullForm input[name="name"]');
+    var name = nameInput ? nameInput.value.trim() : '';
+    var coverEl = document.querySelector('#topicFullForm .cover-hidden-input');
+    var cover = coverEl ? coverEl.value : DEFAULT_COVER_URL;
+
+    var miniCard = document.getElementById('topicMiniCard');
+    if (!miniCard) return;
+    var miniName = document.getElementById('topicMiniName');
+    var miniThumb = document.getElementById('topicMiniThumb');
+    if (miniName) miniName.textContent = name || 'Untitled Topic';
+    if (miniThumb) miniThumb.src = cover || DEFAULT_COVER_URL;
+
+    miniCard.classList.remove('hidden');
+    var fullForm = document.getElementById('topicFullForm');
+    if (fullForm) fullForm.classList.add('hidden');
+}
+
+function expandTopicForm() {
+    // Hide the mini-card and reveal the full form for editing.
+    // Sub-topics that already exist are left untouched — the caller is responsible
+    // for clearing them when the "no subs" revert is actually needed.
+    var miniCard = document.getElementById('topicMiniCard');
+    if (miniCard) miniCard.classList.add('hidden');
+    var fullForm = document.getElementById('topicFullForm');
+    if (fullForm) fullForm.classList.remove('hidden');
+}
+
+function buildStep2() {
+    var pane = document.getElementById('stepPane2');
+    if (!pane) return;
+
+    var companyKey = _currentScope.companyKey;
+    var companies  = (typeof SIDEBAR_COMPANIES  !== 'undefined') ? SIDEBAR_COMPANIES  : [];
+    var departments = (typeof SIDEBAR_DEPARTMENTS !== 'undefined') ? SIDEBAR_DEPARTMENTS : [];
+    var company = companies.find(function(c) { return c.name.toLowerCase() === companyKey; });
+    var currentDept = (_currentScope && _currentScope.dept) || '';
+
+    var items = '';
+    if (company) {
+        var allDepts = departments.filter(function(d) { return d.companyId === company.id; });
+        items = allDepts.map(function(d) {
+            var precheck = d.name === currentDept;
+            return '<label class="share-dept-item">' +
+                '<input type="checkbox" value="' + escapeAttr(d.name) + '"' + (precheck ? ' checked' : '') + '>' +
+                '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
+                '</label>';
+        }).join('') || '<div class="share-empty">No other departments to share with.</div>';
+    } else {
+        items = '<div class="share-empty">Select a company to configure sharing.</div>';
+    }
+
+    pane.innerHTML =
+        '<p class="step-pane-lead">Choose which departments this topic will be shared with:</p>' +
+        '<div class="share-dept-list" id="stepShareDeptList">' + items + '</div>';
+}
+
+function buildStep3() {
+    var pane = document.getElementById('stepPane3');
+    if (!pane) return;
+
+    pane.innerHTML =
+        '<p class="step-pane-lead">Would you like to create a game for this topic?</p>' +
+        '<div class="game-option-cards">' +
+            '<button type="button" class="game-option-card selected" data-game="none" onclick="selectGameOption(this)">' +
+                '<span class="goc-icon"><i class="fas fa-times"></i></span>' +
+                '<span class="goc-body">' +
+                    '<span class="goc-title">No game</span>' +
+                    '<span class="goc-desc">Skip for now — you can always add a game later.</span>' +
+                '</span>' +
+            '</button>' +
+            '<button type="button" class="game-option-card" data-game="normal" onclick="selectGameOption(this)">' +
+                '<span class="goc-icon"><i class="fas fa-trophy"></i></span>' +
+                '<span class="goc-body">' +
+                    '<span class="goc-title">Create a game</span>' +
+                    '<span class="goc-desc">Set up a game manually with questions and rules.</span>' +
+                '</span>' +
+            '</button>' +
+            '<button type="button" class="game-option-card" data-game="ai" onclick="selectGameOption(this)">' +
+                '<span class="goc-icon"><i class="fas fa-wand-magic-sparkles"></i></span>' +
+                '<span class="goc-body">' +
+                    '<span class="goc-title">Generate with AI</span>' +
+                    '<span class="goc-desc">Let AI create a game based on the topic content.</span>' +
+                '</span>' +
+            '</button>' +
+        '</div>';
+}
+
+function selectGameOption(btn) {
+    var cards = btn.closest('.game-option-cards');
+    if (!cards) return;
+    cards.querySelectorAll('.game-option-card').forEach(function(c) { c.classList.remove('selected'); });
+    btn.classList.add('selected');
+}
+
+function commitAllSteps() {
+    // Collect topic data from step 1.
+    var miniCard = document.getElementById('topicMiniCard');
+    var isMiniMode = miniCard && !miniCard.classList.contains('hidden');
+
+    var name, description, cover;
+    if (isMiniMode) {
+        var miniNameEl = document.getElementById('topicMiniName');
+        name = miniNameEl ? miniNameEl.textContent.trim() : 'Untitled Topic';
+        var descEl2 = document.querySelector('#topicFullForm input[name="description"]') ||
+                      document.querySelector('#topicFullForm textarea[name="description"]');
+        description = descEl2 ? descEl2.value : '';
+        var coverEl2 = document.querySelector('#topicFullForm .cover-hidden-input');
+        cover = coverEl2 ? coverEl2.value : '';
+    } else {
+        var nameEl = document.querySelector('#topicFullForm input[name="name"]');
+        name = nameEl ? nameEl.value.trim() : 'Untitled Topic';
+        var descEl3 = document.querySelector('#topicFullForm input[name="description"]') ||
+                      document.querySelector('#topicFullForm textarea[name="description"]');
+        description = descEl3 ? descEl3.value : '';
+        var coverEl3 = document.querySelector('#topicFullForm .cover-hidden-input');
+        cover = coverEl3 ? coverEl3.value : '';
+    }
+    if (!name) name = 'Untitled Topic';
+
+    // Determine game option from step 3.
+    var selectedGameCard = document.querySelector('.game-option-card.selected');
+    var gameOption = selectedGameCard ? selectedGameCard.dataset.game : 'none';
+    _pendingCreateGame = (gameOption === 'normal' || gameOption === 'ai');
+    _pendingGameFlow   = (gameOption === 'ai') ? 'ai' : 'normal';
+    _pendingTopicCover = cover;
+    _pendingTopicDesc  = description;
+
+    // Create the topic row.
+    var tbody = document.querySelector('.data-table tbody');
+    var existingIds = Array.from(document.querySelectorAll('tr[data-topic]')).map(function(r) { return parseInt(r.dataset.topic); });
+    var newId = Math.max.apply(null, [0].concat(existingIds)) + 1;
+
+    var tr = document.createElement('tr');
+    tr.className = 'row-company expanded';
+    tr.dataset.topic = newId;
+    tr.dataset.subtitle = '';
+    tr.dataset.description = description;
+    tr.dataset.cover = cover;
+    tr.dataset.active = 'true';
+    tr.dataset.name = name;
+    tr.setAttribute('onclick', 'toggleTopic(' + newId + ')');
+    tr.innerHTML =
+        '<td class="col-name">' +
+            '<div class="cell-row">' +
+                '<span class="row-select"><input type="checkbox" class="row-checkbox" data-topic-name="' + escapeAttr(name) + '" onclick="onSelectCheckbox(event)"></span>' +
+                '<span class="chevron" style="visibility:hidden"><i class="fas fa-chevron-down"></i></span>' +
+                '<img class="row-thumb" src="' + escapeAttr(cover || randomCover()) + '" alt="">' +
+                '<span class="company-name">' + escapeAttr(name) + '</span>' +
+                '<span class="row-main-chip"></span>' +
+                '<span class="cell-pills"></span>' +
+                '<span class="row-status"><span class="chip chip-status chip-status-active">Active</span></span>' +
+                '<span class="row-actions">' +
+                    '<div class="action-menu">' +
+                        '<button class="btn-icon action-menu-trigger" onclick="toggleTopicMenu(this, event)" title="Actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>' +
+                        '<div class="action-menu-popup" role="menu">' +
+                            '<button type="button" class="action-item" onclick="actionAddSubTopic(this, event)"><i class="fas fa-puzzle-piece"></i> Add sub-topic</button>' +
+                            '<button type="button" class="action-item" onclick="actionAddGameForTopic(this, event)"><i class="fas fa-trophy"></i> Add game</button>' +
+                            '<button type="button" class="action-item" onclick="actionEditTopic(this, event)"><i class="fas fa-pen"></i> Edit</button>' +
+                            '<button type="button" class="action-item" onclick="actionShareTopic(this, event)"><i class="fas fa-people-group"></i> Share</button>' +
+                            '<button type="button" class="action-item" onclick="actionToggleDisabled(this, event)"><i class="fas fa-ban"></i> Disable</button>' +
+                            '<div class="action-sep"></div>' +
+                            '<button type="button" class="action-item action-item-danger" onclick="actionDeleteTopic(this, event)"><i class="fas fa-trash"></i> Delete</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</span>' +
+            '</div>' +
+        '</td>';
+    tbody.appendChild(tr);
+
+    // Handle sub-topics or single content.
+    var listed = readListedSubs();
+    var contentSection = document.getElementById('topicContentSection');
+    var contentVisible = contentSection && !contentSection.classList.contains('hidden');
+
+    if (listed.length > 0) {
+        listed.forEach(function(s) { createSubTopicRow(newId, s); });
+        updateTopicRowChips(tr);
+    } else if (contentVisible) {
+        var picker = contentSection.querySelector('.content-picker');
+        if (!validateContentPicker(picker)) {
+            showToast('Add content (file, video URL, or text) before saving');
+            tr.remove();
+            picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        var c = readContentPicker(picker);
+        tr.dataset.mediaType = c.mediaType;
+        tr.dataset.mediaName = c.mediaName;
+        updateTopicRowChips(tr);
+    }
+
+    // Apply sharing from step 2.
+    var companyKey = _currentScope.companyKey;
+    var stepShareList = document.getElementById('stepShareDeptList');
+    if (stepShareList && companyKey) {
+        var currentDept = (_currentScope && _currentScope.dept) || '';
+        var checkedDepts = Array.from(stepShareList.querySelectorAll('input:checked')).map(function(cb) { return cb.value; });
+        var toShare = checkedDepts.filter(function(d) { return d !== currentDept; });
+        if (toShare.length) {
+            shareTopicWithDepartments(companyKey, name, toShare);
+            persistTopicsScope();
+        }
+    }
+
+    var subSummary = listed.length
+        ? ' with ' + listed.length + ' sub-topic' + (listed.length !== 1 ? 's' : '')
+        : '';
+    snapshotCurrentScope();
+    showToast('"' + name + '" added' + subSummary);
+
+    if (_pendingCreateGame) {
+        closeDetail();
+        _launchCreateGame(name);
+    } else {
+        showEmpty();
+    }
 }
 
 function addTopicAI() {
