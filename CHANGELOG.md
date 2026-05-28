@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Games v2: new page + sidebar nav link on all pages
+
+### Added
+- **`index-games-v2.html`** — New page (copy of `index-games.html`) with "Games v2" as the active nav item; uses `script-games.js?v=95`.
+- **All sidebar pages** (`index-games.html`, `index-questions.html`, `index-topics.html`, `index-topics-v2.html`, `companies.html`, `index-users-dept-grid.html`) — Added "Games v2" nav link after the Games link in the sidebar.
+
 ## [2026-05-28] — Topics v2: remove Generate-with-AI option; grip-handle reorder; label fixes
 
 ### Removed
