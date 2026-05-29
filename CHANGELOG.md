@@ -13,6 +13,193 @@ Project contact: elsadr@agilebridge.co.za
 ### Fixed
 - **`script-topics.js`** — `confirmShare()`: replaced `refreshTopics()` with `updateTopicShareChip(target.name)`. Share badge now appears in the topic row immediately after confirming the share panel.
 - **`script-topics-add-intent.js`** (v13) — `v2Commit()`: calls `updateTopicShareChip(name)` after sharing so the badge is visible on the new row straight away.
+- **`script-topics.js`** (v55) — `_aiUrlSyncRemoveBtns` now hides the × button on the first row unconditionally (`index === 0`), regardless of how many rows exist. Only rows added via "+ Add URL" ever show their × button.
+- **`index-topics-v2.html`**, **`index-topics.html`** — bumped `script-topics.js` to `?v=55`.
+
+## [2026-05-28] — Topics AI panel: fix remove button visible on first URL row
+
+### Fixed
+- **`styles-topics.css`** — added `.ai-url-remove-btn[hidden] { display: none; }` so the `hidden` HTML attribute is not overridden by the `display: flex` rule on the button. The × button on the first row now stays hidden until a second URL is added.
+
+## [2026-05-28] — Topics AI panel: multi-URL input with inline validation
+
+### Added
+- **`script-topics.js`** (v54) — four new global helpers for the multi-URL field:
+  - `aiUrlValidate(input)` — runs on every keystroke; tests `^https?://` and sets a `fa-check` (green) or `fa-times` (red) icon inside the input. Clears icon when the field is empty.
+  - `aiUrlAdd()` — appends a new URL row to `#aiUrlList`, focuses its input, then calls `_aiUrlSyncRemoveBtns`.
+  - `aiUrlRemove(btn)` — removes the row, syncs remove-button visibility.
+  - `_aiUrlSyncRemoveBtns()` — shows the × button on all rows when there are 2+; hides it when only one row remains.
+- **`styles-topics.css`** — added `.ai-url-list`, `.ai-url-row`, `.ai-url-input-wrap`, `.ai-url-status-icon` (`.fa-check` green / `.fa-times` red), `.ai-url-remove-btn` (red hover), `.ai-url-add-btn` (indigo dashed border).
+
+### Changed
+- **`script-topics.js`** (v54) — replaced single `<input id="aiUrlInput">` with the multi-row URL list (first row pre-rendered with a hidden remove button).
+- **`script-topics-add-intent.js`** (v14) — same HTML change for the v2 AI flow; updated `hasUrl` check in `v2AIGenerate` to read all `.ai-url-input` values via `querySelectorAll` instead of `getElementById('aiUrlInput')`.
+- **`index-topics-v2.html`** — bumped `script-topics.js` to `?v=54`, `script-topics-add-intent.js` to `?v=14`.
+- **`index-topics.html`** — bumped `script-topics.js` to `?v=54`.
+
+## [2026-05-28] — AI flow: remove Import Bulk button from step 2
+
+### Changed
+- **`script-games-stepper.js`** (v23) — Import Bulk bar removed from `_gsAIPane2Html()` (not shown in the AI flow). Corresponding show/hide references removed from `gsAIPickQType()` and `_gsAIActivateStep()`. The Import Bulk button remains in the manual 3-step flow (step 2) unchanged.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=23`.
+
+## [2026-05-28] — Rename stepper step 2 label from "Upload" to "Content"
+
+### Changed
+- **`script-games-stepper.js`** (v22) — all stepper label arrays updated: `'Upload'` → `'Content'` in both the 3-step manual stepper and the 4-step AI stepper, including the committed re-renders in `_gsGoBackToStep2`, `_gsOpenShareStep`, and `_gsAIOpenShareStep`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=22`.
+
+## [2026-05-28] — AI flow: remove placeholder note from review step
+
+### Changed
+- **`script-games-stepper.js`** (v21) — removed the "Placeholder questions — real AI generation will populate this list." note from `_gsAIBuildReviewPane()`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=21`.
+
+## [2026-05-28] — AI flow: review step — Keep lock + Regenerate for individual questions
+
+### Changed
+- **`script-games-stepper.js`** (v20):
+  - Each question row now has a **Keep** button (🔓 lock-open icon) on the right side. Clicking it locks the question (🔒 lock icon, green tint, `gs-review-kept` class on the item). Clicking again unlocks it.
+  - As soon as any question is kept, a **✦ Regenerate** button (AI-styled) appears above the note row.
+  - `window.gsReviewRegenerate()` — replaces all non-kept questions with questions from `_GS_MOCK_QUESTIONS_EXTRA` (5 extra placeholder MCQs), cycling with `_gsRegenIdx`. Shows a spinner on unlocked questions for 1.5 s before swapping content.
+  - `window.gsReviewKeep(btn)` — toggles kept state and shows/hides the regenerate bar.
+  - `_gsReviewItemHtml(q, i)` helper extracted so both initial render and regeneration reuse the same HTML builder.
+  - `_gsRegenIdx` reset to 0 on new AI flow start.
+- **`styles-games.css`** — added `.gs-review-q-row` (flex row), `.gs-review-keep-btn` (right-side keep button, locked/hover states), `.gs-review-item.gs-review-kept` (green border + background), `.gs-review-regen-bar` (right-aligned container, hidden until a question is kept).
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=20`.
+
+## [2026-05-28] — AI flow: step 2 action bar — replace Next with AI-themed Generate button
+
+### Changed
+- **`script-games-stepper.js`** (v19) — `_gsAISetActions(2)`: replaced the "Next →" primary button with `<button class="btn btn-ai" id="gsAINextBtn">✦ Generate</button>`. Button is still disabled until a question type is selected; clicking it triggers the 2-second generation spinner and auto-advances to step 3.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=19`.
+
+## [2026-05-28] — AI flow: step 3 is now the review; generation fires from step 2 Next button
+
+### Changed
+- **`script-games-stepper.js`** (v18):
+  - Step 3 pane no longer pre-renders the upload form. Clicking **Next** on step 2 (question type picker) now triggers generation inline: the Next button shows a `fa-spinner` and "Generating…" for 2 seconds, then `_gsAIBuildReviewPane()` populates step 3 and the stepper advances automatically.
+  - `_gsAISetActions(3)` simplified — step 3 is always reached post-generation so it unconditionally renders Cancel / ← Back / Next →.
+  - The `_gsAIPane3Html()` upload form function is kept in code but is no longer injected into the stepper HTML.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=18`.
+
+## [2026-05-28] — AI flow: step 3 review panel — accordion questions with answers
+
+### Changed
+- **`script-games-stepper.js`** (v17):
+  - `_gsAIBuildReviewPane()` completely rewritten. Step 3 now shows 5 MCQ placeholder questions in collapsible accordion cards. Each card shows the question text and a chevron; clicking opens the answers panel revealing all 4 options — correct answer highlighted in green with a ✓ icon, wrong answers in light grey with a ○ icon. A question-count chip (`5 questions`) appears next to the game name in the header.
+  - `window.gsReviewToggle(btn)` added — toggles the `.hidden` class on the answers panel and the `.open` class on the item for chevron rotation.
+  - `_GS_MOCK_QUESTIONS` array holds 5 realistic MCQ training questions (placeholder until real AI generation).
+- **`styles-games.css`** — replaced flat `.gs-ai-review-*` rules with full accordion styles: `.gs-review-item`, `.gs-review-q-btn`, `.gs-review-q-num`, `.gs-review-q-text`, `.gs-review-chevron`, `.gs-review-answers`, `.gs-review-answer`, `.gs-review-answer--correct`, `.gs-review-answer--wrong`, `.gs-review-note`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=17`.
+
+## [2026-05-28] — AI flow: credit estimate starts at 0; shown on steps 1, 2, and 3
+
+### Changed
+- **`script-games-stepper.js`** (v16):
+  - Credit estimate chip now initialises to `~0 credits` on all three panes (steps 1, 2, 3).
+  - `gsAIUpdateCreditEstimate()` uses a multiplier of `0` when no question type has been selected yet, so the displayed cost is 0 until the user picks a type card. Once a type is picked the cost updates immediately to `base × multiplier`.
+  - Credit estimate chip added to step 2 (question-type picker pane) so it is visible and updates as the user selects a type.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=16`.
+
+## [2026-05-28] — AI flow: step 2 matches manual flow; step 3 = Upload; dynamic credit estimate
+
+### Changed
+- **`script-games-stepper.js`** (v15):
+  - **Step 2 (Upload)** in the AI 4-step flow now looks identical to the manual flow: question-type card picker, Import Bulk button (hidden until a type is selected), Cancel / ← Back / Next → action bar. The Next button is disabled until a type card is picked.
+  - **Step 3 (Review)** now holds the upload zone, URL, text, prompt, and Generate button (previously on step 2). Action bar shows Cancel + ← Back before generating; Cancel + ← Back + Next → once generation completes.
+  - **Step reachability** updated: step 3 dot becomes clickable once a question type is selected; step 4 dot only after generation completes.
+  - **Dynamic credit estimate** — `window.gsAIUpdateCreditEstimate()` reads the selected AI Model (`#gsAIModel`) and question type (`_gsSelectedQType`) and updates every `.gs-credit-estimate-value` element in real-time. Model costs: Haiku ~20, Sonnet ~50, Opus ~150, GPT-4o ~75, Gemini ~40. Question-type multipliers: MCQ ×1.0, Fill blank ×1.2, Statement blanking ×1.2, Select on image ×1.5, Match terms ×1.3, Word bucket ×1.4, Crossword ×2.0. Called on model `onchange` and after each type-card click.
+  - `_gsCreditEstimateHtml()` marks the estimate `<strong>` with class `gs-credit-estimate-value` so all chips can be updated together.
+  - Resets `_gsSelectedQType` on new AI flow start so stale type from a previous session does not pollute step reachability.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=15`.
+
+## [2026-05-28] — Questions page: disable Done until 5 questions added
+
+### Changed
+- **`script-questions.js`** (v2) — "Done" button in `#questionsDoneBar` is now rendered disabled when fewer than 5 questions exist, and re-enables as soon as the 5th question is saved. Tooltip `"Add at least 5 questions to continue"` appears on the disabled button; it clears once the threshold is met. This mirrors the existing orange warning banner (which already hides at 5) and fires on every `renderQuestionsPage()` call so the state is always current.
+- **`index-questions-v2.html`**, **`index-questions.html`** — bumped `script-questions.js` to `?v=2`.
+
+## [2026-05-28] — Games: AI flow — Configure 2×2 grid, step 2 type picker, credit estimates
+
+### Changed
+- **`script-games-stepper.js`** (v14):
+  - **Configure grid** — Pass Threshold moved inside `.configure-grid` so all four fields (Max attempts, Questions for game, Pass Threshold, AI Model) share the same 2-column equal-width grid. Removed `style="width:100px"` from Pass Threshold; the grid's existing `1fr 1fr` CSS handles sizing. For the regular manual flow, only 3 cells are present; grid places Pass Threshold in the left column of the second row.
+  - **AI step 2 (Upload)** — rebuilt to match the regular flow: compact 2-column question-type card picker (`#gsAIQTypePicker`) at the top ("Choose the type of questions…"), followed by file upload, URL, text area, and the prompt + Generate button below. `gsAIPickQType()` handles card selection and tracks `_gsSelectedQType`.
+  - **Credit estimates** — amber "Estimated cost: ~50 credits" chip added to the bottom of step 1 (Game Setup), step 2 (Upload), and step 3 (Review) in the AI flow via `_gsCreditEstimateHtml()`.
+- **`styles-games.css`** — added `.gs-credit-estimate` amber chip styles.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=14`.
+
+## [2026-05-28] — Games: AI flow — move AI Model picker into Configure (step 1)
+
+### Changed
+- **`script-games-stepper.js`** (v13) — AI Model dropdown moved from step 2 (Upload) into the **Configure** collapsible block on step 1 (Game Setup), below Pass Threshold. It only appears in the AI flow — `_gsPane1Html` now accepts an optional `extraConfigHtml` argument injected at the bottom of the Configure block; the regular manual flow passes nothing so its Configure section is unchanged. `_gsAIModelPickerHtml()` helper builds the select, and `_gsAIPane2Html` no longer renders it.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=13`.
+
+## [2026-05-28] — Games: AI flow 4-step stepper (Generate with AI on index-games.html)
+
+### Added
+- **`script-games-stepper.js`** (v12) — overrides `window.addGameAI` to launch a 4-step stepper: **Game Setup → Upload → Review → Share**.
+  - **Step 1 (Game Setup)**: identical to the regular manual flow (Cover image, Topic, Game name *, Description, Configure). Uses the same `_gsPane1Html()` so field IDs and validation are shared.
+  - **Step 2 (Upload)**: AI content panel — AI Model picker, file upload zone (drag-and-drop), URL field, rich-text area, and prompt input with a "Generate →" button. Clicking Generate shows a loading spinner, then advances to Review after a 2-second simulated delay.
+  - **Step 3 (Review)**: shows the AI-generated questions list (placeholder mock questions for now). Action bar: Cancel | ← Back | Next →.
+  - **Step 4 (Share)**: same department checkboxes + from/to schedule picker as the regular flow. Action bar: Cancel | Share.
+  - Stepper dots are clickable with the same rules as the regular 3-step stepper: backward always allowed; step 2 reachable once a name is entered; step 3 reachable only after generation; step 4 reachable after reviewing. `gsUpdateStepAccess()` now updates both `#gsStepper` (regular) and `#gsAIStepper` (AI) in one call.
+- **`styles-games.css`** — added `.gs-ai-stepper .add-step-label` (font-size 0.68rem so 4 nodes fit); `#gsAIStepper` click-interaction rules; `.gs-ai-review-list/item/num/text/note` styles for the Review step question list.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=12`.
+
+## [2026-05-28] — Games stepper: "← Change type" returns to stepper step 2
+
+### Fixed
+- **`script-games-stepper.js`** (v11) — clicking "← Change type" in the question form now returns to the stepper's compact step 2 type-picker (same 2-column grid) instead of the old full-panel large-card picker. Previously selected type is pre-highlighted and the "Next →" button is pre-enabled. Picking a new type and clicking "Next →" reuses the already-saved game and category — no duplicate rows are created. Step 1 ("Game Setup") shows as a committed (non-clickable) completed step since the game is already saved. Cancelling from any point restores the original `backToQTypePicker` so normal question flows on other games are unaffected.
+- **`styles-games.css`** — added `#gsStepper .add-step.gs-step-committed` rule (`cursor: default; pointer-events: none`) for the non-navigable step 1 when the game is already saved.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=11`.
+
+## [2026-05-28] — Games stepper: clickable step navigation
+
+### Added
+- **`script-games-stepper.js`** (v10) — stepper dots are now interactive:
+  - Each dot has `onclick="gsStepClick(N)"`.
+  - **Backward**: clicking any completed (green ✓) step always navigates back to it; the question-type selection on step 2 is preserved and the Next button is re-enabled if a type was already chosen.
+  - **Forward**: clicking the next step dot is only allowed when the current step's required fields are filled — clicking step 2 from step 1 validates the game name (same logic as the "Next →" button); clicking step 3 from step 2 saves the game (same as "Next →" on step 2, which then navigates to the questions page). Step 3 cannot be reached by clicking the dot directly — it is only opened via the full save → questions → return flow.
+  - `gsUpdateStepAccess()` is called on every name keypress and after every step transition to toggle the `gs-step-reachable` class on step 2, making it visually clickable only when a game name is present.
+- **`styles-games.css`** — added `#gsStepper`-scoped CSS: locked future steps (`opacity: 0.45`, `cursor: not-allowed`, `pointer-events: none`); reachable next step (full opacity, `cursor: pointer`); done steps (`cursor: pointer`); hover brightness on done/reachable step circles.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=10`.
+
+## [2026-05-28] — Games stepper: rename step 1 label to "Game Setup"
+
+### Changed
+- **`script-games-stepper.js`** (v9) — step 1 label changed from "Game" to "Game Setup" in both the active stepper (`_gsStepperHtml`) and the completed stepper shown on step 3 (`_gsOpenShareStep`).
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=9`.
+
+## [2026-05-28] — Games: restore scheduled-date chip on game list rows
+
+### Added
+- **`script-games.js`** (v97) — added `_buildScheduleChip(startDate, endDate)` helper that returns a `<span class="chip chip-scheduled">` showing the date range (e.g. "30 May – 5 Jun '26"), or empty string when no start date is set. Used by `gameRowHtml()` (via `.cell-sched` wrapper) and `updateGameRowChips()` so the chip appears on first render and updates whenever the schedule changes.
+- **`index-games.html`**, **`index-games-v2.html`**, **`index-questions-v2.html`** — bumped `script-games.js` to `?v=97`.
+
+## [2026-05-28] — Games stepper (index-games.html): labels, Upload step, cross-page navigation, share step fixes
+
+### Added
+- **`script-games-stepper.js`** (v8) — step 2 renamed from "Questions" to "Upload"; step 2 shows an **Import Bulk** button (`gsImportBulk`) once a question type card is selected; clicking **Next** on step 2 opens the Add Question form in the right-hand panel (calls `openAddQuestionForm`) rather than immediately going to step 3; `_navigateToQuestionsPage` stores `returnTo: 'index-games.html'` in `gameon.questionsNav` so "Done" on the questions page navigates back to `index-games.html`; `_gsOpenShareStep` now calls `setGamePanelMode('add')` + `showGameEdit()` **before** assigning custom action-bar HTML, preventing the default "Create Game" submit button from re-appearing; step 3 includes a `buildScheduleBodyHtml` date-range picker (from/to); `gsConfirmShare` reads `scheduleStartDate` / `scheduleEndDate` values and writes them to the game row's `data-scheduled-date` / `data-scheduled-end-date` attributes, then calls `updateGameRowChips`.
+- **`styles-games.css`** — added `.gs-import-bulk-bar` and `.gs-import-bulk-bar.hidden` for the Import Bulk bar shown on step 2.
+- **`index-questions-v2.html`** — inline `goBackToGames` override now reads `nav.returnTo` from `gameon.questionsNav` and redirects to that URL (defaults to `index-games-v2.html`), enabling the v1 stepper to return to `index-games.html`.
+
+### Changed
+- **`script-games-stepper.js`** — step labels changed to **Game / Upload / Share**; "Name" field label changed to "Game name *"; "Topic" and "Description" labels no longer include "(optional)".
+
+### Fixed
+- **`script-games-stepper.js`** — `_gsOpenShareStep` action bar ordering bug: `setGamePanelMode('add')` is now always called before `actions.innerHTML` is overwritten so the Share button is never replaced by a default "Create Game" submit button.
+
+## [2026-05-28] — Games: 3-step stepper on regular Add Game panel; stepper border removed
+
+### Added
+- **`script-games-stepper.js`** (v1) — new script for `index-games.html` that wraps `addGame()` to deliver the same 3-step stepper flow (Game → Questions → Share) as Games v2. Step 1 uses the same field IDs (`addGameName`, `addGameDesc`, etc.) as the original form so the rest of `script-games.js` stays unchanged. Step 2 shows a compact 7-card question-type picker; clicking Next saves the game and advances to step 3. Step 3 renders an inline department share checklist backed by `confirmGameSharePanel()`.
+- **`index-games.html`** — loads `script-games-stepper.js?v=1` after `script-games.js`; also upgraded `script-games.js` reference from `?v=85` to `?v=96` so it matches the other pages.
+
+### Fixed
+- **`styles-topics.css`** — removed `border-bottom: 1px solid var(--border)` and `padding-bottom: 16px` from `.add-stepper`. These produced a visible horizontal divider line below the stepper row on every panel that uses the stepper (AI game flow, manual flow, topics).
+- **`index-games-v2.html`**, **`index-questions-v2.html`** — bumped `script-games-v2-intent.js` to `?v=36` to deliver the `setGamePanelMode` ordering fix (actions bar no longer overwritten on AI step 2).
 
 ## [2026-05-28] — Games v2: fix "Game name is required" on AI step 2 Next
 

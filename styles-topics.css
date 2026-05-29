@@ -1412,6 +1412,70 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px #dbeafe;
 }
+
+/* ===== Multi-URL input list ===== */
+.ai-url-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.ai-url-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ai-url-input-wrap {
+    position: relative;
+    flex: 1;
+}
+/* Make room for the status icon on the right */
+.ai-url-input-wrap .ai-text-input { padding-right: 30px; }
+.ai-url-status-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+.ai-url-status-icon.fa-check { color: #22c55e; }
+.ai-url-status-icon.fa-times { color: #ef4444; }
+/* Remove (×) button */
+.ai-url-remove-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 0.73rem;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ai-url-remove-btn:hover    { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+.ai-url-remove-btn[hidden]  { display: none; }
+/* + Add URL button */
+.ai-url-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    color: #6366f1;
+    background: none;
+    border: 1px dashed #c7d2fe;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+}
+.ai-url-add-btn:hover { background: #eef2ff; border-color: #818cf8; }
+.ai-url-add-btn i     { font-size: 0.72rem; }
 .ai-rte {
     width: 100%;
     min-height: 80px;
@@ -1795,8 +1859,6 @@ tr.row-company:hover .row-checkbox { opacity: 0.5; }
     display: flex;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border, #e5e7eb);
 }
 .add-step {
     display: flex;

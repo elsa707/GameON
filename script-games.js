@@ -265,6 +265,23 @@ function openGameSharePanelFromChip(chip) {
     if (row) openGameSharePanel(row);
 }
 
+// Returns a chip HTML string showing the scheduled date range, or '' if no start date.
+// e.g. <span class="chip chip-scheduled">📅 30 May – 5 Jun '26</span>
+function _buildScheduleChip(startDate, endDate) {
+    if (!startDate) return '';
+    var s = new Date(startDate);
+    var sStr = s.getDate() + ' ' + _MONTHS[s.getMonth()];
+    var label;
+    if (!endDate) {
+        label = sStr + ' \'' + String(s.getFullYear()).slice(2);
+    } else {
+        var e = new Date(endDate);
+        var eStr = e.getDate() + ' ' + _MONTHS[e.getMonth()];
+        label = sStr + ' – ' + eStr + ' \'' + String(e.getFullYear()).slice(2);
+    }
+    return '<span class="chip chip-scheduled"><i class="fas fa-calendar-alt"></i> ' + label + '</span>';
+}
+
 // easy, medium, hard are counts of questions at each level
 function _difficultyDonutSvg(easy, medium, hard) {
     var total = easy + medium + hard;
@@ -326,8 +343,14 @@ function updateGameRowChips(gameRow) {
     var chevron = gameRow.querySelector('.chevron');
     if (chevron) chevron.style.visibility = catCount > 0 ? '' : 'hidden';
 
-    // Scheduled date chip intentionally not shown on the game list row
-    // (dates are visible in the Share panel only)
+    // Scheduled date chip
+    var cellSched = gameRow.querySelector('.cell-sched');
+    if (cellSched) {
+        cellSched.innerHTML = _buildScheduleChip(
+            gameRow.dataset.scheduledDate    || '',
+            gameRow.dataset.scheduledEndDate || ''
+        );
+    }
 
     // Share count chip
     var cellShare = gameRow.querySelector('.cell-share');
@@ -389,7 +412,7 @@ function gameRowHtml(game, id) {
         ? '<span class="chip chip-cats"><i class="fas fa-list"></i> ' + catCount + ' categor' + (catCount !== 1 ? 'ies' : 'y') + '</span>'
         : '';
 
-    // scheduledDate is stored on the row dataset for use in the Share panel but not shown as a chip
+    var schedChip = _buildScheduleChip(game.scheduledDate || '', game.scheduledEndDate || '');
     var sharedDepts = game.sharedDepts || [];
     var shareChip = sharedDepts.length > 0
         ? _buildShareChip(sharedDepts)
@@ -421,7 +444,7 @@ function gameRowHtml(game, id) {
             gameCoverHtml(cover) +
             '<span class="company-name">' + escapeAttr(game.name) + '</span>' +
             '<span class="row-main-chip">' + catChip + '</span>' +
-            '<span class="cell-pills"></span>' +
+            '<span class="cell-pills"><span class="cell-sched">' + schedChip + '</span></span>' +
             '<span class="cell-share">' + shareChip + '</span>' +
             '<span class="row-status">' + statusChip + '</span>' +
             donutHtml +
