@@ -2072,17 +2072,16 @@ function openAddQuestionForm(questionType, gameId, catId) {
         '</div>' +
 
         '<div class="form-group">' +
-            '<label>Difficulty <span class="form-label-optional">(optional)</span></label>' +
+            '<label>Difficulty</label>' +
             '<select name="difficulty" class="aq-select">' +
-                '<option value="">Select difficulty</option>' +
                 '<option value="easy">Easy</option>' +
-                '<option value="medium">Medium</option>' +
+                '<option value="medium" selected>Medium</option>' +
                 '<option value="hard">Hard</option>' +
             '</select>' +
         '</div>' +
 
         '<div class="form-group">' +
-            '<label>Question Image <span class="form-label-optional">(optional)</span></label>' +
+            '<label>Question Image</label>' +
             '<label class="aq-image-zone">' +
                 '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">' +
                 '<i class="fas fa-cloud-upload-alt aq-image-icon"></i>' +

@@ -90,7 +90,7 @@
             '  ' + gameCoverPickerHtml(GAME_COVER_PRESETS[0]),
             '</div>',
             '<div class="form-group">',
-            '  <label for="addGameTopic">Topic</label>',
+            '  <label for="addGameTopic">Topic <span class="required-mark">*</span></label>',
             '  <select id="addGameTopic" class="ai-model-select" onchange="onAddGameTopicChange(this)">',
             '    <option value="">Select a topic</option>',
             '    ' + topicOpts,
@@ -113,7 +113,7 @@
             '    <div class="configure-grid">',
             '      <div class="form-group"><label>Max attempts</label>',
             '        <input type="number" id="addGameMaxAttempts" placeholder="e.g. 3" min="1" max="99"></div>',
-            '      <div class="form-group"><label>Questions for this game</label>',
+            '      <div class="form-group"><label>Number of Questions to Generate</label>',
             '        <input type="number" id="addGameQPerSession" value="5" min="1" max="100"></div>',
             '      <div class="form-group"><label>Pass Threshold (%)</label>',
             '        <input type="number" id="addGamePassThreshold" placeholder="e.g. 60" min="0" max="100"></div>',
@@ -144,6 +144,72 @@
             '</div>'
         );
     }
+
+    // ── Share pane helpers — used by both manual step 3 and AI step 4 ─────────
+
+    // Generates 2 mock users per department (placeholder until real user API)
+    function _gsShareUserItemsHtml(allDepts) {
+        var pool = ['Sarah Adams', 'James Brown', 'Lisa Chen', 'David Miller', 'Emma Wilson',
+                    'Tom Jackson', 'Anna Garcia', 'Mark Taylor', 'Jessica Park', 'Ryan Cooper',
+                    'Sophie Zhang', 'Chris Nkosi', 'Maria Santos', 'Kevin Dube'];
+        var users = [];
+        allDepts.forEach(function (d, di) {
+            users.push({ name: pool[(di * 2)     % pool.length], dept: d.name });
+            users.push({ name: pool[(di * 2 + 1) % pool.length], dept: d.name });
+        });
+        if (!users.length) return '<p class="share-empty">No users found.</p>';
+        return users.map(function (u) {
+            return '<label class="share-dept-item">' +
+                '<input type="checkbox" value="' + escapeAttr(u.name) + '">' +
+                '<span class="share-user-info">' +
+                    '<span class="share-dept-name">' + escapeAttr(u.name) + '</span>' +
+                    '<span class="gs-share-user-dept">' + escapeAttr(u.dept) + '</span>' +
+                '</span>' +
+            '</label>';
+        }).join('');
+    }
+
+    // Wraps dept + individual views with the toggle control
+    function _gsShareToggleHtml(deptItems, userItems) {
+        return (
+            '<div class="gs-share-toggle">' +
+                '<button type="button" class="gs-share-toggle-btn gs-share-active" onclick="gsShareMode(\'dept\')">' +
+                    '<i class="fas fa-building"></i> Department' +
+                '</button>' +
+                '<button type="button" class="gs-share-toggle-btn" onclick="gsShareMode(\'individual\')">' +
+                    '<i class="fas fa-user"></i> Individual' +
+                '</button>' +
+            '</div>' +
+            '<div id="gsShareDeptView">' +
+                '<div class="share-dept-list" id="gameShareDeptList">' + deptItems + '</div>' +
+            '</div>' +
+            '<div id="gsShareIndivView" class="hidden">' +
+                '<input type="text" class="ai-text-input" id="gsShareUserSearch" placeholder="Search users…" oninput="gsFilterShareUsers(this.value)">' +
+                '<div class="share-dept-list" id="gsShareUserList" style="margin-top:6px">' + userItems + '</div>' +
+            '</div>'
+        );
+    }
+
+    window.gsShareMode = function (mode) {
+        var deptView  = document.getElementById('gsShareDeptView');
+        var indivView = document.getElementById('gsShareIndivView');
+        var isDept    = (mode === 'dept');
+        if (deptView)  deptView.classList.toggle('hidden',  !isDept);
+        if (indivView) indivView.classList.toggle('hidden',  isDept);
+        document.querySelectorAll('.gs-share-toggle-btn').forEach(function (btn, i) {
+            btn.classList.toggle('gs-share-active', isDept ? i === 0 : i === 1);
+        });
+    };
+
+    window.gsFilterShareUsers = function (query) {
+        var q = query.toLowerCase().trim();
+        document.querySelectorAll('#gsShareUserList .share-dept-item').forEach(function (item) {
+            var nameEl = item.querySelector('.share-dept-name');
+            var deptEl = item.querySelector('.gs-share-user-dept');
+            var text   = ((nameEl ? nameEl.textContent : '') + ' ' + (deptEl ? deptEl.textContent : '')).toLowerCase();
+            item.hidden = !!(q && text.indexOf(q) === -1);
+        });
+    };
 
     // ── Step 3: share ─────────────────────────────────────────────────────────
     function _gsPopulatePane3() {
@@ -242,6 +308,12 @@
 
     window.gsGoNext = function () {
         if (_gsStep === 1) {
+            var topicEl = document.getElementById('addGameTopic');
+            if (!topicEl || !topicEl.value) {
+                if (topicEl) { topicEl.classList.add('input-error'); topicEl.focus(); }
+                return;
+            }
+            if (topicEl) topicEl.classList.remove('input-error');
             var nameEl = document.getElementById('addGameName');
             if (!nameEl || !nameEl.value.trim()) {
                 if (nameEl) { nameEl.classList.add('input-error'); nameEl.focus(); }
@@ -741,13 +813,10 @@
             stepperHtml +
             '<div class="add-step-pane">' +
                 '<p class="step-pane-lead"><strong>' + escapeAttr(name) + '</strong></p>' +
-                '<div class="share-dept-list" id="gameShareDeptList">' + items + '</div>' +
+                _gsShareToggleHtml(items, _gsShareUserItemsHtml(allDepts)) +
                 scheduleHtml +
             '</div>';
 
-        // setGamePanelMode MUST run before we write the action bar — it checks
-        // for #gameSubmitBtn and restores the default "Create Game" submit button
-        // if it is missing, which would overwrite our custom Share button.
         setGamePanelMode('add');
         showGameEdit();
 
@@ -1017,6 +1086,12 @@
     // ── Navigation ────────────────────────────────────────────────────────────
     window.gsAIGoNext = function () {
         if (_gsAIStep === 1) {
+            var topicEl = document.getElementById('addGameTopic');
+            if (!topicEl || !topicEl.value) {
+                if (topicEl) { topicEl.classList.add('input-error'); topicEl.focus(); }
+                return;
+            }
+            if (topicEl) topicEl.classList.remove('input-error');
             var nameEl = document.getElementById('addGameName');
             if (!nameEl || !nameEl.value.trim()) {
                 if (nameEl) { nameEl.classList.add('input-error'); nameEl.focus(); }
@@ -1220,7 +1295,12 @@
         pane.innerHTML =
             '<div class="gs-review-header">' +
                 '<p>Review questions for <strong>' + escapeAttr(gameName) + '</strong></p>' +
-                '<span class="chip chip-modules">' + count + ' questions</span>' +
+                '<div class="gs-review-header-actions">' +
+                    '<span class="chip chip-modules">' + count + ' questions</span>' +
+                    '<button type="button" class="gs-review-action-btn" onclick="gsAIExportQuestions()" title="Download questions as CSV">' +
+                        '<i class="fas fa-download"></i> Export' +
+                    '</button>' +
+                '</div>' +
             '</div>' +
             '<div class="gs-review-list">' + itemsHtml + '</div>' +
             '<div class="gs-review-regen-bar hidden" id="gsReviewRegenerateBar">' +
@@ -1307,6 +1387,127 @@
             if (typeof window.gsAIUpdateCreditEstimate === 'function') window.gsAIUpdateCreditEstimate();
         }, 1500);
     };
+
+    // ── Export / Import questions (AI review step) ───────────────────────────
+
+    // Read current questions directly from the rendered DOM items
+    function _gsAIReadQuestionsFromDOM() {
+        var questions = [];
+        document.querySelectorAll('#gsAIPane3 .gs-review-item').forEach(function (item) {
+            var textEl = item.querySelector('.gs-review-q-text');
+            var text   = textEl ? textEl.textContent.trim() : '';
+            if (!text) return;
+            var answers = [];
+            item.querySelectorAll('.gs-review-answers .gs-review-answer').forEach(function (a) {
+                answers.push({
+                    text:    a.textContent.trim(),
+                    correct: a.classList.contains('gs-review-answer--correct')
+                });
+            });
+            questions.push({ text: text, answers: answers });
+        });
+        return questions;
+    }
+
+    // Export current review questions as a CSV file
+    window.gsAIExportQuestions = function () {
+        var questions = _gsAIReadQuestionsFromDOM();
+        if (!questions.length) { showGameToast('No questions to export'); return; }
+        var rows = [['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct (1-4)']];
+        questions.forEach(function (q) {
+            var row = [q.text];
+            var correctNum = 1;
+            for (var i = 0; i < 4; i++) {
+                if (q.answers[i]) {
+                    row.push(q.answers[i].text);
+                    if (q.answers[i].correct) correctNum = i + 1;
+                } else { row.push(''); }
+            }
+            row.push(correctNum);
+            rows.push(row);
+        });
+        var csv = rows.map(function (r) {
+            return r.map(function (cell) {
+                return '"' + String(cell).replace(/"/g, '""') + '"';
+            }).join(',');
+        }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'questions.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // Import questions from a CSV file and replace the review list
+    window.gsAIImportQuestions = function (input) {
+        var file = input && input.files && input.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var questions = _gsParseQuestionsCSV(e.target.result);
+            if (!questions.length) { showGameToast('No valid questions found in file'); return; }
+            _gsReplaceAIQuestions(questions);
+            input.value = ''; // reset so same file can be re-imported
+        };
+        reader.readAsText(file);
+    };
+
+    // Parse a CSV where row format is: Question, OptA, OptB, OptC, OptD, Correct(1-4)
+    function _gsParseQuestionsCSV(text) {
+        var lines     = text.split(/\r?\n/);
+        var questions = [];
+        lines.forEach(function (line, li) {
+            if (li === 0 || !line.trim()) return; // skip header + blanks
+            var fields = _gsSplitCSVLine(line);
+            var q      = (fields[0] || '').trim();
+            if (!q) return;
+            var opts = [];
+            for (var i = 1; i <= 4; i++) {
+                var opt = (fields[i] || '').trim();
+                if (opt) opts.push(opt);
+            }
+            if (!opts.length) return;
+            var correctNum = parseInt(fields[5], 10) || 1;
+            var correctIdx = Math.min(Math.max(correctNum - 1, 0), opts.length - 1);
+            questions.push({
+                text:    q,
+                answers: opts.map(function (opt, i) { return { text: opt, correct: (i === correctIdx) }; })
+            });
+        });
+        return questions;
+    }
+
+    function _gsSplitCSVLine(line) {
+        var fields = [], inQuote = false, field = '';
+        for (var i = 0; i < line.length; i++) {
+            var ch = line[i];
+            if (ch === '"') {
+                if (inQuote && line[i + 1] === '"') { field += '"'; i++; }
+                else { inQuote = !inQuote; }
+            } else if (ch === ',' && !inQuote) {
+                fields.push(field); field = '';
+            } else { field += ch; }
+        }
+        fields.push(field);
+        return fields;
+    }
+
+    // Replace all questions in the review pane with a new set
+    function _gsReplaceAIQuestions(questions) {
+        var pane = document.getElementById('gsAIPane3');
+        if (!pane) return;
+        var list = pane.querySelector('.gs-review-list');
+        var chip = pane.querySelector('.gs-review-header .chip');
+        var regenBar = document.getElementById('gsReviewRegenerateBar');
+
+        if (chip)  chip.textContent = questions.length + ' questions';
+        if (list)  list.innerHTML   = questions.map(_gsReviewItemHtml).join('');
+        if (regenBar) regenBar.classList.add('hidden'); // reset keep state
+        if (typeof window.gsAIUpdateCreditEstimate === 'function') window.gsAIUpdateCreditEstimate();
+        showGameToast(questions.length + ' question' + (questions.length !== 1 ? 's' : '') + ' imported');
+    }
 
     // ── Save game + open Share step ───────────────────────────────────────────
     function _gsAISaveAndOpenShare() {
@@ -1406,7 +1607,7 @@
             stepperHtml +
             '<div class="add-step-pane">' +
                 '<p class="step-pane-lead"><strong>' + escapeAttr(name) + '</strong></p>' +
-                '<div class="share-dept-list" id="gameShareDeptList">' + items + '</div>' +
+                _gsShareToggleHtml(items, _gsShareUserItemsHtml(allDepts)) +
                 scheduleHtml +
             '</div>';
 

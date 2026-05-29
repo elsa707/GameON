@@ -5,6 +5,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-05-28] — Add Question form: remove "(optional)" labels; default difficulty to Medium
+
+### Changed
+- **`script-games.js`** (v98) — in `openAddQuestionForm`: removed `(optional)` text from Difficulty and Question Image labels; Difficulty dropdown now defaults to "Medium" (removed the blank "Select difficulty" placeholder option).
+- **`index-games.html`**, **`index-questions.html`**, **`index-questions-v2.html`** — bumped `script-games.js` to `?v=98`.
+
+## [2026-05-28] — Game Setup step 1: Topic is required
+
+### Changed
+- **`script-games-stepper.js`** (v32) — Topic dropdown now shows a `*` required mark. Both `gsGoNext()` (manual flow) and `gsAIGoNext()` (AI flow) validate that a topic is selected before advancing to step 2; if not, the dropdown gets `input-error` focus and the step does not advance.
+- **`index-games.html`** — bumped to `?v=32`.
+
+## [2026-05-28] — Configure: rename "Questions for this game" label
+
+### Changed
+- **`script-games-stepper.js`** (v31) — renamed Configure field label from "Questions for this game" to "Number of Questions to Generate" on both the manual and AI game flows.
+- **`index-games.html`** — bumped to `?v=31`.
+
+## [2026-05-28] — AI review step: remove Import button
+
+### Changed
+- **`script-games-stepper.js`** (v30) — removed the Import file-label button from the AI review step header. Export button remains.
+- **`index-games.html`** — bumped to `?v=30`.
+
+## [2026-05-28] — Share step: Department / Individual toggle on both game flows
+
+### Added
+- **`script-games-stepper.js`** (v29):
+  - Both the manual flow (step 3 Share) and the AI flow (step 4 Share) now show a segmented toggle: **Department** | **Individual** above the share list.
+  - **Department** view (default) — existing department checkbox list, unchanged.
+  - **Individual** view — search input + list of 2 mock users per department (name + department sub-label). Typing in the search box filters the list live via `gsFilterShareUsers()`.
+  - `_gsShareToggleHtml(deptItems, userItems)` — builds the toggle + both views.
+  - `_gsShareUserItemsHtml(allDepts)` — generates placeholder users from the department list.
+  - `window.gsShareMode(mode)` — switches between `'dept'` and `'individual'` views.
+  - `window.gsFilterShareUsers(query)` — hides non-matching user rows on input.
+- **`styles-games.css`** — `.gs-share-toggle`, `.gs-share-toggle-btn`, `.gs-share-active`, `.share-user-info`, `.gs-share-user-dept`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=29`.
+
+## [2026-05-28] — AI review step: Export and Import buttons for question editing
+
+### Added
+- **`script-games-stepper.js`** (v28) — Export and Import buttons in the AI review step 3 header. Export downloads the current questions as `questions.csv` (columns: Question, Option A, Option B, Option C, Option D, Correct 1-4). Import opens a file picker; the selected CSV is parsed and replaces the review list. CSV parser handles quoted fields, embedded commas, and header row. Imported questions reset the Keep/Regenerate bar and update the question count chip.
+- **`styles-games.css`** — `.gs-review-header-actions` (flex group) and `.gs-review-action-btn` (small bordered button/label used for both Export and Import).
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=28`.
+
 ## [2026-05-28] — Fix: share badge appears immediately after sharing a topic
 
 ### Added
