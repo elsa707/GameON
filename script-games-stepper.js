@@ -422,9 +422,31 @@
             updateGameRowChips(gameRow);
             persistGamesScope();
         }
-        _gsSavedCatId = catId;   // remember so "← Change type" can reuse it
+        _gsSavedCatId = catId;
         openAddQuestionForm(questionType || 'mcq', gameId, catId);
+        _gsInjectStepperIntoForm();
         _gsSetupChangeTypeOverride();
+        setTimeout(function () { _gsPatchFormCancelBtn(gameId, catId); }, 0);
+    }
+
+    // Prepends the committed stepper (step 1 done, step 2 active) to the
+    // add-question form so the user always sees where they are.
+    function _gsInjectStepperIntoForm() {
+        var fieldsEl = document.getElementById('gameEditFields');
+        if (!fieldsEl) return;
+        var labels = ['Game Setup', 'Content', 'Share'];
+        var html   = '<div class="add-stepper gs-form-stepper" id="gsStepper">';
+        labels.forEach(function (label, i) {
+            if (i > 0) html += '<div class="add-step-connector"></div>';
+            var cls = i === 0 ? ' done gs-step-committed' : (i === 1 ? ' active' : '');
+            html +=
+                '<div class="add-step' + cls + '" data-step="' + (i + 1) + '">' +
+                    '<span class="add-step-num">' + (i + 1) + '</span>' +
+                    '<span class="add-step-label">' + label + '</span>' +
+                '</div>';
+        });
+        html += '</div>';
+        fieldsEl.insertAdjacentHTML('afterbegin', html);
     }
 
     // ── "← Change type" intercept ────────────────────────────────────────────
@@ -496,21 +518,149 @@
         _gsSetupChangeTypeOverride();
     }
 
-    // ── Override _navigateToQuestionsPage so it goes to the v2 questions page ─
-    // Tag the nav entry with returnTo:'index-games.html' so goBackToGames knows
-    // which page to come back to.
+    // ── After saving a question: show inline list, or re-open form for "add another" ─
     window._navigateToQuestionsPage = function (gameId, catId, openPicker) {
-        try {
-            localStorage.setItem('gameon.questionsNav', JSON.stringify({
-                gameId:     String(gameId),
-                catId:      String(catId),
-                openPicker: !!openPicker,
-                returnTo:   'index-games.html',
-                companyKey: (_currentGameScope && _currentGameScope.companyKey) || '',
-                dept:       (_currentGameScope && _currentGameScope.dept)       || ''
-            }));
-        } catch (e) {}
-        window.location.href = 'index-questions-v2.html';
+        _gsSavedCatId = catId;
+        if (openPicker) {
+            // "Save & Add Another" — re-open the form with the same type
+            openAddQuestionForm(_gsSelectedQType || 'mcq', gameId, catId);
+            _gsInjectStepperIntoForm();
+            _gsSetupChangeTypeOverride();
+            setTimeout(function () { _gsPatchFormCancelBtn(gameId, catId); }, 0);
+        } else {
+            _gsShowInlineQuestionsView(gameId, catId);
+        }
+    };
+
+    // ── Read saved questions from DOM data attributes ─────────────────────────
+    function _gsGetSavedQuestions(gameId, catId) {
+        var rows = document.querySelectorAll(
+            'tr.row-q[data-game="' + gameId + '"][data-cat="' + catId + '"]'
+        );
+        var questions = [];
+        rows.forEach(function (row) {
+            try {
+                questions.push({
+                    text:    row.dataset.text || '',
+                    options: JSON.parse(row.dataset.options || '[]'),
+                    correct: parseInt(row.dataset.correct, 10) || 0
+                });
+            } catch (e) {}
+        });
+        return questions;
+    }
+
+    // ── Build a single question accordion item (uses options/correct format) ──
+    function _gsInlineQItemHtml(q, i) {
+        var answersHtml = (q.options || []).map(function (opt, oi) {
+            var correct = (oi === q.correct);
+            var cls  = correct ? ' gs-review-answer--correct' : ' gs-review-answer--wrong';
+            var icon = correct ? 'fa-check' : 'fa-circle';
+            return '<div class="gs-review-answer' + cls + '">' +
+                '<i class="fas ' + icon + '"></i>' + escapeAttr(opt) +
+            '</div>';
+        }).join('');
+
+        return '<div class="gs-review-item">' +
+            '<div class="gs-review-q-row">' +
+                '<button type="button" class="gs-review-q-btn" onclick="gsReviewToggle(this)">' +
+                    '<span class="gs-review-q-num">' + (i + 1) + '</span>' +
+                    '<span class="gs-review-q-text">' + escapeAttr(q.text) + '</span>' +
+                    '<i class="fas fa-chevron-down gs-review-chevron"></i>' +
+                '</button>' +
+            '</div>' +
+            (answersHtml ? '<div class="gs-review-answers hidden">' + answersHtml + '</div>' : '') +
+        '</div>';
+    }
+
+    // ── Build the questions pane HTML ─────────────────────────────────────────
+    function _gsInlineQViewHtml(questions, gameId, catId) {
+        var count    = questions.length;
+        var listHtml = count > 0
+            ? '<div class="gs-review-list">' + questions.map(_gsInlineQItemHtml).join('') + '</div>'
+            : '<p class="gs-q-empty">No questions yet — click Add Question above.</p>';
+        return [
+            '<div class="gs-q-view-header">',
+            '  <p>Questions for <strong>' + escapeAttr(_gsSavedGameName || '') + '</strong></p>',
+            '  <span class="chip chip-modules">' + count + (count === 1 ? ' question' : ' questions') + '</span>',
+            '</div>',
+            '<button type="button" class="btn btn-outline gs-inline-add-btn"',
+            '    onclick="gsInlineAddQuestion(' + gameId + ',' + catId + ')">',
+            '  <i class="fas fa-plus"></i> Add Question',
+            '</button>',
+            listHtml
+        ].join('\n');
+    }
+
+    // ── Rebuild the stepper at step 2 showing the questions list ─────────────
+    function _gsShowInlineQuestionsView(gameId, catId) {
+        var questions = _gsGetSavedQuestions(gameId, catId);
+
+        var labels = ['Game Setup', 'Content', 'Share'];
+        var stepperHtml = '<div class="add-stepper" id="gsStepper">';
+        labels.forEach(function (label, i) {
+            if (i > 0) stepperHtml += '<div class="add-step-connector"></div>';
+            var cls     = i === 0 ? ' done gs-step-committed' : (i === 1 ? ' active' : '');
+            var onclick = i === 0 ? '' : ' onclick="gsStepClick(' + (i + 1) + ')"';
+            stepperHtml +=
+                '<div class="add-step' + cls + '" data-step="' + (i + 1) + '"' + onclick + '>' +
+                    '<span class="add-step-num">' + (i + 1) + '</span>' +
+                    '<span class="add-step-label">' + label + '</span>' +
+                '</div>';
+        });
+        stepperHtml += '</div>';
+
+        document.getElementById('gameEditTitle').textContent    = 'Add Game';
+        document.getElementById('gameEditSubtitle').textContent = getGamesScopeSubtitle();
+        document.getElementById('gameEditFields').innerHTML =
+            stepperHtml +
+            '<div class="add-step-pane hidden" id="gsPane1"></div>' +
+            '<div class="add-step-pane" id="gsPane2">' + _gsInlineQViewHtml(questions, gameId, catId) + '</div>' +
+            '<div class="add-step-pane hidden" id="gsPane3"></div>';
+
+        setGamePanelMode('add');
+        showGameEdit();
+
+        var actions = document.querySelector('#detailEdit .edit-actions');
+        if (actions) {
+            actions.innerHTML =
+                '<button type="button" class="btn btn-outline" onclick="gsCancelWithWarning()">Cancel</button>' +
+                '<button type="button" class="btn btn-primary" onclick="gsQuestionsNext()">Next <i class="fas fa-arrow-right"></i></button>';
+        }
+        _gsStep = 2;
+    }
+
+    // ── Patch the form's Cancel button to return here instead of empty state ──
+    function _gsPatchFormCancelBtn(gameId, catId) {
+        var bar = document.querySelector('#detailEdit .edit-actions');
+        if (!bar) return;
+        bar.querySelectorAll('button').forEach(function (btn) {
+            if (btn.getAttribute('onclick') === 'showGameEmpty()') {
+                btn.setAttribute('onclick', 'gsInlineCancelForm(' + gameId + ',' + catId + ')');
+            }
+        });
+    }
+
+    window.gsInlineAddQuestion = function (gameId, catId) {
+        openAddQuestionForm(_gsSelectedQType || 'mcq', gameId, catId);
+        _gsInjectStepperIntoForm();
+        _gsSetupChangeTypeOverride();
+        setTimeout(function () { _gsPatchFormCancelBtn(gameId, catId); }, 0);
+    };
+
+    window.gsInlineCancelForm = function (gameId, catId) {
+        var questions = _gsGetSavedQuestions(gameId, catId);
+        if (questions.length > 0) {
+            _gsShowInlineQuestionsView(gameId, catId);
+        } else {
+            _gsGoBackToStep2();
+        }
+    };
+
+    window.gsQuestionsNext = function () {
+        var gameRow = _gsSavedGameRow ||
+            (_gsSavedGameId ? document.querySelector('tr.row-game[data-game="' + _gsSavedGameId + '"]') : null);
+        if (gameRow) _gsOpenShareStep(gameRow);
     };
 
     // ── Step 3 share panel — rebuilt inline after returning from questions page ─

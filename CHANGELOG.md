@@ -37,6 +37,61 @@ Project contact: elsadr@agilebridge.co.za
 - **`index-topics-v2.html`** — bumped `script-topics.js` to `?v=54`, `script-topics-add-intent.js` to `?v=14`.
 - **`index-topics.html`** — bumped `script-topics.js` to `?v=54`.
 
+## [2026-05-28] — Manual flow: show stepper on add-question form
+
+### Changed
+- **`script-games-stepper.js`** (v27) — added `_gsInjectStepperIntoForm()`: after every `openAddQuestionForm()` call (first open via `_gsOpenQuestionForm`, re-open via `gsInlineAddQuestion`, and "Save & Add Another" via the `_navigateToQuestionsPage` override), the committed stepper (step 1 done, step 2 active, step 3 greyed) is prepended to `#gameEditFields` so the user always sees their progress while filling in the question form.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=27`.
+
+## [2026-05-28] — Manual flow: questions list shown inline in games panel after each save
+
+### Changed
+- **`script-games-stepper.js`** (v26):
+  - **`_navigateToQuestionsPage` override replaced** — no longer navigates to `index-questions-v2.html`. After "Add Question" saves a question, `_gsShowInlineQuestionsView(gameId, catId)` is called to rebuild the stepper panel at step 2 with an accordion list. After "Save & Add Another", `openAddQuestionForm` re-opens with the same type.
+  - **`_gsShowInlineQuestionsView(gameId, catId)`** — reads saved questions from DOM `tr.row-q` data attributes (`data-text`, `data-options`, `data-correct`), rebuilds the stepper HTML at step 2 with the questions list and an "Add Question" button. Action bar: Cancel + Next →.
+  - **`_gsInlineQItemHtml(q, i)`** — renders each question as an accordion item (same style as AI review — numbered circle, chevron, ✓ correct in green, ○ wrong in grey). Uses the `{ text, options, correct }` format from `_doSaveQuestion`.
+  - **`_gsPatchFormCancelBtn(gameId, catId)`** — after `openAddQuestionForm` renders, replaces the Cancel button's `showGameEmpty()` with `gsInlineCancelForm(gameId, catId)`.
+  - **`window.gsInlineCancelForm`** — if questions already saved, returns to the list; otherwise returns to the type picker via `_gsGoBackToStep2()`.
+  - **`window.gsInlineAddQuestion`** — re-opens the add form from the inline list view.
+  - **`window.gsQuestionsNext`** — calls `_gsOpenShareStep` to advance to Share.
+  - **`_gsOpenQuestionForm`** calls `_gsPatchFormCancelBtn` on first form open.
+- **`styles-games.css`** — added `.gs-q-view-header`, `.gs-inline-add-btn`, `.gs-q-empty`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=26`.
+
+## [2026-05-28] — Questions page: move question list into the right-side panel
+
+### Changed
+- **`index-questions.html`**, **`index-questions-v2.html`** — removed `<div id="questionsList">` from the main content area; added `<div class="detail-content hidden" id="detailQuestionsList"><div id="questionsList"></div></div>` to the detail panel so questions render in the right-hand panel alongside the add form.
+- **`script-questions.js`** (v4):
+  - Added `_showQListPanel()` — hides all panel sections and shows `#detailQuestionsList`.
+  - Added `_showQEmptyPanel()` — shows `#detailEmpty` and hides list/form.
+  - `renderQuestionsPage()` calls `_showQListPanel()` when questions exist, `_showQEmptyPanel()` when none.
+  - `submitAddQuestion()` no longer calls `showGameEmpty()` — `renderQuestionsPage()` handles panel state.
+  - `closeQPanel()` shows the list panel if questions exist, empty state otherwise.
+
+## [2026-05-28] — Questions page: accordion list matching AI review style
+
+### Changed
+- **`script-questions.js`** (v3) — `renderQuestionRows` rewritten to use the same `.gs-review-item` accordion markup as the AI review step. Each question row shows: numbered purple circle, question text, question-type chip, edit/delete buttons on the right (behind a border), and a chevron. Clicking the row expands it to show answer options — correct answer in green with ✓, wrong answers in grey with ○. Added `window.qToggle(btn)` accordion toggle (mirrors `gsReviewToggle` for use on the questions page which doesn't load the stepper script).
+- **`styles-questions.css`** — added `#questionsList` flex container rule, `.q-accordion-actions` (edit/delete button group inside the row), and `#questionsList .gs-review-answers { padding-left: 44px }` to align answers under the question text.
+- **`script-games-stepper.js`** (v25) — reverted the accidental inline-questions-view changes from v24; manual flow navigates to the questions page as before.
+- **`index-questions.html`**, **`index-questions-v2.html`** — bumped `script-questions.js` to `?v=3`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=25`.
+
+## [2026-05-28] — Manual flow: inline questions list in step 2 panel (accordion style)
+
+### Changed
+- **`script-games-stepper.js`** (v24):
+  - After clicking **Next** on step 2 (content/type picker), the panel no longer navigates to `index-questions-v2.html`. Instead, step 2 transforms in-place to an **inline questions view** matching the AI review accordion style.
+  - The questions view shows: game name header + question count chip; an **Add Question** form (MCQ: 4 option inputs with radio buttons for correct answer; other types: single answer input); the question list in accordion format (numbered circles, ✓ correct in green, ○ wrong in grey, chevron expand); empty-state note until the first question is added.
+  - Action bar in questions mode: **Cancel** | **Next →** (advances to the Share step via `_gsOpenShareStep`). No Back button since the game is already saved.
+  - `window.gsAddInlineQuestion()` — reads and validates the form, pushes to `_gsInlineQuestions[]`, re-renders the list and clears the form.
+  - `window.gsQuestionsNext()` — opens the Share step for the saved game row.
+  - `_gsQuestionsMode` flag gates `_gsSetActions(2)` so the questions action bar persists even if the step is re-activated.
+  - Resets `_gsInlineQuestions`, `_gsInlineQType`, `_gsQuestionsMode` on each new manual flow start.
+- **`styles-games.css`** — added `.gs-q-view-header`, `.gs-add-q-form`, `.gs-q-textarea`, `.gs-add-q-options`, `.gs-add-q-opt-row`, `.gs-q-radio`, `.gs-q-opt-input`, `.gs-add-q-hint`, `.gs-add-q-btn`, `.gs-q-empty`.
+- **`index-games.html`** — bumped `script-games-stepper.js` to `?v=24`.
+
 ## [2026-05-28] — AI flow: remove Import Bulk button from step 2
 
 ### Changed

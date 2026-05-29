@@ -1360,6 +1360,18 @@ label.add-game-cover-zone:hover .add-game-cover-overlay { opacity: 1; }
     margin-top: 0;
 }
 
+/* ===== Inline questions view (step 2 after saving game) ===== */
+.gs-q-view-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.gs-q-view-header p { font-size: 0.85rem; color: #374151; margin: 0; }
+.gs-inline-add-btn  { font-size: 0.8rem; margin-bottom: 12px; }
+.gs-q-empty         { text-align: center; font-size: 0.82rem; color: #94a3b8; padding: 16px 0; margin: 0; }
+
 /* ===== Games stepper — Import Bulk bar (step 2) ===== */
 .gs-import-bulk-bar {
     margin-top: 16px;

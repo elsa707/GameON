@@ -1,5 +1,21 @@
 /* ===== Questions page styles ===== */
 
+/* Accordion list — reuses .gs-review-* from styles-games.css */
+/* Container */
+#questionsList { display: flex; flex-direction: column; gap: 6px; padding: 0 0 12px; }
+
+/* Edit / Delete buttons inside the accordion row */
+.q-accordion-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    padding: 0 8px 0 4px;
+    border-left: 1px solid #e8eaf0;
+}
+/* Ensure answers indent to align with question text (past the number badge) */
+#questionsList .gs-review-answers { padding-left: 44px; }
+
 /* Back button in page title row */
 .page-back-btn {
     display: inline-flex;

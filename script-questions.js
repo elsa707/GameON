@@ -63,6 +63,27 @@
         } catch(e) {}
     }
 
+    // ===== Panel helpers =====
+    function _showQListPanel() {
+        var ids = ['detailEmpty', 'detailQuestionsList', 'detailEdit'];
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        var listPane = document.getElementById('detailQuestionsList');
+        if (listPane) listPane.classList.remove('hidden');
+    }
+
+    function _showQEmptyPanel() {
+        var ids = ['detailQuestionsList', 'detailEdit'];
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        var empty = document.getElementById('detailEmpty');
+        if (empty) empty.classList.remove('hidden');
+    }
+
     // ===== Render =====
     function renderQuestionsPage() {
         var questions = _qCat ? (_qCat.questions || []) : [];
@@ -84,10 +105,11 @@
             }
         }
 
-        var listEl = document.getElementById('questionsList');
-        if (listEl) {
-            listEl.hidden = false;
+        if (questions.length > 0) {
             renderQuestionRows(questions);
+            _showQListPanel();
+        } else {
+            _showQEmptyPanel();
         }
     }
 
@@ -105,27 +127,43 @@
         var listEl = document.getElementById('questionsList');
         if (!listEl) return;
         listEl.innerHTML = questions.map(function(q, idx) {
-            var typeLabel  = TYPE_LABELS[q.questionType] || 'MCQ';
-            var answerChips = (q.options || []).map(function(opt, oi) {
-                var isCorrect = (oi === q.correct);
-                return '<span class="q-answer-chip' + (isCorrect ? ' q-answer-chip--correct' : '') + '">' + escapeAttr(opt) + '</span>';
+            var typeLabel   = TYPE_LABELS[q.questionType] || 'MCQ';
+            var answersHtml = (q.options || []).map(function(opt, oi) {
+                var correct = (oi === q.correct);
+                var cls  = correct ? ' gs-review-answer--correct' : ' gs-review-answer--wrong';
+                var icon = correct ? 'fa-check' : 'fa-circle';
+                return '<div class="gs-review-answer' + cls + '">' +
+                    '<i class="fas ' + icon + '"></i>' + escapeAttr(opt) +
+                '</div>';
             }).join('');
-            return '<div class="qlist-row">' +
-                '<div class="qlist-main">' +
-                    '<div class="qlist-text-row">' +
-                        '<span class="qlist-num">' + (idx + 1) + '.</span>' +
-                        '<span class="qlist-text">' + escapeAttr(q.text) + '</span>' +
-                        '<span class="chip chip-qtype">' + typeLabel + '</span>' +
+
+            return '<div class="gs-review-item">' +
+                '<div class="gs-review-q-row">' +
+                    '<button type="button" class="gs-review-q-btn" onclick="qToggle(this)">' +
+                        '<span class="gs-review-q-num">' + (idx + 1) + '</span>' +
+                        '<span class="gs-review-q-text">' + escapeAttr(q.text) + '</span>' +
+                        '<span class="chip chip-qtype" style="flex-shrink:0;font-size:0.7rem">' + typeLabel + '</span>' +
+                        '<i class="fas fa-chevron-down gs-review-chevron"></i>' +
+                    '</button>' +
+                    '<div class="q-accordion-actions">' +
+                        '<button type="button" class="btn-icon" onclick="editQuestion(' + idx + ')" title="Edit"><i class="fas fa-pen"></i></button>' +
+                        '<button type="button" class="btn-icon btn-icon-danger" onclick="deleteQuestion(' + idx + ')" title="Delete"><i class="fas fa-trash"></i></button>' +
                     '</div>' +
-                    '<div class="qlist-chips">' + answerChips + '</div>' +
                 '</div>' +
-                '<div class="qlist-actions">' +
-                    '<button type="button" class="btn-icon" onclick="editQuestion(' + idx + ')" title="Edit"><i class="fas fa-pen"></i></button>' +
-                    '<button type="button" class="btn-icon btn-icon-danger" onclick="deleteQuestion(' + idx + ')" title="Delete"><i class="fas fa-trash"></i></button>' +
-                '</div>' +
+                (answersHtml ? '<div class="gs-review-answers hidden">' + answersHtml + '</div>' : '') +
             '</div>';
         }).join('');
     }
+
+    // Accordion toggle for question list rows
+    window.qToggle = function(btn) {
+        var item    = btn.closest('.gs-review-item');
+        var answers = item && item.querySelector('.gs-review-answers');
+        if (!answers) return;
+        var opening = answers.classList.contains('hidden');
+        answers.classList.toggle('hidden', !opening);
+        item.classList.toggle('open', opening);
+    };
 
     // ===== Add Question panel =====
     window.openAddQuestion = function() {
@@ -152,7 +190,10 @@
         showGameEdit();
     };
 
-    window.closeQPanel = function() { showGameEmpty(); };
+    window.closeQPanel = function() {
+        var questions = _qCat ? (_qCat.questions || []) : [];
+        if (questions.length > 0) { _showQListPanel(); } else { _showQEmptyPanel(); }
+    };
 
     window.goBackToGames = function() { window.location.href = 'index-games.html'; };
 
@@ -197,8 +238,7 @@
     // ===== Override: stay on questions page after save =====
     window.submitAddQuestion = function(gameId, catId) {
         if (window._doSaveQuestion(gameId, catId)) {
-            showGameEmpty();
-            renderQuestionsPage();
+            renderQuestionsPage();  // renders list + shows _showQListPanel
             showQSavedToast();
         }
     };

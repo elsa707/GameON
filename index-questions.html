@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -79,9 +79,6 @@
                 At least 5 questions are required before this category can be used in a game.
             </div>
 
-            <!-- Questions list -->
-            <div id="questionsList" hidden></div>
-
             <!-- Done button — inline, right-aligned, below the list -->
             <div class="questions-done-bar" id="questionsDoneBar" hidden>
                 <button class="btn" onclick="goBackToGames()">Done</button>
@@ -94,6 +91,11 @@
             <div class="detail-empty" id="detailEmpty">
                 <i class="fas fa-mouse-pointer"></i>
                 <p>Click <strong>+ Add Question</strong> to add a question</p>
+            </div>
+
+            <!-- Questions list (shown when at least one question exists) -->
+            <div class="detail-content hidden" id="detailQuestionsList">
+                <div id="questionsList"></div>
             </div>
 
             <!-- Edit / Add mode -->
@@ -125,7 +127,7 @@
     <script src="games-data.js?v=1"></script>
     <script src="topics-data.js?v=1"></script>
     <script src="script-games.js?v=85"></script>
-    <script src="script-questions.js?v=2"></script>
+    <script src="script-questions.js?v=4"></script>
     <script src="script-games-sidebar-scope.js?v=1"></script>
     <script src="script-sidebar-scope.js"></script>
 </body>
