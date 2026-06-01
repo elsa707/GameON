@@ -90,7 +90,7 @@
             '  ' + gameCoverPickerHtml(GAME_COVER_PRESETS[0]),
             '</div>',
             '<div class="form-group">',
-            '  <label for="addGameTopic">Topic <span class="required-mark">*</span></label>',
+            '  <label for="addGameTopic">Topic</label>',
             '  <select id="addGameTopic" class="ai-model-select" onchange="onAddGameTopicChange(this)">',
             '    <option value="">Select a topic</option>',
             '    ' + topicOpts,
@@ -308,12 +308,6 @@
 
     window.gsGoNext = function () {
         if (_gsStep === 1) {
-            var topicEl = document.getElementById('addGameTopic');
-            if (!topicEl || !topicEl.value) {
-                if (topicEl) { topicEl.classList.add('input-error'); topicEl.focus(); }
-                return;
-            }
-            if (topicEl) topicEl.classList.remove('input-error');
             var nameEl = document.getElementById('addGameName');
             if (!nameEl || !nameEl.value.trim()) {
                 if (nameEl) { nameEl.classList.add('input-error'); nameEl.focus(); }
@@ -633,8 +627,13 @@
             '</div>';
         }).join('');
 
-        return '<div class="gs-review-item">' +
+        return '<div class="gs-review-item" draggable="true"' +
+            ' ondragstart="gsReviewDragStart(event,this)"' +
+            ' ondragover="gsReviewDragOver(event,this)"' +
+            ' ondrop="gsReviewDrop(event,this)"' +
+            ' ondragend="gsReviewDragEnd(event)">' +
             '<div class="gs-review-q-row">' +
+                '<span class="gs-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>' +
                 '<button type="button" class="gs-review-q-btn" onclick="gsReviewToggle(this)">' +
                     '<span class="gs-review-q-num">' + (i + 1) + '</span>' +
                     '<span class="gs-review-q-text">' + escapeAttr(q.text) + '</span>' +
@@ -660,7 +659,12 @@
             '    onclick="gsInlineAddQuestion(' + gameId + ',' + catId + ')">',
             '  <i class="fas fa-plus"></i> Add Question',
             '</button>',
-            listHtml
+            listHtml,
+            '<div class="gs-keep-order-row">',
+            '  <label class="gs-keep-order-label">',
+            '    <input type="checkbox" id="gsKeepDisplayOrderManual"> Keep display order',
+            '  </label>',
+            '</div>'
         ].join('\n');
     }
 
@@ -1086,12 +1090,6 @@
     // ── Navigation ────────────────────────────────────────────────────────────
     window.gsAIGoNext = function () {
         if (_gsAIStep === 1) {
-            var topicEl = document.getElementById('addGameTopic');
-            if (!topicEl || !topicEl.value) {
-                if (topicEl) { topicEl.classList.add('input-error'); topicEl.focus(); }
-                return;
-            }
-            if (topicEl) topicEl.classList.remove('input-error');
             var nameEl = document.getElementById('addGameName');
             if (!nameEl || !nameEl.value.trim()) {
                 if (nameEl) { nameEl.classList.add('input-error'); nameEl.focus(); }
@@ -1267,8 +1265,13 @@
             '</div>';
         }).join('');
 
-        return '<div class="gs-review-item">' +
+        return '<div class="gs-review-item" draggable="true"' +
+            ' ondragstart="gsReviewDragStart(event,this)"' +
+            ' ondragover="gsReviewDragOver(event,this)"' +
+            ' ondrop="gsReviewDrop(event,this)"' +
+            ' ondragend="gsReviewDragEnd(event)">' +
             '<div class="gs-review-q-row">' +
+                '<span class="gs-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>' +
                 '<button type="button" class="gs-review-q-btn" onclick="gsReviewToggle(this)">' +
                     '<span class="gs-review-q-num">' + (i + 1) + '</span>' +
                     '<span class="gs-review-q-text">' + escapeAttr(q.text) + '</span>' +
@@ -1303,6 +1306,11 @@
                 '</div>' +
             '</div>' +
             '<div class="gs-review-list">' + itemsHtml + '</div>' +
+            '<div class="gs-keep-order-row">' +
+                '<label class="gs-keep-order-label">' +
+                    '<input type="checkbox" id="gsKeepDisplayOrder"> Keep display order' +
+                '</label>' +
+            '</div>' +
             '<div class="gs-review-regen-bar hidden" id="gsReviewRegenerateBar">' +
                 '<button type="button" class="btn btn-ai" onclick="gsReviewRegenerate()">' +
                     '<i class="fas fa-wand-magic-sparkles"></i> Regenerate' +
@@ -1339,6 +1347,47 @@
             var anyKept = !!document.querySelector('.gs-review-item.gs-review-kept');
             regenBar.classList.toggle('hidden', !anyKept);
         }
+    };
+
+    // ── Drag-and-drop reordering of question cards ───────────────────────────
+    var _gsDragSrc = null;
+
+    window.gsReviewDragStart = function (e, el) {
+        _gsDragSrc = el;
+        el.classList.add('gs-review-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    window.gsReviewDragOver = function (e, el) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        document.querySelectorAll('.gs-review-item').forEach(function (i) {
+            i.classList.remove('gs-review-drag-over');
+        });
+        if (el !== _gsDragSrc) el.classList.add('gs-review-drag-over');
+    };
+
+    window.gsReviewDrop = function (e, el) {
+        e.preventDefault();
+        if (!_gsDragSrc || el === _gsDragSrc) return;
+        var list    = el.parentNode;
+        var srcIdx  = Array.from(list.children).indexOf(_gsDragSrc);
+        var tgtIdx  = Array.from(list.children).indexOf(el);
+        list.insertBefore(_gsDragSrc, srcIdx < tgtIdx ? el.nextSibling : el);
+        // Renumber badges
+        list.querySelectorAll('.gs-review-q-num').forEach(function (n, i) {
+            n.textContent = i + 1;
+        });
+    };
+
+    window.gsReviewDragEnd = function () {
+        if (_gsDragSrc) _gsDragSrc.classList.remove('gs-review-dragging');
+        document.querySelectorAll('.gs-review-item').forEach(function (el) {
+            el.classList.remove('gs-review-drag-over');
+        });
+        _gsDragSrc = null;
+        // If we're in the manual inline-questions panel, sync the games table order
+        if (document.getElementById('gsInlineQList')) _gsSyncInlineQuestionsOrder();
     };
 
     // ── Regenerate unlocked questions, keep locked ones intact ───────────────
@@ -1509,6 +1558,86 @@
         showGameToast(questions.length + ' question' + (questions.length !== 1 ? 's' : '') + ' imported');
     }
 
+    // ── Persist review-panel questions to the games table (AI flow) ──────────
+    function _gsSaveReviewQuestionsToGame(gameId, gameRow) {
+        var tbody = document.querySelector('#gamesTable tbody');
+        if (!tbody || !gameRow) return;
+
+        var catId  = Date.now();
+        var newCat = { id: catId, name: 'Category 1', description: '', questions: [] };
+        gameRow.insertAdjacentHTML('afterend', catRowHtml(newCat, gameId, gameRow.dataset.cover || ''));
+        var catRowEl   = document.querySelector('tr.row-cat[data-game="' + gameId + '"][data-cat="' + catId + '"]');
+        var insertAfter = catRowEl;
+        var qNum = 1;
+
+        // Read questions from the review pane in their current (possibly reordered) sequence
+        document.querySelectorAll('#gsAIPane3 .gs-review-item').forEach(function (item) {
+            var textEl  = item.querySelector('.gs-review-q-text');
+            var qText   = textEl ? textEl.textContent.trim() : '';
+            if (!qText) return;
+
+            var opts    = [];
+            var correct = 0;
+            item.querySelectorAll('.gs-review-answers .gs-review-answer').forEach(function (a, ai) {
+                opts.push(a.textContent.trim());
+                if (a.classList.contains('gs-review-answer--correct')) correct = ai;
+            });
+            if (!opts.length) opts = ['Option A', 'Option B'];
+
+            var newQ = {
+                id:           Date.now() + Math.floor(Math.random() * 1000) + qNum,
+                text:         qText,
+                options:      opts,
+                correct:      correct,
+                difficulty:   'medium',
+                questionType: _gsSelectedQType || 'mcq'
+            };
+            if (insertAfter) {
+                insertAfter.insertAdjacentHTML('afterend', qRowHtml(newQ, gameId, catId, qNum));
+                var newRowEl = document.querySelector('tr.row-q[data-q="' + newQ.id + '"]');
+                if (newRowEl) insertAfter = newRowEl;
+            }
+            qNum++;
+        });
+
+        if (catRowEl) updateCatRowChips(catRowEl);
+        if (gameRow)  updateGameRowChips(gameRow);
+        persistGamesScope();
+    }
+
+    // ── Sync inline questions panel order → games table (manual flow) ─────────
+    function _gsSyncInlineQuestionsOrder() {
+        if (!_gsSavedGameId || !_gsSavedCatId) return;
+        var catRow = document.querySelector(
+            'tr.row-cat[data-game="' + _gsSavedGameId + '"][data-cat="' + _gsSavedCatId + '"]'
+        );
+        if (!catRow) return;
+
+        // Collect question rows keyed by their question text
+        var qRows = document.querySelectorAll(
+            'tr.row-q[data-game="' + _gsSavedGameId + '"][data-cat="' + _gsSavedCatId + '"]'
+        );
+        var textToRow = {};
+        qRows.forEach(function (row) { textToRow[row.dataset.text || ''] = row; });
+
+        // Re-insert rows in panel order
+        var insertAfter = catRow;
+        document.querySelectorAll('#gsInlineQList .gs-review-item').forEach(function (item, i) {
+            var textEl = item.querySelector('.gs-review-q-text');
+            var text   = textEl ? textEl.textContent.trim() : '';
+            var row    = textToRow[text];
+            if (row) {
+                insertAfter.insertAdjacentElement('afterend', row);
+                insertAfter = row;
+                // Renumber
+                var numEl = row.querySelector('.q-num');
+                if (numEl) numEl.textContent = 'Q' + (i + 1);
+            }
+        });
+
+        persistGamesScope();
+    }
+
     // ── Save game + open Share step ───────────────────────────────────────────
     function _gsAISaveAndOpenShare() {
         if (_gsAIGameId) { _gsAIOpenShareStep(); return; }
@@ -1535,6 +1664,10 @@
         _gsAIGameId   = newId;
         _gsAIGameName = name;
         _gsAIGameRow  = gameRow;
+
+        // Save the review questions (in their current drag-ordered sequence) to the game
+        _gsSaveReviewQuestionsToGame(newId, gameRow);
+
         _gsAIOpenShareStep();
     }
 

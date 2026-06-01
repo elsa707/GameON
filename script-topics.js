@@ -159,7 +159,7 @@ function contentPickerHtml(idPrefix, defaults) {
                     <i class="fas fa-upload"></i>
                     <span class="cp-dropzone-hint">Drop file or <u>browse</u></span>
                     <span class="cp-detected cp-dropzone-name">${mediaName ? escapeAttr(mediaName) : ''}</span>
-                    <input type="file" class="cp-file" accept="application/pdf,image/*" onchange="onContentFileChange(this)" style="display:none">
+                    <input type="file" class="cp-file" accept="application/pdf,image/*" multiple onchange="onContentFileChange(this)" style="display:none">
                 </div>
                 <input type="hidden" class="cp-media-name" value="${kind === 'upload' ? escapeAttr(mediaName) : ''}">
             </div>
@@ -212,11 +212,16 @@ function aiUrlValidate(input) {
     if (!val) {
         icon.className = 'ai-url-status-icon fas';
         input.classList.remove('ai-url-valid', 'ai-url-invalid');
+        input.title = '';
     } else {
-        var valid = /^https?:\/\/.{3,}/.test(val);
+        var isVideo  = /youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|twitch\.tv/i.test(val);
+        var valid    = !isVideo && /^https?:\/\/.{3,}/.test(val);
         icon.className = 'ai-url-status-icon fas ' + (valid ? 'fa-check' : 'fa-times');
         input.classList.toggle('ai-url-valid',   valid);
         input.classList.toggle('ai-url-invalid', !valid);
+        input.title = isVideo
+            ? 'Video URLs are not supported. Please provide a URL to a webpage or document, or upload a file instead.'
+            : (!valid ? 'This URL appears to be invalid.' : '');
     }
 }
 
@@ -226,15 +231,7 @@ function aiUrlAdd() {
     if (!list) return;
     var row = document.createElement('div');
     row.className = 'ai-url-row';
-    row.innerHTML =
-        '<div class="ai-url-input-wrap">' +
-            '<input type="url" class="ai-text-input ai-url-input" placeholder="https://…" ' +
-                   'oninput="aiUrlValidate(this); updateAIGenerateBtn()">' +
-            '<i class="ai-url-status-icon fas"></i>' +
-        '</div>' +
-        '<button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL">' +
-            '<i class="fas fa-times"></i>' +
-        '</button>';
+    row.innerHTML = _aiUrlRowHtml('', null); // no body = no expand chevron
     list.appendChild(row);
     row.querySelector('input').focus();
     _aiUrlSyncRemoveBtns();
@@ -248,43 +245,64 @@ function aiUrlRemove(btn) {
     updateAIGenerateBtn();
 }
 
-// The first row is never removable; only rows added after it get the × button.
+// Show × on all rows when there are multiple; hide when only one remains.
 function _aiUrlSyncRemoveBtns() {
     var rows = document.querySelectorAll('#aiUrlList .ai-url-row');
-    rows.forEach(function (row, index) {
+    var multiple = rows.length > 1;
+    rows.forEach(function (row) {
         var btn = row.querySelector('.ai-url-remove-btn');
-        if (btn) btn.hidden = (index === 0);
+        if (btn) btn.hidden = !multiple;
     });
 }
 
 function onContentFileChange(input) {
-    const file = input.files[0];
-    if (!file) return;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
     const picker = input.closest('.content-picker');
     if (!picker) return;
-    const detected = detectMediaTypeFromFile(file) || 'PDF';
-    picker.querySelector('.cp-media-type').value = detected;
-    picker.querySelector('.cp-media-name').value = file.name;
-    const nameEl = picker.querySelector('.cp-dropzone-name');
-    if (nameEl) nameEl.textContent = file.name;
-    picker.classList.remove('error');
-    updateAIGenerateBtn();
+    _renderContentFileList(picker, files);
 }
 
 function onContentFileDrop(zone, event) {
     event.preventDefault();
     zone.classList.remove('drag-over');
-    const file = event.dataTransfer.files[0];
-    if (!file) return;
+    const files = Array.from(event.dataTransfer.files || []);
+    if (!files.length) return;
     const picker = zone.closest('.content-picker');
     if (!picker) return;
-    const detected = detectMediaTypeFromFile(file) || 'PDF';
+    _renderContentFileList(picker, files);
+}
+
+function _renderContentFileList(picker, files) {
+    const detected = detectMediaTypeFromFile(files[0]) || 'PDF';
     picker.querySelector('.cp-media-type').value = detected;
-    picker.querySelector('.cp-media-name').value = file.name;
-    const nameEl = picker.querySelector('.cp-dropzone-name');
-    if (nameEl) nameEl.textContent = file.name;
+    picker.querySelector('.cp-media-name').value = files.map(function(f) { return f.name; }).join(', ');
     picker.classList.remove('error');
+
+    const nameEl = picker.querySelector('.cp-dropzone-name');
+    if (nameEl) {
+        if (files.length === 1) {
+            nameEl.textContent = files[0].name;
+        } else {
+            nameEl.innerHTML = files.map(function(f) {
+                return '<span class="cp-file-chip">' +
+                    escapeAttr(f.name) +
+                    '<button type="button" class="cp-file-chip-remove" onclick="_removeContentFile(this)" title="Remove"><i class="fas fa-times"></i></button>' +
+                '</span>';
+            }).join('');
+        }
+    }
     updateAIGenerateBtn();
+}
+
+function _removeContentFile(btn) {
+    var chip = btn.closest('.cp-file-chip');
+    if (chip) chip.remove();
+    // If no chips left, restore the hint
+    var nameEl = btn.closest('.cp-dropzone-name');
+    if (nameEl && !nameEl.querySelector('.cp-file-chip')) {
+        nameEl.textContent = '';
+    }
 }
 
 // Returns true if the picker has a non-empty value matching the active kind.
@@ -1352,7 +1370,7 @@ function addTopic() {
                     ${coverPickerHtml('')}
                 </div>
                 <div class="form-group">
-                    <label>Topic name</label>
+                    <label>Topic name <span class="required-mark">*</span></label>
                     <input type="text" name="name" value="" required placeholder="Topic name">
                 </div>
                 <div class="form-group">
@@ -1760,89 +1778,152 @@ function addTopicAI() {
     _aiHasGenerated = false;
     setPanelMode('add');
 
+    _aiTotalSteps  = 4;
+    _aiHighestStep = 1;
     document.getElementById('editFields').innerHTML = `
-        <div class="add-topic-tabs" id="aiTabBar">
-            <button type="button" class="add-topic-tab active" data-tab="ai-content" onclick="switchAITab('ai-content')">Content</button>
-            <button type="button" class="add-topic-tab" data-tab="ai-topic" id="aiTopicTab" onclick="switchAITab('ai-topic')" disabled>Topics</button>
-            <button type="button" class="add-topic-tab hidden" data-tab="ai-subs" id="aiSubsTab" onclick="switchAITab('ai-subs')" disabled>
-                <i class="fas fa-list-ol"></i> Sub-topics
-            </button>
+        <div class="add-stepper gs-ai-stepper" id="aiTopicStepper">
+            <div class="add-step active" data-step="1" onclick="aiStepClick(1)">
+                <span class="add-step-num">1</span>
+                <span class="add-step-label">Topic Setup</span>
+            </div>
+            <div class="add-step-connector"></div>
+            <div class="add-step" data-step="2" onclick="aiStepClick(2)">
+                <span class="add-step-num">2</span>
+                <span class="add-step-label">Content</span>
+            </div>
+            <div class="add-step-connector"></div>
+            <div class="add-step" data-step="3" onclick="aiStepClick(3)">
+                <span class="add-step-num">3</span>
+                <span class="add-step-label">Review</span>
+            </div>
+            <div class="add-step-connector"></div>
+            <div class="add-step" data-step="4" onclick="aiStepClick(4)">
+                <span class="add-step-num">4</span>
+                <span class="add-step-label">Share</span>
+            </div>
         </div>
-        <div class="add-topic-pane" id="aiTabPaneContent">
-            <div class="form-group ai-model-group">
-                <label for="aiModelSelect">AI Model</label>
-                <select id="aiModelSelect" class="ai-model-select">
-                    <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — Recommended</option>
-                    <option value="claude-opus-4-7">Claude Opus 4.7 — Most capable</option>
-                    <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                </select>
+
+        <!-- Step 1: Topic Setup -->
+        <div class="add-step-pane" id="aiStepPane1">
+            <div class="form-group">
+                <label>Cover image</label>
+                ${coverPickerHtml('')}
             </div>
-            <div class="form-group" id="aiUploadSection">
-                <label>Upload</label>
-                <div class="ai-upload-zone" id="aiUploadZone"
-                     onclick="document.getElementById('aiFileInput').click()"
-                     ondragover="event.preventDefault();this.classList.add('drag-over')"
-                     ondragleave="this.classList.remove('drag-over')"
-                     ondrop="onAIFileDrop(this,event)">
-                    <input type="file" id="aiFileInput" hidden onchange="onAIFileChange(this)">
-                    <i class="fas fa-cloud-upload-alt ai-upload-icon"></i>
-                    <span class="ai-upload-prompt" id="aiUploadPrompt">Drop a file or click to upload</span>
-                </div>
+            <div class="form-group">
+                <label>Topic name <span class="required-mark">*</span></label>
+                <input type="text" id="aiTopicName" placeholder="Topic name" oninput="this.classList.remove('input-error')">
             </div>
-            <div class="form-group" id="aiUrlSection">
-                <label>URL</label>
-                <div class="ai-url-list" id="aiUrlList">
-                    <div class="ai-url-row">
-                        <div class="ai-url-input-wrap">
-                            <input type="url" class="ai-text-input ai-url-input" placeholder="https://…"
-                                   oninput="aiUrlValidate(this); updateAIGenerateBtn()">
-                            <i class="ai-url-status-icon fas"></i>
-                        </div>
-                        <button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL" hidden>
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-                <button type="button" class="ai-url-add-btn" onclick="aiUrlAdd()">
-                    <i class="fas fa-plus"></i> Add URL
-                </button>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="aiTopicDesc" placeholder="Topic description">
             </div>
-            <div class="form-group" id="aiTextSection">
-                <label>Text</label>
-                <div class="rte-toolbar">
-                    <button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand('bold')"><i class="fas fa-bold"></i></button>
-                    <button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand('italic')"><i class="fas fa-italic"></i></button>
-                    <button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand('underline')"><i class="fas fa-underline"></i></button>
-                    <span class="rte-sep"></span>
-                    <button type="button" class="rte-btn" title="Bullet list" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
-                    <button type="button" class="rte-btn" title="Numbered list" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
-                </div>
-                <div id="aiTextInput" class="ai-rte" contenteditable="true"
-                     data-placeholder="Paste text, notes, or reference material…" oninput="updateAIGenerateBtn()"></div>
-            </div>
-            <div class="ai-subtopics-option">
+            <div class="ai-subtopics-option" style="margin:10px 0">
                 <label class="ai-toggle-label">
                     <span class="ai-toggle-wrap">
                         <input type="checkbox" id="aiIncludeSubtopics" class="ai-toggle-input">
                         <span class="ai-toggle-track"></span>
                     </span>
-                    <span class="ai-toggle-text">Create sub-topics</span>
+                    <span class="ai-toggle-text">Create with sub-topics</span>
                 </label>
             </div>
-        </div>
-        <div class="add-topic-pane hidden" id="aiTabPaneTopic"></div>
-        <div class="add-topic-pane hidden" id="aiTabPaneSubs"></div>
-        <div class="ai-generate-block">
-            <div class="form-group">
-                <input type="text" class="ai-text-input" id="aiPromptText"
-                       placeholder="What learning content would you like to create today?">
+            <div class="ai-topic-configure-box">
+                <div class="form-group">
+                    <label for="aiModelSelect">AI Model</label>
+                    <select id="aiModelSelect" class="ai-model-select" onchange="aiTopicUpdateCredit()">
+                        <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — Recommended</option>
+                        <option value="claude-opus-4-7">Claude Opus 4.7 — Most capable</option>
+                        <option value="claude-haiku-4-5">Claude Haiku 4.5 — Fastest</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </select>
+                </div>
             </div>
-            <button type="button" class="btn btn-ai btn-full" id="aiGenerateBtn" onclick="triggerAIGenerate()">
-                <i class="fas fa-wand-magic-sparkles"></i> Generate Topic
-            </button>
+            <div class="gs-credit-estimate" id="aiTopicCreditChip" style="margin-top:10px">
+                <i class="fas fa-coins"></i>
+                Estimated cost: <strong class="gs-credit-estimate-value">~15 credits</strong>
+            </div>
         </div>
+
+        <!-- Step 2: Content — two cards, both usable together -->
+        <div class="add-step-pane hidden" id="aiTabPaneContent">
+
+            <!-- Card 1: Upload yourself -->
+            <div class="ai-content-card">
+                <div class="ai-content-card-head" onclick="aiToggleContentCard(this)" style="cursor:pointer">
+                    <span class="ai-content-card-icon"><i class="fas fa-upload"></i></span>
+                    <div style="flex:1">
+                        <span class="ai-content-card-title">Upload content yourself</span>
+                    </div>
+                    <i class="fas fa-chevron-down ai-content-card-chevron" style="transform:rotate(180deg)"></i>
+                </div>
+                <div class="ai-content-card-body">
+            <div id="aiUploadModeSection">
+                <div class="form-group">
+                    <label>Upload file</label>
+                    <div class="ai-upload-zone" id="aiUploadZone"
+                         onclick="document.getElementById('aiFileInput').click()"
+                         ondragover="event.preventDefault();this.classList.add('drag-over')"
+                         ondragleave="this.classList.remove('drag-over')"
+                         ondrop="onAIFileDrop(this,event)">
+                        <input type="file" id="aiFileInput" hidden accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" multiple onchange="onAIFileChange(this)">
+                        <i class="fas fa-cloud-upload-alt ai-upload-icon"></i>
+                        <span class="ai-upload-prompt" id="aiUploadPrompt">Drop a file or click to upload</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>URL</label>
+                    <div class="ai-url-list" id="aiUrlList">
+                        <div class="ai-url-row">
+                            <div class="ai-url-row-top">
+                                <div class="ai-url-input-wrap">
+                                    <input type="url" class="ai-text-input ai-url-input" placeholder="https://..."
+                                           oninput="aiUrlValidate(this)">
+                                    <i class="ai-url-status-icon fas"></i>
+                                </div>
+                                <button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL" hidden>
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+                        <button type="button" class="ai-url-add-btn" onclick="aiUrlAdd()">
+                            <i class="fas fa-plus"></i> Add URL
+                        </button>
+                        <button type="button" class="btn btn-outline ai-suggest-inline-btn" onclick="aiGetSuggestions()">
+                            <i class="fas fa-search"></i> Get AI Suggestions
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Text</label>
+                    <div class="rte-toolbar">
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('bold')"><i class="fas fa-bold"></i></button>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('italic')"><i class="fas fa-italic"></i></button>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('underline')"><i class="fas fa-underline"></i></button>
+                        <span class="rte-sep"></span>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                    </div>
+                    <div id="aiTextInput" class="ai-rte" contenteditable="true"
+                         data-placeholder="Paste text, notes, or reference material..."></div>
+                </div>
+            </div>
+                </div><!-- /ai-content-card-body -->
+            </div><!-- /ai-content-card -->
+
+            <div class="gs-credit-estimate" style="margin-top:12px">
+                <i class="fas fa-coins"></i>
+                Estimated cost: <strong class="gs-credit-estimate-value">~15 credits</strong>
+            </div>
+        </div><!-- /aiTabPaneContent -->
+
+        <!-- Step 3: Review (populated by doAIGenerate) -->
+        <div class="add-step-pane hidden" id="aiTabPaneTopic"></div>
+        <div class="add-step-pane hidden" id="aiTabPaneSubs"></div>
+
+        <!-- Step 4: Share -->
+        <div class="add-step-pane hidden" id="aiStepPane4"></div>
     `;
 
     var badge = document.getElementById('editBadge');
@@ -1860,15 +1941,16 @@ function addTopicAI() {
     var creditsEl = document.getElementById('aiCreditsDisplay');
     if (creditsEl) creditsEl.hidden = false;
 
-    // Save stays disabled until Generate has run at least once
-    var submitBtn = document.getElementById('editSubmitBtn');
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Save'; }
-
+    _aiHasGenerated = false;
+    setPanelMode('add');
+    setupAIStepperActions(1);
     showEdit();
 }
 
 var _aiGenerateIdx = 0;
 var _aiHasGenerated = false;
+var _aiTotalSteps   = 3; // 3 = no sub-topics (Create→Review→Share), 4 = with sub-topics
+var _aiHighestStep  = 1; // furthest step the user has reached — enables back/forward navigation
 var _companyCreditsUsed = {}; // keyed by companyKey; persists across AI panel openings
 (function() {
     try {
@@ -1965,14 +2047,27 @@ var _AI_SUGGESTIONS = [
 ];
 
 function triggerAIGenerate() {
+    // Validate no invalid/video URLs remain
+    var hasInvalidUrl = false;
+    document.querySelectorAll('#aiUrlList .ai-url-input').forEach(function(el) {
+        if (el.value.trim() && el.classList.contains('ai-url-invalid')) hasInvalidUrl = true;
+    });
+    if (hasInvalidUrl) {
+        showToast('Please fix or remove invalid URLs before generating.');
+        return;
+    }
+
+    // Determine action by which pane is currently visible
     var action;
     if (!_aiHasGenerated) {
         action = 'generate';
     } else {
-        var activeTab = document.querySelector('#aiTabBar .add-topic-tab.active');
-        var tab = activeTab ? activeTab.dataset.tab : 'ai-content';
-        if (tab === 'ai-topic') action = 'regen-topic';
-        else if (tab === 'ai-subs') action = 'regen-subs';
+        var topicPane    = document.getElementById('aiTabPaneTopic');
+        var subsPane     = document.getElementById('aiTabPaneSubs');
+        var topicVisible = topicPane && !topicPane.classList.contains('hidden');
+        var subsVisible  = subsPane  && !subsPane.classList.contains('hidden');
+        if (topicVisible) action = 'regen-topic';
+        else if (subsVisible) action = 'regen-subs';
         else action = 'regen-all';
     }
     doAIGenerate(action);
@@ -1989,18 +2084,24 @@ function buildAISubsPaneHtml(subs) {
         '</div>' +
         '<div id="subsList" class="sub-list">' + subItems + '</div>' +
     '</div>' +
-    '<div id="subEditor" class="sub-editor hidden"></div>' +
-    '<div class="add-sub-row" id="addSubTopicBtnRow">' +
-        '<button type="button" class="btn btn-outline btn-add-sub" id="addSubTopicBtn" onclick="openSubEditor(\'new\')">' +
-            '<i class="fas fa-plus"></i> Add another sub-topic' +
-        '</button>' +
-    '</div>';
+    '<div id="subEditor" class="sub-editor hidden"></div>';
 }
 
 function doAIGenerate(action) {
+    // Show spinner on the generate button and a progress bar
+    var genBtn = document.getElementById('aiGenerateBtn');
+    if (genBtn) { genBtn.disabled = true; genBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating…'; }
+    _aiShowProgress();
+
+    setTimeout(function() {
+    _aiHideProgress();
+    if (genBtn) { genBtn.disabled = false; }
+
     var namePair   = nextAISuggestion();
     var suggestion = _AI_SUGGESTIONS[_aiGenerateIdx % _AI_SUGGESTIONS.length];
-    suggestion = Object.assign({}, suggestion, { name: namePair.name, description: namePair.description });
+    // Build topic content by joining all subtopic HTML sections
+    var topicContent = (suggestion.subtopics || []).map(function(s) { return s.content || ''; }).join('');
+    suggestion = Object.assign({}, suggestion, { name: namePair.name, description: namePair.description, content: topicContent });
     _aiGenerateIdx++;
 
     var topicPane = document.getElementById('aiTabPaneTopic');
@@ -2031,18 +2132,21 @@ function doAIGenerate(action) {
         }
     } else {
         // Rebuild the topic pane (for 'generate', 'regen-all', 'regen-topic')
-        topicPane.innerHTML =
-            '<div class="form-group"><label>Cover Image</label>' + coverPickerHtml(coverUrl) + '</div>' +
-            '<div class="form-group"><label>Topic Name</label>' +
-                '<input type="text" name="name" value="' + escapeAttr(suggestion.name) + '" placeholder="Topic name">' +
-            '</div>' +
-            '<div class="form-group"><label>Description</label>' +
-                '<input type="text" name="description" value="' + escapeAttr(suggestion.description) + '" placeholder="Topic description">' +
-            '</div>' +
-            createGameToggleHtml();
+        // Respect Keep locks — preserve kept field values on regen
+        var keptName    = document.querySelector('#aiTabPaneTopic .ai-keep-btn.kept[data-field="name"]');
+        var keptDesc    = document.querySelector('#aiTabPaneTopic .ai-keep-btn.kept[data-field="description"]');
+        var keptContent = document.querySelector('#aiTabPaneTopic .ai-keep-btn.kept[data-field="content"]');
+        var lockedName    = keptName    ? ((document.querySelector('#aiTabPaneTopic input[name="name"]')        || {}).value   || suggestion.name)        : suggestion.name;
+        var lockedDesc    = keptDesc    ? ((document.querySelector('#aiTabPaneTopic input[name="description"]') || {}).value   || suggestion.description)  : suggestion.description;
+        var lockedContent = keptContent ? ((document.getElementById('aiReviewContent')                          || {}).innerHTML || (suggestion.content || '')) : (suggestion.content || '');
 
-        // Restore game toggle and flow picker
-        if (gameToggleOn) {
+        // Hide the content RTE when sub-topics are being generated — the sub-topics pane shows all the content
+        var creditChip = '<div class="gs-credit-estimate" style="margin-top:14px"><i class="fas fa-coins"></i> Estimated cost: <strong class="gs-credit-estimate-value">~15 credits</strong></div>';
+        // When sub-topics are included the credit chip goes at the end of the subs pane (added below);
+        // when not, it goes at the end of the content review pane.
+        topicPane.innerHTML = includeSubtopics ? '' : _aiReviewContentRow(lockedContent, !!keptContent) + creditChip;
+
+        if (false) { // game toggle restore — preserved for future use
             var restoredToggle = document.getElementById('createGameToggle');
             if (restoredToggle) restoredToggle.checked = true;
             var restoredPicker = document.getElementById('gameFlowPicker');
@@ -2058,7 +2162,7 @@ function doAIGenerate(action) {
             // Also rebuild sub-topics pane for 'generate' and 'regen-all'
             if (includeSubtopics && suggestion.subtopics && suggestion.subtopics.length) {
                 var subs = suggestion.subtopics;
-                if (subsPane) { subsPane.innerHTML = buildAISubsPaneHtml(subs); subsPane.classList.add('hidden'); }
+                if (subsPane) { subsPane.innerHTML = buildAISubsPaneHtml(subs) + creditChip; subsPane.classList.add('hidden'); }
                 var subsTab = document.getElementById('aiSubsTab');
                 if (subsTab) {
                     subsTab.classList.remove('hidden');
@@ -2075,14 +2179,16 @@ function doAIGenerate(action) {
         // Enable Topics tab; switch to it only on first generate
         var topicTab = document.getElementById('aiTopicTab');
         if (topicTab) topicTab.disabled = false;
-        if (!_aiHasGenerated) switchAITab('ai-topic');
+        var wasFirstGenerate = !_aiHasGenerated;
+        _aiHasGenerated = true;  // must be true before switchAITab so stepper rebuilds
+        if (wasFirstGenerate) switchAITab('ai-topic');
     }
 
     _aiHasGenerated = true;
     updateAIGenBtnLabel();
-
-    var submitBtn = document.getElementById('editSubmitBtn');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save'; }
+    // Enable the stepper Next button now that generation is complete
+    var aiNextBtn = document.getElementById('aiStepNextBtn');
+    if (aiNextBtn) aiNextBtn.disabled = false;
 
     var ck = (_currentScope && _currentScope.companyKey) || '';
     _companyCreditsUsed[ck] = (_companyCreditsUsed[ck] || 0) + 1;
@@ -2094,6 +2200,7 @@ function doAIGenerate(action) {
     var countEl = document.getElementById('aiCreditsCount');
     if (countEl) countEl.textContent = _companyCreditsUsed[ck];
     updateScopeCreditsDisplay();
+    }, 1500); // end setTimeout
 }
 
 function updateAIGenBtnLabel() {
@@ -2105,28 +2212,79 @@ function updateAIGenBtnLabel() {
         if (promptEl) promptEl.placeholder = 'What learning content would you like to create today?';
         return;
     }
-    var activeTab = document.querySelector('#aiTabBar .add-topic-tab.active');
-    var tab = activeTab ? activeTab.dataset.tab : 'ai-content';
-    if (tab === 'ai-topic') {
+    var topicPane    = document.getElementById('aiTabPaneTopic');
+    var subsPane     = document.getElementById('aiTabPaneSubs');
+    var topicVisible = topicPane && !topicPane.classList.contains('hidden');
+    var subsVisible  = subsPane  && !subsPane.classList.contains('hidden');
+    if (topicVisible) {
         genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate Topic';
         if (promptEl) { promptEl.placeholder = 'What would you like to change?'; promptEl.value = ''; }
-    } else if (tab === 'ai-subs') {
+    } else if (subsVisible) {
         genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate Sub-topics';
         if (promptEl) { promptEl.placeholder = 'What would you like to change?'; promptEl.value = ''; }
     } else {
-        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+        genBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate Topic';
         if (promptEl) promptEl.placeholder = 'What learning content would you like to create today?';
     }
 }
 
 function onAIFileChange(input) {
-    var file = input.files[0];
-    if (!file) return;
-    var prompt = document.getElementById('aiUploadPrompt');
-    if (prompt) prompt.textContent = file.name;
-    var zone = document.getElementById('aiUploadZone');
-    if (zone) zone.classList.add('has-file');
+    var files   = input.files;
+    var allowed = ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'];
+    var invalid = [];
+    Array.from(files || []).forEach(function(file) {
+        var ext = file.name.split('.').pop().toLowerCase();
+        if (allowed.indexOf(ext) === -1) invalid.push(file.name);
+    });
+    if (invalid.length) {
+        showToast('Unsupported file type: ' + invalid.join(', ') + '. Accepted: PDF, DOCX, XLSX, PNG, JPG, JPEG.');
+        input.value = '';
+        return;
+    }
+    _aiShowMultiFileUpload(Array.from(files));
     updateAIGenerateBtn();
+}
+
+function _aiShowMultiFileUpload(files) {
+    var zone = document.getElementById('aiUploadZone');
+    if (!zone) return;
+    var iconMap = { pdf: 'fa-file-pdf', docx: 'fa-file-word', xlsx: 'fa-file-excel' };
+    var filesHtml = files.map(function(file, i) {
+        var ext  = file.name.split('.').pop().toLowerCase();
+        var icon = ['png','jpg','jpeg'].indexOf(ext) !== -1 ? 'fa-file-image' : (iconMap[ext] || 'fa-file');
+        var size = file.size > 1048576
+            ? (file.size / 1048576).toFixed(1) + ' MB'
+            : (file.size / 1024).toFixed(0) + ' KB';
+        return '<div class="ai-file-list-item">' +
+            '<i class="fas ' + icon + ' ai-file-list-icon"></i>' +
+            '<span class="ai-file-preview-name" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeAttr(file.name) + '</span>' +
+            '<span class="ai-file-preview-size">' + size + '</span>' +
+            '<button type="button" class="btn-icon" style="font-size:0.7rem;color:#94a3b8" onclick="aiRemoveUploadedFile(this)" title="Remove"><i class="fas fa-times"></i></button>' +
+        '</div>';
+    }).join('');
+    zone.innerHTML =
+        '<div class="ai-file-list">' + filesHtml + '</div>' +
+        '<label class="ai-file-add-more" style="cursor:pointer;font-size:0.75rem;color:#6366f1;margin-top:6px;display:inline-flex;align-items:center;gap:4px">' +
+            '<i class="fas fa-plus"></i> Add more files' +
+            '<input type="file" hidden accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" multiple onchange="onAIFileChange(this)">' +
+        '</label>';
+    zone.classList.add('has-file');
+}
+
+function aiRemoveUploadedFile(btn) {
+    var item = btn.closest('.ai-file-list-item');
+    if (!item) return;
+    item.remove();
+    var list = document.getElementById('aiUploadZone');
+    if (list && !list.querySelector('.ai-file-list-item')) {
+        // All files removed — restore upload zone
+        list.innerHTML =
+            '<input type="file" id="aiFileInput" hidden accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" multiple onchange="onAIFileChange(this)">' +
+            '<i class="fas fa-cloud-upload-alt ai-upload-icon"></i>' +
+            '<span class="ai-upload-prompt" id="aiUploadPrompt">Drop a file or click to upload</span>';
+        list.classList.remove('has-file');
+        list.onclick = function() { var f = document.getElementById('aiFileInput'); if (f) f.click(); };
+    }
 }
 
 function onAIFileDrop(zone, event) {
@@ -2141,17 +2299,516 @@ function onAIFileDrop(zone, event) {
 }
 
 
-function switchAITab(tab) {
-    document.querySelectorAll('#aiTabBar .add-topic-tab').forEach(function(t) {
-        t.classList.toggle('active', t.dataset.tab === tab);
+// ── Topics AI helpers: credit estimate, file upload, generation progress ──────
+
+// ── Topic Review helpers (step 2) ────────────────────────────────────────────
+
+function _aiReviewRow(label, inputHtml, fieldKey, isKept) {
+    var btnCls  = isKept ? 'ai-keep-btn kept' : 'ai-keep-btn';
+    var btnIcon = isKept ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-lock-open"></i>';
+    var btnText = isKept ? 'Kept' : 'Keep';
+    return '<div class="ai-review-row">' +
+        '<div class="ai-review-row-header">' +
+            '<label class="ai-review-row-label">' + escapeAttr(label) + '</label>' +
+            '<button type="button" class="' + btnCls + '" data-field="' + escapeAttr(fieldKey) + '" onclick="aiToggleKeep(this)">' +
+                btnIcon + ' ' + btnText +
+            '</button>' +
+        '</div>' +
+        '<div class="ai-review-row-field">' + inputHtml + '</div>' +
+    '</div>';
+}
+
+function _aiReviewContentRow(contentHtml, isKept) {
+    var btnCls  = isKept ? 'ai-keep-btn kept' : 'ai-keep-btn';
+    var btnIcon = isKept ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-lock-open"></i>';
+    var btnText = isKept ? 'Kept' : 'Keep';
+    return '<div class="ai-review-row">' +
+        '<div class="ai-review-row-header">' +
+            '<label class="ai-review-row-label">Content</label>' +
+            '<div style="display:flex;gap:6px;align-items:center">' +
+                '<button type="button" class="btn-icon" title="Expand" onclick="aiExpandContent()" style="font-size:0.8rem"><i class="fas fa-up-right-and-down-left-from-center"></i></button>' +
+                '<button type="button" class="' + btnCls + '" data-field="content" onclick="aiToggleKeep(this)">' +
+                    btnIcon + ' ' + btnText +
+                '</button>' +
+            '</div>' +
+        '</div>' +
+        '<div class="rte-toolbar">' +
+            '<button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand(\'bold\')"><i class="fas fa-bold"></i></button>' +
+            '<button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand(\'italic\')"><i class="fas fa-italic"></i></button>' +
+            '<button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand(\'underline\')"><i class="fas fa-underline"></i></button>' +
+            '<span class="rte-sep"></span>' +
+            '<button type="button" class="rte-btn" title="Bullet list" onmousedown="event.preventDefault();document.execCommand(\'insertUnorderedList\')"><i class="fas fa-list-ul"></i></button>' +
+            '<button type="button" class="rte-btn" title="Numbered list" onmousedown="event.preventDefault();document.execCommand(\'insertOrderedList\')"><i class="fas fa-list-ol"></i></button>' +
+        '</div>' +
+        '<div class="ai-rte ai-review-content-rte" id="aiReviewContent" contenteditable="' + (isKept ? 'false' : 'true') + '">' + (contentHtml || '') + '</div>' +
+    '</div>';
+}
+
+function aiToggleKeep(btn) {
+    var isKept = btn.classList.toggle('kept');
+    btn.innerHTML = isKept ? '<i class="fas fa-lock"></i> Kept' : '<i class="fas fa-lock-open"></i> Keep';
+    var row   = btn.closest('.ai-review-row');
+    if (!row) return;
+    var input = row.querySelector('input[type="text"]');
+    var rte   = row.querySelector('.ai-rte');
+    if (input) input.readOnly      = isKept;
+    if (rte)   rte.contentEditable = isKept ? 'false' : 'true';
+}
+
+// Open the Content RTE in a full-size popup for easier editing
+function aiExpandContent() {
+    var rte = document.getElementById('aiReviewContent');
+    if (!rte) return;
+    var content = rte.innerHTML;
+
+    var $popup = $('<div>').appendTo('body').dxPopup({
+        title:           'Content',
+        width:           680,
+        height:          560,
+        showCloseButton: true,
+        contentTemplate: function() {
+            var $wrap    = $('<div>').css({ display: 'flex', flexDirection: 'column', height: '100%', gap: '6px' });
+            var toolbar  =
+                '<div class="rte-toolbar">' +
+                    '<button type="button" class="rte-btn" title="Bold" onmousedown="event.preventDefault();document.execCommand(\'bold\')"><i class="fas fa-bold"></i></button>' +
+                    '<button type="button" class="rte-btn" title="Italic" onmousedown="event.preventDefault();document.execCommand(\'italic\')"><i class="fas fa-italic"></i></button>' +
+                    '<button type="button" class="rte-btn" title="Underline" onmousedown="event.preventDefault();document.execCommand(\'underline\')"><i class="fas fa-underline"></i></button>' +
+                    '<span class="rte-sep"></span>' +
+                    '<button type="button" class="rte-btn" title="Bullet list" onmousedown="event.preventDefault();document.execCommand(\'insertUnorderedList\')"><i class="fas fa-list-ul"></i></button>' +
+                    '<button type="button" class="rte-btn" title="Numbered list" onmousedown="event.preventDefault();document.execCommand(\'insertOrderedList\')"><i class="fas fa-list-ol"></i></button>' +
+                '</div>';
+            var $editor  = $('<div id="aiExpandedContent" class="ai-rte v2-rte-modal-body" contenteditable="true">').html(content);
+            $wrap.append($(toolbar), $editor);
+            return $wrap;
+        },
+        onHiding: function() {
+            // Sync edits back to the inline RTE
+            var expanded = document.getElementById('aiExpandedContent');
+            if (expanded && rte) rte.innerHTML = expanded.innerHTML;
+            $popup.dxPopup('instance').dispose();
+            $popup.remove();
+        }
     });
-    var contentPane = document.getElementById('aiTabPaneContent');
-    var topicPane   = document.getElementById('aiTabPaneTopic');
-    var subsPane    = document.getElementById('aiTabPaneSubs');
-    if (contentPane) contentPane.classList.toggle('hidden', tab !== 'ai-content');
-    if (topicPane)   topicPane.classList.toggle('hidden',   tab !== 'ai-topic');
-    if (subsPane)    subsPane.classList.toggle('hidden',    tab !== 'ai-subs');
+    $popup.dxPopup('show');
+}
+
+function aiToggleContentCard(head) {
+    var body    = head.nextElementSibling;
+    var chevron = head.querySelector('.ai-content-card-chevron');
+    if (!body) return;
+    var opening = body.classList.contains('hidden');
+    body.classList.toggle('hidden', !opening);
+    if (chevron) chevron.style.transform = opening ? 'rotate(180deg)' : '';
+}
+
+function aiToggleSuggestion(btn) {
+    var item    = btn.closest('.ai-suggestion-item');
+    var body    = item && item.querySelector('.ai-suggestion-body');
+    var chevron = btn.querySelector('.ai-suggestion-chevron');
+    if (!body) return;
+    var opening = body.classList.contains('hidden');
+    body.classList.toggle('hidden', !opening);
+    if (chevron) chevron.style.transform = opening ? 'rotate(90deg)' : '';
+}
+
+// Toggle upload/suggest mode cards on step 2
+function aiSelectMode(mode, btn) {
+    var uploadSection  = document.getElementById('aiUploadModeSection');
+    var suggestSection = document.getElementById('aiSuggestModeSection');
+    var uploadBtn      = document.getElementById('aiModeUploadBtn');
+    var suggestBtn     = document.getElementById('aiModeSuggestBtn');
+    var isActive = btn.classList.contains('selected');
+    btn.classList.toggle('selected', !isActive);
+    if (mode === 'upload') {
+        if (uploadSection) uploadSection.classList.toggle('hidden', isActive);
+    } else {
+        if (suggestSection) suggestSection.classList.toggle('hidden', isActive);
+    }
+}
+
+// Generate AI resource suggestions based on topic name + description
+// Inject AI-suggested URLs directly into the URL input list
+function aiGetSuggestions() {
+    var btn = document.querySelector('.ai-suggest-inline-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finding…'; }
+
+    var topicName = ((document.getElementById('aiTopicName') || {}).value || '').trim();
+    var label     = topicName || 'this topic';
+
+    setTimeout(function() {
+        var q = encodeURIComponent(label);
+        var suggestions = [
+            { url: 'https://coursera.org/search?query=' + q,              title: label + ' — Complete Learning Guide',   desc: 'Coursera offers structured courses and certifications relevant to this topic.' },
+            { url: 'https://linkedin.com/learning/search?keywords=' + q,  title: label + ' for Business Professionals',  desc: 'LinkedIn Learning provides video-based professional development content.' },
+            { url: 'https://udemy.com/courses/search/?q=' + q,            title: 'Introduction to ' + label,             desc: 'Udemy hosts practical, hands-on courses taught by industry practitioners.' },
+            { url: 'https://hbr.org/search?term=' + q,                    title: label + ': Best Practices & Frameworks', desc: 'Harvard Business Review covers research-backed strategy and management insights.' }
+        ];
+
+        // Open the Upload content card if it's still collapsed
+        var uploadCardBody = document.querySelector('#aiUploadModeSection');
+        if (uploadCardBody) {
+            var card     = uploadCardBody.closest('.ai-content-card');
+            var cardBody = card && card.querySelector('.ai-content-card-body');
+            var chevron  = card && card.querySelector('.ai-content-card-chevron');
+            if (cardBody && cardBody.classList.contains('hidden')) {
+                cardBody.classList.remove('hidden');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // Insert each suggestion as an expandable URL row
+        suggestions.forEach(function(s) { _aiInjectUrl(s.url, s.title, s.desc); });
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check" style="color:#22c55e"></i> ' + suggestions.length + ' URLs added';
+            setTimeout(function() {
+                if (btn) btn.innerHTML = '<i class="fas fa-search"></i> Get AI Suggestions';
+            }, 3000);
+        }
+    }, 1000);
+}
+
+// Shared row HTML builder.
+// Pass bodyHtml to get an expand chevron (AI-generated rows); omit for plain manual rows.
+function _aiUrlRowHtml(url, bodyHtml) {
+    var validCls = url ? ' ai-url-valid' : '';
+    var iconCls  = url ? 'ai-url-status-icon fas fa-check' : 'ai-url-status-icon fas';
+    var expandBtn = bodyHtml
+        ? '<button type="button" class="ai-url-expand-btn" onclick="aiUrlRowToggle(this)"><i class="fas fa-chevron-right ai-url-expand-chevron"></i></button>'
+        : '';
+    var bodySection = bodyHtml
+        ? '<div class="ai-url-row-body hidden">' + bodyHtml + '</div>'
+        : '';
+    return '<div class="ai-url-row-top">' +
+        expandBtn +
+        '<div class="ai-url-input-wrap">' +
+            '<input type="url" class="ai-text-input ai-url-input' + validCls + '" value="' + escapeAttr(url) + '" placeholder="https://…" oninput="aiUrlValidate(this)">' +
+            '<i class="' + iconCls + '"></i>' +
+        '</div>' +
+        '<button type="button" class="ai-url-remove-btn" onclick="aiUrlRemove(this)" title="Remove URL"><i class="fas fa-times"></i></button>' +
+    '</div>' +
+    bodySection;
+}
+
+// Toggle a URL row open/closed
+function aiUrlRowToggle(btn) {
+    var row     = btn.closest('.ai-url-row');
+    var body    = row && row.querySelector('.ai-url-row-body');
+    var chevron = btn.querySelector('.ai-url-expand-chevron');
+    if (!body) return;
+    var opening = body.classList.contains('hidden');
+    body.classList.toggle('hidden', !opening);
+    if (chevron) chevron.style.transform = opening ? 'rotate(90deg)' : '';
+}
+
+// Add an AI-suggested URL row — includes title + description in an expandable body
+function _aiInjectUrl(url, title, desc) {
+    var list = document.getElementById('aiUrlList');
+    if (!list) return;
+    var bodyHtml = title
+        ? '<strong style="display:block;font-size:0.82rem;color:#1e293b;margin-bottom:3px">' + escapeAttr(title) + '</strong>' +
+          (desc ? '<span style="font-size:0.75rem;color:#64748b">' + escapeAttr(desc) + '</span>' : '')
+        : null;
+    // Use the first empty row if available (no chevron yet — upgrade it)
+    var firstRow   = list.querySelector('.ai-url-row');
+    var firstInput = firstRow && firstRow.querySelector('.ai-url-input');
+    if (firstInput && !firstInput.value.trim() && !firstRow.querySelector('.ai-url-expand-btn')) {
+        firstInput.value = url;
+        aiUrlValidate(firstInput);
+        // Upgrade this row to have the expand chevron
+        var top = firstRow.querySelector('.ai-url-row-top');
+        if (top && bodyHtml) {
+            var expandBtn = document.createElement('button');
+            expandBtn.type = 'button';
+            expandBtn.className = 'ai-url-expand-btn';
+            expandBtn.setAttribute('onclick', 'aiUrlRowToggle(this)');
+            expandBtn.innerHTML = '<i class="fas fa-chevron-right ai-url-expand-chevron"></i>';
+            top.insertBefore(expandBtn, top.firstChild);
+            var body = document.createElement('div');
+            body.className = 'ai-url-row-body hidden';
+            body.innerHTML = bodyHtml;
+            firstRow.appendChild(body);
+        }
+        _aiUrlSyncRemoveBtns();
+        return;
+    }
+    var row = document.createElement('div');
+    row.className = 'ai-url-row';
+    row.innerHTML = _aiUrlRowHtml(url, bodyHtml);
+    list.appendChild(row);
+    _aiUrlSyncRemoveBtns();
+}
+
+// Toggle the content sources panel when the "Add content" card is clicked
+function aiToggleContent(btn) {
+    var fields = document.getElementById('aiContentFields');
+    if (!fields) return;
+    var showing = !fields.classList.contains('hidden');
+    fields.classList.toggle('hidden', showing);
+    btn.classList.toggle('selected', !showing);
+}
+
+function aiTopicUpdateCredit() {
+    var credits = { 'claude-sonnet-4-6': 15, 'claude-opus-4-7': 50, 'claude-haiku-4-5': 5, 'gpt-4o': 25, 'gemini-1.5-pro': 12 };
+    var modelEl = document.getElementById('aiModelSelect');
+    var model   = modelEl ? modelEl.value : 'claude-sonnet-4-6';
+    var est     = credits[model] || 15;
+    document.querySelectorAll('#editFields .gs-credit-estimate-value').forEach(function(el) {
+        el.textContent = '~' + est + ' credits';
+    });
+}
+
+function _aiShowFileUpload(file) {
+    var zone = document.getElementById('aiUploadZone');
+    if (!zone) return;
+    var ext  = file.name.split('.').pop().toLowerCase();
+    var size = file.size > 1048576
+        ? (file.size / 1048576).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(0) + ' KB';
+
+    if (['png', 'jpg', 'jpeg'].indexOf(ext) !== -1) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            zone.innerHTML =
+                '<img src="' + e.target.result + '" class="ai-file-preview-img" alt="">' +
+                '<div class="ai-file-preview-meta">' +
+                    '<span class="ai-file-preview-name">' + escapeAttr(file.name) + '</span>' +
+                    '<span class="ai-file-preview-size">' + size + '</span>' +
+                '</div>';
+            zone.classList.add('has-file');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        var iconMap = { pdf: 'fa-file-pdf', docx: 'fa-file-word', xlsx: 'fa-file-excel' };
+        var icon    = iconMap[ext] || 'fa-file';
+        zone.innerHTML =
+            '<i class="fas ' + icon + ' ai-file-preview-doc-icon"></i>' +
+            '<div class="ai-file-preview-meta">' +
+                '<span class="ai-file-preview-name">' + escapeAttr(file.name) + '</span>' +
+                '<span class="ai-file-preview-size">' + size + '</span>' +
+            '</div>';
+        zone.classList.add('has-file');
+    }
+}
+
+function _aiShowProgress() {
+    var existing = document.getElementById('aiGenerateProgress');
+    if (existing) return;
+    var pane = document.getElementById('aiTabPaneTopic') || document.getElementById('aiStepPane1');
+    var bar = document.createElement('div');
+    bar.id = 'aiGenerateProgress';
+    bar.className = 'ai-gen-progress';
+    bar.innerHTML = '<div class="ai-gen-progress-bar"><div class="ai-gen-progress-fill" id="aiGenProgressFill"></div></div>' +
+        '<span class="ai-gen-progress-label">Generating topic…</span>';
+    var fields = document.getElementById('editFields');
+    if (fields) fields.insertBefore(bar, fields.firstChild);
+
+    var fill = document.getElementById('aiGenProgressFill');
+    var pct  = 0;
+    var interval = setInterval(function() {
+        pct = Math.min(90, pct + 6);
+        if (fill) fill.style.width = pct + '%';
+        if (pct >= 90) clearInterval(interval);
+    }, 100);
+    bar._interval = interval;
+}
+
+function _aiHideProgress() {
+    var bar = document.getElementById('aiGenerateProgress');
+    if (!bar) return;
+    if (bar._interval) clearInterval(bar._interval);
+    var fill = document.getElementById('aiGenProgressFill');
+    if (fill) fill.style.width = '100%';
+    setTimeout(function() { if (bar && bar.parentNode) bar.parentNode.removeChild(bar); }, 300);
+}
+
+function switchAITab(tab) {
+    // Both 'ai-topic' and 'ai-subs' map to step 3 (Review)
+    _setAIStepperDots(3);
+    ['aiStepPane1', 'aiTabPaneContent', 'aiStepPane4'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    var topicPane = document.getElementById('aiTabPaneTopic');
+    var subsPane  = document.getElementById('aiTabPaneSubs');
+    if (topicPane) topicPane.classList.remove('hidden');
+    if (subsPane && subsPane.innerHTML.trim()) subsPane.classList.remove('hidden');
+    else if (subsPane) subsPane.classList.add('hidden');
+    setupAIStepperActions(3);
     updateAIGenBtnLabel();
+}
+
+// ── AI stepper — dynamic 3/4-step action bar, navigation, sharing ─────────────
+
+// Rebuild the stepper header dots based on whether sub-topics were generated
+function _aiRebuildStepper(hasSubs) {
+    var labels = hasSubs
+        ? ['Create', 'Topic Review', 'Sub-topics', 'Share']
+        : ['Create', 'Topic Review', 'Share'];
+    _aiTotalSteps = labels.length;
+    var stepper = document.getElementById('aiTopicStepper');
+    if (!stepper) return;
+    var html = '';
+    labels.forEach(function(label, i) {
+        if (i > 0) html += '<div class="add-step-connector"></div>';
+        html += '<div class="add-step' + (i === 0 ? ' done' : '') + '" data-step="' + (i + 1) + '">' +
+            '<span class="add-step-num">' + (i + 1) + '</span>' +
+            '<span class="add-step-label">' + label + '</span>' +
+        '</div>';
+    });
+    stepper.innerHTML = html;
+}
+
+function setupAIStepperActions(step) {
+    var actions = document.querySelector('#detailEdit .edit-actions');
+    if (!actions) return;
+    var cancelBtn = '<button type="button" class="btn btn-outline" onclick="cancelEdit()">Cancel</button>';
+    var backBtn   = '<button type="button" class="btn btn-outline" onclick="goAIStepBack()"><i class="fas fa-arrow-left"></i> Back</button>';
+    if (step === 1) {
+        actions.innerHTML = cancelBtn + backBtn +
+            '<button type="button" class="btn btn-primary" onclick="goAIStepNext()">Next <i class="fas fa-arrow-right"></i></button>';
+    } else if (step === 2) {
+        actions.innerHTML = cancelBtn + backBtn +
+            '<button type="button" class="btn btn-ai" id="aiGenerateBtn" onclick="triggerAIGenerate()"><i class="fas fa-wand-magic-sparkles"></i> Generate Topic</button>';
+    } else if (step === 3) {
+        actions.innerHTML = cancelBtn + backBtn +
+            '<button type="button" class="btn btn-ai" onclick="triggerAIGenerate()"><i class="fas fa-wand-magic-sparkles"></i> Regenerate</button>' +
+            '<button type="button" class="btn btn-primary" onclick="goAIStepNext()">Next <i class="fas fa-arrow-right"></i></button>';
+    } else {
+        actions.innerHTML = cancelBtn + backBtn +
+            '<button type="button" class="btn btn-outline" onclick="commitAIAllSteps(true)"><i class="fas fa-trophy"></i> Continue to create game</button>' +
+            '<button type="button" class="btn btn-primary" onclick="commitAIAllSteps(false)"><i class="fas fa-check"></i> Done</button>';
+    }
+}
+
+function getAICurrentStep() {
+    var active = document.querySelector('#aiTopicStepper .add-step.active');
+    return active ? parseInt(active.dataset.step, 10) : 1;
+}
+
+function _setAIStepperDots(step) {
+    _aiHighestStep = Math.max(_aiHighestStep, step);
+    if (typeof aiTopicUpdateCredit === 'function') aiTopicUpdateCredit();
+    document.querySelectorAll('#aiTopicStepper .add-step').forEach(function(el) {
+        var s = parseInt(el.dataset.step, 10);
+        el.classList.remove('active', 'done', 'ai-step-reachable');
+        if (s < step)              { el.classList.add('done', 'ai-step-reachable'); }
+        else if (s === step)       { el.classList.add('active'); }
+        else if (s <= _aiHighestStep) { el.classList.add('ai-step-reachable'); }
+    });
+}
+
+// Navigate to a step when clicking a stepper dot
+function aiStepClick(n) {
+    var current = getAICurrentStep();
+    if (n === current) return;
+    if (n > _aiHighestStep) return; // not yet reached
+
+    if (n === 1)      { _switchToAIStepManual(1); }
+    else if (n === 2) { _switchToAIStepManual(2); }
+    else if (n === 3) { switchAITab('ai-topic');   }
+    else if (n === 4) { _switchToAIShareStep();    }
+}
+
+function _switchToAIStepManual(step) {
+    _setAIStepperDots(step);
+    ['aiStepPane1', 'aiTabPaneContent', 'aiTabPaneTopic', 'aiTabPaneSubs', 'aiStepPane4'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    var target = step === 1 ? 'aiStepPane1' : 'aiTabPaneContent';
+    var el = document.getElementById(target);
+    if (el) el.classList.remove('hidden');
+    setupAIStepperActions(step);
+    updateAIGenBtnLabel();
+}
+
+function goAIStepNext() {
+    var step = getAICurrentStep();
+    if (step === 1) {
+        var nameEl = document.getElementById('aiTopicName');
+        if (!nameEl || !nameEl.value.trim()) {
+            if (nameEl) { nameEl.classList.add('input-error'); nameEl.focus(); }
+            return;
+        }
+        nameEl.classList.remove('input-error');
+        _switchToAIStepManual(2);
+    } else if (step === 3) {
+        _switchToAIShareStep();
+    }
+}
+
+function goAIStepBack() {
+    var step = getAICurrentStep();
+    if (step === 1) {
+        cancelEdit();
+    } else if (step === 2) {
+        _switchToAIStepManual(1);
+    } else if (step === 3) {
+        _switchToAIStepManual(2);
+    } else if (step === 4) {
+        switchAITab('ai-topic');
+    }
+}
+
+function _switchToAIShareStep() {
+    _setAIStepperDots(_aiTotalSteps);
+    ['aiStepPane1', 'aiTabPaneTopic', 'aiTabPaneSubs'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    _buildAISharePane();
+    var sharePane = document.getElementById('aiStepPane4');
+    if (sharePane) sharePane.classList.remove('hidden');
+    setupAIStepperActions(_aiTotalSteps);
+}
+
+// Keep old name as alias so doAIGenerate's switchAITab path still works
+function _switchToAIStep4() { _switchToAIShareStep(); }
+
+function _buildAISharePane() {
+    var pane = document.getElementById('aiStepPane4');
+    if (!pane) return;
+    var companyKey  = (_currentScope && _currentScope.companyKey) || '';
+    var companies   = (typeof SIDEBAR_COMPANIES  !== 'undefined') ? SIDEBAR_COMPANIES  : [];
+    var departments = (typeof SIDEBAR_DEPARTMENTS !== 'undefined') ? SIDEBAR_DEPARTMENTS : [];
+    var company     = companies.find(function(c) { return c.name.toLowerCase() === companyKey; });
+    var currentDept = (_currentScope && _currentScope.dept) || '';
+    var items       = '';
+    if (company) {
+        var allDepts = departments.filter(function(d) { return d.companyId === company.id; });
+        items = allDepts.map(function(d) {
+            return '<label class="share-dept-item">' +
+                '<input type="checkbox" value="' + escapeAttr(d.name) + '"' + (d.name === currentDept ? ' checked' : '') + '>' +
+                '<span class="share-dept-name">' + escapeAttr(d.name) + '</span>' +
+            '</label>';
+        }).join('') || '<div class="share-empty">No other departments to share with.</div>';
+    } else {
+        items = '<div class="share-empty">Select a company to configure sharing.</div>';
+    }
+    pane.innerHTML =
+        '<p class="step-pane-lead">Choose which departments this topic will be shared with:</p>' +
+        '<div class="share-dept-list" id="aiShareDeptList">' + items + '</div>' +
+        '<div class="gs-credit-estimate" style="margin-top:14px"><i class="fas fa-coins"></i> Estimated cost: <strong class="gs-credit-estimate-value">~15 credits</strong></div>';
+}
+
+function commitAIAllSteps(createGame) {
+    var checkedDepts = [];
+    document.querySelectorAll('#aiShareDeptList input[type="checkbox"]:checked').forEach(function(cb) {
+        checkedDepts.push(cb.value);
+    });
+    window._aiPendingShareDepts = checkedDepts;
+
+    // Wire into the existing pending-game mechanism so the game creation flow
+    // fires automatically after the topic is saved, same as the manual flow.
+    if (createGame) {
+        _pendingCreateGame = true;
+        _pendingGameFlow   = 'ai';
+    }
+
+    var submitBtn = document.getElementById('editSubmitBtn');
+    if (submitBtn && !submitBtn.disabled) submitBtn.click();
 }
 
 function toggleAISub(btn) {
