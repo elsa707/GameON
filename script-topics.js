@@ -1038,19 +1038,21 @@ function saveAdd(data) {
             }
         }
 
-        const isAIFlow = !!document.getElementById('aiStep2Section');
+        // Also detect the new 4-step AI topics stepper
+        const isAIFlow = !!document.getElementById('aiStep2Section') ||
+                         !!document.getElementById('aiTopicStepper');
 
         if (isAIFlow) {
-            // AI flow: only require name and description to be non-empty.
+            // New 4-step AI stepper: only name is required (description optional).
+            // Old AI flow: name + description required.
+            const isNewAIStepper = !!document.getElementById('aiTopicStepper');
             const aiName = (data.get('name') || '').trim();
             const aiDesc = (data.get('description') || '').trim();
-            if (!aiName || !aiDesc) {
-                switchAITab('ai-topic');
-                const emptyField = !aiName
-                    ? document.querySelector('#aiTabPaneTopic input[name="name"]')
-                    : document.querySelector('#aiTabPaneTopic input[name="description"]');
-                if (emptyField) emptyField.focus();
-                showToast(!aiName ? 'Please enter a topic name' : 'Please enter a description');
+            const nameOk = !!aiName;
+            const descOk = isNewAIStepper ? true : !!aiDesc;
+            if (!nameOk || !descOk) {
+                if (!isNewAIStepper) switchAITab('ai-topic');
+                showToast(!nameOk ? 'Please enter a topic name' : 'Please enter a description');
                 return;
             }
         } else {
@@ -2787,28 +2789,81 @@ function _buildAISharePane() {
     } else {
         items = '<div class="share-empty">Select a company to configure sharing.</div>';
     }
+    // Hidden form fields so saveAdd can read name/description/cover via FormData
+    var topicName = ((document.getElementById('aiTopicName') || {}).value || '').trim();
+    var topicDesc = ((document.getElementById('aiTopicDesc') || {}).value || '').trim();
+    var coverEl   = document.querySelector('#aiStepPane1 .cover-hidden-input');
+    var coverVal  = coverEl ? coverEl.value : '';
+
     pane.innerHTML =
+        '<input type="hidden" name="name" value="' + escapeAttr(topicName) + '">' +
+        '<input type="hidden" name="description" value="' + escapeAttr(topicDesc) + '">' +
+        '<input type="hidden" name="cover" value="' + escapeAttr(coverVal) + '">' +
         '<p class="step-pane-lead">Choose which departments this topic will be shared with:</p>' +
         '<div class="share-dept-list" id="aiShareDeptList">' + items + '</div>' +
         '<div class="gs-credit-estimate" style="margin-top:14px"><i class="fas fa-coins"></i> Estimated cost: <strong class="gs-credit-estimate-value">~15 credits</strong></div>';
 }
 
 function commitAIAllSteps(createGame) {
+    // Collect checked departments
     var checkedDepts = [];
     document.querySelectorAll('#aiShareDeptList input[type="checkbox"]:checked').forEach(function(cb) {
         checkedDepts.push(cb.value);
     });
     window._aiPendingShareDepts = checkedDepts;
+    window._pendingShareDepts   = checkedDepts;
 
-    // Wire into the existing pending-game mechanism so the game creation flow
-    // fires automatically after the topic is saved, same as the manual flow.
     if (createGame) {
         _pendingCreateGame = true;
         _pendingGameFlow   = 'ai';
     }
 
+    // Read topic data from step 1 fields (always available in DOM even when hidden)
+    var topicName = ((document.getElementById('aiTopicName') || {}).value || '').trim();
+    var topicDesc = ((document.getElementById('aiTopicDesc') || {}).value || '').trim();
+    var coverEl   = document.querySelector('#aiStepPane1 .cover-hidden-input');
+    var coverUrl  = coverEl ? coverEl.value : (randomCover ? randomCover() : '');
+
+    if (!topicName) {
+        showToast('Please enter a topic name');
+        _switchToAIStepManual(1);
+        return;
+    }
+
+    // Build a minimal FormData that saveAdd can read
+    var form = document.getElementById('editForm');
+    if (!form) { showToast('Could not save topic — form not found'); return; }
+
+    // Temporarily inject hidden fields into the form so saveAdd's FormData picks them up
+    function _tmpInput(name, value) {
+        var el = document.createElement('input');
+        el.type = 'hidden'; el.name = name; el.value = value;
+        el.className = 'ai-topic-tmp-field';
+        form.appendChild(el);
+        return el;
+    }
+    document.querySelectorAll('.ai-topic-tmp-field').forEach(function(el) { el.remove(); });
+    _tmpInput('name',        topicName);
+    _tmpInput('description', topicDesc);
+    _tmpInput('cover',       coverUrl);
+
+    // Fire the form submit (same as manual flow's commitAllSteps)
     var submitBtn = document.getElementById('editSubmitBtn');
-    if (submitBtn && !submitBtn.disabled) submitBtn.click();
+    if (submitBtn) { submitBtn.disabled = false; }
+    isAddMode = true;
+    currentEditType = 'topic';
+
+    var fakeEvt = { preventDefault: function() {} };
+    saveEdit(fakeEvt);
+
+    // saveAdd ends by calling openShareInPanel which shows a sharing panel —
+    // immediately close it so the user returns to the topics list.
+    document.querySelectorAll('.ai-topic-tmp-field').forEach(function(el) { el.remove(); });
+    if (createGame) {
+        setTimeout(function() { window.location.href = 'index-games.html'; }, 50);
+    } else {
+        showEmpty();
+    }
 }
 
 function toggleAISub(btn) {
