@@ -1873,6 +1873,19 @@ function addTopicAI() {
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Text</label>
+                    <div class="rte-toolbar">
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('bold')"><i class="fas fa-bold"></i></button>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('italic')"><i class="fas fa-italic"></i></button>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('underline')"><i class="fas fa-underline"></i></button>
+                        <span class="rte-sep"></span>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                    </div>
+                    <div id="aiTextInput" class="ai-rte" contenteditable="true"
+                         data-placeholder="Paste text, notes, or reference material..."></div>
+                </div>
+                <div class="form-group">
                     <label>URL</label>
                     <div class="ai-url-list" id="aiUrlList">
                         <div class="ai-url-row">
@@ -1896,19 +1909,6 @@ function addTopicAI() {
                             <i class="fas fa-search"></i> Get AI Suggestions
                         </button>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Text</label>
-                    <div class="rte-toolbar">
-                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('bold')"><i class="fas fa-bold"></i></button>
-                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('italic')"><i class="fas fa-italic"></i></button>
-                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('underline')"><i class="fas fa-underline"></i></button>
-                        <span class="rte-sep"></span>
-                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
-                        <button type="button" class="rte-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
-                    </div>
-                    <div id="aiTextInput" class="ai-rte" contenteditable="true"
-                         data-placeholder="Paste text, notes, or reference material..."></div>
                 </div>
             </div>
                 </div><!-- /ai-content-card-body -->
