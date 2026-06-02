@@ -48,6 +48,29 @@
 .ai-keep-btn.kept:hover { background: #dcfce7; }
 .ai-review-content-rte { min-height: 160px; max-height: 280px; overflow-y: auto; }
 
+/* ===== AI sub-topics — Keep/Kept button ===== */
+.ai-sub-keep-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: inherit;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    color: #6366f1;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ai-sub-keep-btn:hover { background: #f5f3ff; border-color: #c7d2fe; }
+.ai-sub-keep-btn.kept  { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
+.ai-sub-keep-btn i     { font-size: 0.73rem; }
+
 /* ===== Topics AI stepper — clickable navigation ===== */
 #aiTopicStepper .add-step { cursor: not-allowed; }
 #aiTopicStepper .add-step.active,

@@ -2076,8 +2076,13 @@ function triggerAIGenerate() {
 }
 
 function buildAISubsPaneHtml(subs) {
-    var subItems = subs.map(function(s) {
-        return subListItemHtml(s.name, 'PDF', '', htmlToMarkdown(s.content || ''));
+    var subItems = subs.map(function(s, i) {
+        var baseHtml = subListItemHtml(s.name, 'PDF', '', htmlToMarkdown(s.content || ''));
+        // Inject a Keep/Kept button before the closing tag of each item
+        var keepBtn = '<button type="button" class="ai-sub-keep-btn" onclick="aiSubKeep(this)">' +
+            '<i class="fas fa-lock-open"></i><span>Keep</span>' +
+        '</button>';
+        return baseHtml.replace('</div></div>', keepBtn + '</div></div>');
     }).join('');
     return '<div class="sub-list-section" id="subsListSection">' +
         '<div class="sub-list-head">' +
@@ -2087,6 +2092,35 @@ function buildAISubsPaneHtml(subs) {
         '<div id="subsList" class="sub-list">' + subItems + '</div>' +
     '</div>' +
     '<div id="subEditor" class="sub-editor hidden"></div>';
+}
+
+// ── Sub-topics Keep/Kept + Regenerate ────────────────────────────────────────
+
+function aiSubKeep(btn) {
+    var item   = btn.closest('.sub-list-item') || btn.closest('div');
+    var isKept = btn.classList.toggle('kept');
+    var icon   = btn.querySelector('i');
+    var label  = btn.querySelector('span');
+    if (icon)  icon.className  = isKept ? 'fas fa-lock' : 'fas fa-lock-open';
+    if (label) label.textContent = isKept ? 'Kept' : 'Keep';
+}
+
+// Regenerate only unlocked sub-topics (replaces them from the suggestion pool)
+function aiRegenerateUnkeptSubs() {
+    var items = document.querySelectorAll('#aiTabPaneSubs .gs-review-item:not(.gs-review-kept)');
+    var pool  = [
+        'Introduction & Overview', 'Core Concepts', 'Practical Applications',
+        'Case Studies', 'Best Practices', 'Common Challenges', 'Advanced Topics',
+        'Assessment & Review', 'Tools & Resources', 'Summary & Next Steps'
+    ];
+    var idx = 0;
+    items.forEach(function(item) {
+        var textEl = item.querySelector('.gs-review-q-text');
+        if (textEl) { textEl.textContent = pool[idx % pool.length]; idx++; }
+    });
+    document.querySelectorAll('#aiTabPaneSubs .gs-review-q-num').forEach(function(n, i) {
+        n.textContent = i + 1;
+    });
 }
 
 function doAIGenerate(action) {
