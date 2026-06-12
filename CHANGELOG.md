@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-12] — Dashboard: dark chrome header + nav; leaderboard & table polish; period dropdown
+
+### Added
+- **Dark top chrome**: header bar, period bar, and main nav tabs all use `#0f172a` background, creating a strong visual split between chrome and content area.
+- Period dxSelectBox styled for dark background (white text, translucent border, red focus ring).
+- Nav badge gets a dark halo (`box-shadow: 0 0 0 2px #0f172a`) so it reads well on the dark nav.
+
+### Changed
+- **Leaderboard avatars, rank medals, top-3 row tints, points badge** as described above — points badge changed from red to dark slate pill.
+- **Period filter**: replaced pill buttons with compact dxSelectBox; labels formatted with space before year ("January 2026").
+- Tables: lighter dividers, bolder headers, more row padding.
+- Buttons in header now use translucent-white ghost style on the dark background.
+- Hidden tabs fix: `.dash-nav-tab[hidden] { display:none !important }`.
+
 ## [2026-06-12] — Dashboard: leaderboard redesign, table polish, period dropdown, tab fix
 
 ### Added

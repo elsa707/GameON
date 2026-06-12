@@ -9,8 +9,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 16px 32px 15px;
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
     flex-shrink: 0;
     gap: 16px;
 }
@@ -18,7 +18,7 @@
 .dash-hd-title {
     font-size: 18px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #fff;
     white-space: nowrap;
     letter-spacing: -0.3px;
 }
@@ -35,12 +35,12 @@
     align-items: center;
     gap: 0;
     font-size: 13px;
-    color: var(--text-secondary);
+    color: rgba(255,255,255,0.55);
 }
 
 .dash-hd-stat {
     padding: 0 14px;
-    border-right: 1px solid var(--border);
+    border-right: 1px solid rgba(255,255,255,0.12);
     white-space: nowrap;
 }
 
@@ -48,7 +48,7 @@
 .dash-hd-stat:last-child { border-right: none; }
 
 .dash-hd-stat strong {
-    color: var(--text-primary);
+    color: #fff;
     font-weight: 700;
 }
 
@@ -57,10 +57,10 @@
     align-items: center;
     gap: 6px;
     padding: 7px 16px;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255,255,255,0.18);
     border-radius: 8px;
-    background: var(--white);
-    color: var(--text-secondary);
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.8);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -69,7 +69,7 @@
     white-space: nowrap;
 }
 
-.dash-btn-report:hover { background: var(--bg); color: var(--text-primary); border-color: #94a3b8; }
+.dash-btn-report:hover { background: rgba(255,255,255,0.14); color: #fff; border-color: rgba(255,255,255,0.3); }
 
 .dash-btn-pdf {
     display: inline-flex;
@@ -96,15 +96,67 @@
     align-items: center;
     gap: 10px;
     padding: 7px 32px;
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
     flex-shrink: 0;
+}
+
+/* Period dxSelectBox input (on dark background) */
+#dashPeriodSelect .dx-texteditor.dx-editor-outlined {
+    border-radius: 8px;
+    border-color: rgba(255,255,255,0.2) !important;
+    background: rgba(255,255,255,0.08) !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+}
+
+#dashPeriodSelect .dx-texteditor.dx-editor-outlined.dx-state-hover {
+    border-color: rgba(255,255,255,0.35) !important;
+}
+
+#dashPeriodSelect .dx-texteditor.dx-editor-outlined.dx-state-focused {
+    border-color: #e11d48 !important;
+    box-shadow: 0 0 0 3px rgba(225,29,72,0.25) !important;
+}
+
+#dashPeriodSelect .dx-texteditor-input {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff !important;
+    font-family: inherit;
+    background: transparent !important;
+}
+
+#dashPeriodSelect .dx-dropdowneditor-icon { color: rgba(255,255,255,0.5) !important; }
+
+/* Period dropdown popup */
+.period-dropdown .dx-list-item {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: inherit;
+    padding: 0 !important;
+}
+
+.period-dropdown .dx-list-item .dx-list-item-content {
+    padding: 9px 16px !important;
+}
+
+.period-dropdown .dx-list-item.dx-state-hover .dx-list-item-content {
+    background: #f8fafc;
+    color: var(--text-primary);
+}
+
+.period-dropdown .dx-list-item.dx-list-item-selected .dx-list-item-content {
+    background: rgba(225,29,72,0.06);
+    color: #e11d48;
+    font-weight: 700;
 }
 
 .dash-period-lbl {
     font-size: 10px;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: rgba(255,255,255,0.45);
     letter-spacing: 0.6px;
     text-transform: uppercase;
     white-space: nowrap;
@@ -116,8 +168,8 @@
     display: flex;
     align-items: center;
     padding: 0 32px;
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
+    background: #0f172a;
+    border-bottom: 3px solid rgba(255,255,255,0.06);
     flex-shrink: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -133,10 +185,10 @@
     gap: 7px;
     padding: 13px 16px;
     border: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -3px;
     background: transparent;
-    color: var(--text-secondary);
+    color: rgba(255,255,255,0.45);
     font-size: 13px;
     font-weight: 500;
     font-family: inherit;
@@ -145,10 +197,10 @@
     white-space: nowrap;
 }
 
-.dash-nav-tab:hover { color: var(--text-primary); }
+.dash-nav-tab:hover { color: rgba(255,255,255,0.8); }
 
 .dash-nav-tab.active {
-    color: #e11d48;
+    color: #fff;
     border-bottom-color: #e11d48;
     font-weight: 600;
 }
@@ -156,6 +208,7 @@
 .dash-nav-badge {
     background: #e11d48;
     color: #fff;
+    box-shadow: 0 0 0 2px #0f172a;
     font-size: 10px;
     font-weight: 700;
     min-width: 18px;
@@ -1231,13 +1284,14 @@
 }
 
 .lb-pts-badge {
-    background: rgba(225,29,72,0.08);
-    color: #e11d48;
+    background: #1e293b;
+    color: #fff;
     border-radius: 99px;
     padding: 3px 10px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     white-space: nowrap;
+    letter-spacing: 0.2px;
 }
 
 .lb-acc {

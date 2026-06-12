@@ -288,6 +288,9 @@
         var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
         return 'rgba('+r+','+g+','+b+','+a+')';
     }
+    function fmtPeriod(p) {
+        return p === 'All Months' ? p : p.replace(/(\d{4})$/, ' $1');
+    }
 
     function areaChartConfig(data, color, isPercent, h) {
         var ds = MONTHS_LABELS.map(function(l, i) { return { arg: l, val: data[i] }; });
@@ -819,9 +822,11 @@
         $('#dashPeriodSelect').dxSelectBox({
             items: PERIODS,
             value: state.period,
-            width: 175,
-            height: 32,
+            displayExpr: fmtPeriod,
+            width: 170,
+            height: 34,
             stylingMode: 'outlined',
+            dropDownOptions: { wrapperAttr: { class: 'period-dropdown' } },
             onValueChanged: function(e) { dashPeriod(e.value); }
         });
         refreshAll();
