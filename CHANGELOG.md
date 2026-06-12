@@ -5,6 +5,78 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-12] — Dashboard UI redesign: clean single-page Summary
+
+### Added
+- **KPI card row**: 5 accent-bordered cards (Participation %, Active Players, Total Plays, Avg Accuracy, Inactive) with CSS `--accent` custom property for per-card colour theming and an inline progress bar on the Participation card.
+- **Player Leaderboard** in Summary: compact rank-badge rows (gold/silver/bronze/gray) with name, dept, points and colour-coded accuracy mini-bar — replaces the separate Players > Overview spotlight cards on the Summary screen.
+- **Department Breakdown** in Summary: mini table (Active / Activity bar / Avg Pts) replacing the separate chart card.
+- **Anomaly strip**: compact horizontal chip row at the bottom of Summary (medium = amber, high = red) replacing the full Anomalies sub-tab.
+- New CSS classes: `summary-page`, `kpi-grid`, `kpi-card`, `kpi-value`, `kpi-progress`, `summary-2col`, `panel-card`, `panel-card-hd`, `summary-dept-table`, `lb-list`, `lb-row`, `lb-rank`, `lb-acc`, `anomaly-strip`, `anomaly-chip` and related helpers.
+
+### Changed
+- **Summary tab** is now one scrollable page — Overview / Trends / Forecast / Anomalies sub-tabs removed.
+- Sub-tab row (`#dashSubRow`) now only appears for Players, Games, Departments tabs; hidden on all others.
+- Sub-tab row trimmed to two items: **Overview** and **Trends** only (Forecast + Anomalies placeholders removed).
+- Forecast / Anomalies placeholder sub-panels removed from Players, Games, Departments, Regional panels.
+- Regional panel now renders directly (no sub-panel wrapper).
+- `refreshAll()`: replaced four separate summary render calls with single `renderSummaryPage()`.
+- `kpiCard()` helper function added.
+- Summary charts: "Monthly Plays" area chart (blue) + "Top Games by Plays" bar (red) replace the old Dept Activity / Top Games pair.
+
+## [2026-06-11] — Dashboard participation rate fixes
+
+### Fixed
+- `renderSummaryOverview`: participation rate now uses `profile.players` (active headcount) instead of summing `dept.active` values, so Naspers correctly shows 17/22 = 77% instead of 18/22 = 81.8%.
+- `renderSummaryAnomalies`: inactive-player count now uses same `profile.players` source, giving "5 players (22.7%) are inactive" matching the reference.
+- Removed stale "registered" legend dot from participation card legend (only active + inactive shown now).
+
+### Added
+- Participation card right-side mini bar visualisation: two proportional bars (active=red, inactive=gray) with player counts, matching the reference layout.
+- `participation-card-right`, `participation-mini-bars`, `pmb-row`, `pmb-track`, `pmb-fill`, `pmb-lbl` CSS rules in `styles-dashboard.css`.
+- Period labels stripped of spaces: `January2026`, `February2026`, etc. — keys in `NASPERS_DATA` and `PERIODS` array updated accordingly to match reference tab labels.
+
+## [2026-06-11] — Dashboard full tab content
+
+### Added
+- **Summary > Trends**: Player Growth (red area) + Monthly Plays (blue area) side-by-side, Accuracy Trend (green area) full-width — Chart.js area charts from per-company monthly trend data.
+- **Summary > Forecast**: Player Count Forecast (Linear Regression) — actual red line + blue dashed projection for +1/+2/+3 months.
+- **Summary > Anomalies**: Dynamic anomaly cards (inactive players, depts with zero active, play-volume drop) with medium/high severity styling matching the reference.
+- **Players > Overview**: Rebuilt to match reference — 4 metric cards, top-3 player spotlight badges (gold/silver/bronze), Full Player Rankings table (Rank / Player / Dept / Region / Points / Accuracy / Games). Naspers uses exact reference player names (Rihcard Moroke 4,177 pts, Johann Kok 1,345 pts, Hein Hein 510 pts, etc.).
+- **Players > Trends**, **Games > Trends**, **Departments > Trends**: Player Activity (red area) + Accuracy Trend (blue area) + Combined Engagement Overview (red bars) — shared render function. Renamed "Player Trend" → "Player Activity".
+- **Departments > Overview**: Department Breakdown table (Total / Active / Avg Points / Activity Rate colour bar) + Active Players by Department pie chart.
+- **Regional > Overview**: Regions table, Players per Region horizontal bar, Top Dealers table — Naspers uses exact reference dealer data.
+- `COMPANY_REGISTERED` map, `COMPANY_DEALERS` map, `avgPoints` on dept records, `NASPERS_MONTHLY` trend arrays.
+- Sidebar nav label: "Users" → "Players".
+
+### Changed
+- `NASPERS_DATA['All Months'].plays` corrected to 2300 (matches reference "2.3K").
+- `COMPANY_DEPT_PLAYERS[7]`: BB Gezina Nissan total=22, Auto Sales Excellence total=5.
+- `COMPANY_PLAYERS` schema: `{plays, streak}` → `{points, games, region}` across all companies.
+- `styles-dashboard.css`: added trends, spotlight, anomaly, dept/regional grid rules.
+- `index.html`: sub-panels now have render IDs; placeholder content removed from implemented panels.
+
+## [2026-06-11] — Dashboard scope-driven data
+
+### Changed
+- **Dashboard (`script-dashboard.js`) — dynamic per-company data**: all metric cards, header stats (players / plays / dealers), game performance table, player leaderboard, and department table now update automatically whenever the sidebar scope changes to a different company. Listens for `gameon:scope-change` and reads `localStorage['gameon.scope']` on load.
+- Added `COMPANY_PROFILES` (7 companies, each with `players`, `dealers`, `playScale`, `accShift`) and `COMPANY_PLAYERS` (per-company leaderboard rosters). Period data for non-Naspers companies is derived by scaling the Naspers base data with each company's `playScale` and `accShift` offsets.
+
+## [2026-06-11] — Analytics Dashboard
+
+### Added
+- **Analytics Dashboard (`index.html`)**: replaced placeholder with full dashboard matching the reference design. Includes:
+  - Sticky header bar with title, live player/play/dealer stats and Report / PDF Report action buttons.
+  - **DATA PERIOD** pill-tab filter across 7 periods (All Months, Jan–Jun 2026); selecting a period re-renders all stats and the performance table.
+  - **Main tab navigation**: Summary, Players, Games (default active), Departments, Regional, Incentives, Prizes, AI Analysis (badge). Each tab shows its panel; unsupported tabs display a placeholder.
+  - **Games › Overview**: four metric cards (Games Available, Total Plays, Avg Answer Accuracy, User Answers) plus a Game Performance table with play count, colour-coded accuracy bars (green ≥ 75 %, orange 60–74 %, red < 60 %), and play-time column for all 17 games.
+  - **Games sub-tabs**: Overview, Trends, Forecast, Anomalies (with count badge); non-overview sub-tabs show a coming-soon placeholder.
+  - **Summary tab**: six KPI cards with trend indicators.
+  - **Players tab**: player leaderboard table with accuracy bars and streak column.
+  - **Departments tab**: department performance comparison table.
+  - Hard-coded data for every period (`script-dashboard.js`) and dashboard-specific styles (`styles-dashboard.css`).
+- **Sidebar**: added Dashboard as the first nav item with `active` class on `index.html`.
+
 ## [2026-06-01] — Remove categories feature from Game Setup stepper
 
 ### Removed
