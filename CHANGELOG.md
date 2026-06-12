@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-12] — Dashboard: restore sub-tabs; switch to DevExtreme charts
+
+### Added
+- **Summary Trends sub-tab**: Player Growth, Monthly Plays and Accuracy Trend area charts (DevExtreme dxChart).
+- **Summary Forecast sub-tab**: dual-series area+dashed-line play-volume forecast using linear regression for 4 future months (DevExtreme dxChart).
+- **Summary Anomalies sub-tab**: styled anomaly cards with severity badge and coloured icon (replaces anomaly strip on Overview).
+- New CSS classes: `anomaly-list`, `anomaly-ok`, `anomaly-item`, `anomaly-item-icon`, `anomaly-item-text`, `anomaly-item-badge`.
+
+### Changed
+- **Summary tab** restored to **Overview / Trends / Forecast / Anomalies** sub-tab structure (reverts single-page layout from prior session).
+- **Sub-tab row** restored to 4 tabs with Forecast and Anomalies; shown for Summary, Players, Games, Departments.
+- **Players, Games, Departments** panels each have Forecast and Anomalies placeholders ("Coming soon") restored.
+- **All charts migrated from Chart.js to DevExtreme** (`dxChart` / `dxPieChart`): area charts (all trend charts), horizontal bar charts (Top Games, Regional), vertical bar chart (Engagement Overview), pie chart (Dept breakdown).
+- `destroyChart()` / `makeChart()` rewritten to use DevExtreme widget API (`instance().dispose()`).
+- `areaChartConfig()` rewritten to return DevExtreme options object.
+- All `<canvas>` chart hosts replaced with `<div>` hosts; `size.height` set via DevExtreme options.
+- CSS: `.chart-container canvas` selector changed to `.chart-container > div`.
+- Chart.js CDN removed from `index.html`.
+
 ## [2026-06-12] — Dashboard UI redesign: clean single-page Summary
 
 ### Added

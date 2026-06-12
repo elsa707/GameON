@@ -475,9 +475,9 @@
     padding: 0 16px 16px;
 }
 
-.chart-container canvas {
+.chart-container > div {
     display: block;
-    width: 100% !important;
+    width: 100%;
 }
 
 /* ===== Responsive ===== */
@@ -1305,6 +1305,62 @@
 .anomaly-chip.medium { background: #fef3c7; color: #92400e; }
 .anomaly-chip.high   { background: #fee2e2; color: #991b1b; }
 .anomaly-chip i { font-size: 9px; }
+
+/* Anomaly panel (Anomalies sub-tab) */
+.anomaly-list { padding: 8px 16px 16px; }
+
+.anomaly-ok {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #16a34a;
+    padding: 16px;
+    background: #f0fdf4;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.anomaly-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.anomaly-item.high   { background: #fff1f2; border-color: #fecdd3; }
+.anomaly-item.medium { background: #fffbeb; border-color: #fde68a; }
+
+.anomaly-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.anomaly-item.high   .anomaly-item-icon { background: #fee2e2; color: #dc2626; }
+.anomaly-item.medium .anomaly-item-icon { background: #fef3c7; color: #d97706; }
+
+.anomaly-item-text { flex: 1; font-size: 13px; color: #374151; font-weight: 500; }
+
+.anomaly-item-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 99px;
+}
+
+.anomaly-item-badge.high   { background: #fee2e2; color: #dc2626; }
+.anomaly-item-badge.medium { background: #fef3c7; color: #d97706; }
 
 /* Responsive */
 @media (max-width: 1100px) {

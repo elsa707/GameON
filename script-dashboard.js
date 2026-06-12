@@ -261,13 +261,22 @@
 
     var _charts = {};
 
-    function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
+    function destroyChart(id) {
+        var $el = $('#' + id);
+        if ($el.length) {
+            try { $el.dxChart('instance').dispose();    } catch(e) {}
+            try { $el.dxPieChart('instance').dispose(); } catch(e) {}
+        }
+        delete _charts[id];
+    }
 
-    function makeChart(id, config) {
+    function makeChart(id, cfg) {
         destroyChart(id);
-        var el = document.getElementById(id);
-        if (!el || typeof Chart === 'undefined') return;
-        _charts[id] = new Chart(el.getContext('2d'), config);
+        var $el = $('#' + id);
+        if (!$el.length) return;
+        _charts[id] = true;
+        if (cfg.isPie) $el.dxPieChart(cfg.opts);
+        else           $el.dxChart(cfg.opts);
     }
 
     /* ── Helpers ─────────────────────────────────────────────── */
@@ -276,22 +285,25 @@
     function accColor(pct) { return pct >= 75 ? 'green' : pct >= 60 ? 'orange' : 'red'; }
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    function areaChartConfig(data, color, isPercent) {
+    function areaChartConfig(data, color, isPercent, h) {
+        var ds = MONTHS_LABELS.map(function(l, i) { return { arg: l, val: data[i] }; });
         return {
-            type: 'line',
-            data: {
-                labels: MONTHS_LABELS,
-                datasets: [{ data: data, borderColor: color, backgroundColor: color.replace(')',',0.12)').replace('rgb','rgba'), fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: color, borderWidth: 2 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display:false } },
-                scales: {
-                    x: { grid:{ color:'rgba(200,200,200,0.2)' }, ticks:{ font:{size:10}, color:'#666' } },
-                    y: { beginAtZero:true, grid:{ color:'rgba(200,200,200,0.2)' },
-                         ticks:{ font:{size:10}, color:'#666', callback: isPercent ? function(v){return v+'%';} : undefined },
-                         max: isPercent ? 100 : undefined }
-                }
+            opts: {
+                dataSource: ds,
+                series: [{ argumentField: 'arg', valueField: 'val', type: 'area', color: color, opacity: 0.18,
+                           point: { visible: true, size: 5, color: color } }],
+                commonAxisSettings: {
+                    grid: { color: 'rgba(200,200,200,0.25)', visible: true },
+                    tick: { visible: false },
+                    label: { font: { size: 10, color: '#64748b' } }
+                },
+                valueAxis: {
+                    max: isPercent ? 100 : undefined,
+                    label: { customizeText: isPercent ? function(info) { return info.valueText + '%'; } : undefined }
+                },
+                legend:  { visible: false },
+                tooltip: { enabled: true },
+                size:    { height: h || 200 }
             }
         };
     }
@@ -337,10 +349,10 @@
         '</div>';
     }
 
-    /* ── Render: Summary page (single scroll) ────────────────── */
+    /* ── Render: Summary > Overview ─────────────────────────── */
 
-    function renderSummaryPage() {
-        var el = document.getElementById('dashSummaryPage');
+    function renderSummaryOverview() {
+        var el = document.getElementById('dashSummaryOverview');
         if (!el) return;
         var d        = getPeriodData(state.companyId, state.period);
         var profile  = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
@@ -358,17 +370,6 @@
         var top8 = d.perf.map(function(p, i) { return { name: BASE_GAMES[i], plays: p.plays }; })
                          .sort(function(a, b) { return b.plays - a.plays; }).slice(0, 8);
 
-        /* anomalies */
-        var deptsZero = depts.filter(function(dep) { return dep.active === 0; }).length;
-        var maxPlay   = Math.max.apply(null, trend.plays);
-        var lastPlay  = trend.plays[trend.plays.length - 1];
-        var dropPct   = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
-        var anomalies = [];
-        if (inactive > 0)  anomalies.push({ sev:'medium', icon:'fas fa-user-clock',       text: inactive + ' players (' + (inactive/reg*100).toFixed(1) + '%) inactive' });
-        if (deptsZero > 0) anomalies.push({ sev:'medium', icon:'fas fa-building',         text: deptsZero + ' dept' + (deptsZero > 1 ? 's' : '') + ' with no active players' });
-        if (dropPct > 25)  anomalies.push({ sev:'high',   icon:'fas fa-arrow-trend-down', text: 'Play volume dropped ' + dropPct.toFixed(1) + '% from peak' });
-
-        /* KPI row */
         var kpiHtml =
             '<div class="kpi-grid">' +
             kpiCard('#e11d48', 'Participation',  partRate + '%',            active + ' of ' + reg + ' registered', partRate) +
@@ -378,7 +379,6 @@
             kpiCard('#d97706', 'Inactive',       inactive,                  (inactive/reg*100).toFixed(1) + '% of registered', null) +
             '</div>';
 
-        /* dept table rows */
         var deptRows = depts.map(function(dep, i) {
             var dd = deptRaw[i] || {};
             var ar = dep.total > 0 ? dep.active / dep.total * 100 : 0;
@@ -391,7 +391,6 @@
             '</tr>';
         }).join('');
 
-        /* leaderboard rows */
         var lbRows = players.map(function(p, i) {
             var sp = Math.max(1, Math.round(p.points * scale));
             var rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rn';
@@ -404,21 +403,14 @@
             '</div>';
         }).join('');
 
-        /* anomaly strip */
-        var aHtml = anomalies.length === 0
-            ? '<div class="anomaly-strip"><span class="anomaly-strip-ok"><i class="fas fa-circle-check"></i> No anomalies detected</span></div>'
-            : '<div class="anomaly-strip"><span class="anomaly-strip-lbl"><i class="fas fa-triangle-exclamation"></i>&nbsp;' + anomalies.length + ' Anomal' + (anomalies.length === 1 ? 'y' : 'ies') + '</span>' +
-              anomalies.map(function(a) { return '<div class="anomaly-chip ' + a.sev + '"><i class="' + a.icon + '"></i>' + esc(a.text) + '</div>'; }).join('') +
-              '</div>';
-
-        var chartH = Math.max(160, top8.length * 26 + 10);
+        var chartH = Math.max(180, top8.length * 28 + 10);
 
         el.innerHTML =
             '<div class="summary-page">' +
             kpiHtml +
             '<div class="summary-2col">' +
-                '<div class="panel-card"><div class="panel-card-hd">Monthly Plays</div><div class="chart-container"><canvas id="sumChartPlays" height="200"></canvas></div></div>' +
-                '<div class="panel-card"><div class="panel-card-hd">Top Games by Plays</div><div class="chart-container"><canvas id="sumChartTopGames" height="' + chartH + '"></canvas></div></div>' +
+                '<div class="panel-card"><div class="panel-card-hd">Monthly Plays</div><div class="chart-container"><div id="sumChartPlays"></div></div></div>' +
+                '<div class="panel-card"><div class="panel-card-hd">Top Games by Plays</div><div class="chart-container"><div id="sumChartTopGames"></div></div></div>' +
             '</div>' +
             '<div class="summary-2col">' +
                 '<div class="panel-card"><div class="panel-card-hd">Department Breakdown</div>' +
@@ -426,17 +418,129 @@
                 '<div class="panel-card"><div class="panel-card-hd">Player Leaderboard <span class="panel-card-count">' + players.length + ' players</span></div>' +
                 '<div class="lb-list">' + lbRows + '</div></div>' +
             '</div>' +
-            aHtml +
             '</div>';
 
         makeChart('sumChartPlays', areaChartConfig(trend.plays, 'rgb(37,99,235)', false));
         makeChart('sumChartTopGames', {
-            type: 'bar',
-            data: { labels: top8.map(function(g) { return g.name; }), datasets: [{ label:'Plays', data: top8.map(function(g) { return g.plays; }), backgroundColor:'#e11d48', borderRadius:{topRight:3,bottomRight:3}, borderSkipped:'left', barThickness:10 }] },
-            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
-                plugins: { legend:{display:false}, tooltip:{callbacks:{label:function(ctx){return ' '+ctx.parsed.x+' plays';}}} },
-                scales: { x:{beginAtZero:true,grid:{color:'rgba(200,200,200,0.3)'},ticks:{font:{size:10},color:'#666'}}, y:{grid:{display:false},ticks:{font:{size:10},color:'#666'}} } }
+            opts: {
+                dataSource: top8.map(function(g) { return { name: g.name, plays: g.plays }; }),
+                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: '#e11d48', cornerRadius: 3 }],
+                rotated: true,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis:    { grid: { color: 'rgba(200,200,200,0.3)', visible: true } },
+                legend:  { visible: false },
+                tooltip: { enabled: true },
+                size:    { height: chartH }
+            }
         });
+    }
+
+    /* ── Render: Summary > Trends ────────────────────────────── */
+
+    function renderSummaryTrends() {
+        var el = document.getElementById('dashSummaryTrends');
+        if (!el) return;
+        var trend = getMonthlyTrend(state.companyId);
+
+        el.innerHTML =
+            '<div class="summary-page">' +
+            '<div class="summary-2col">' +
+                '<div class="panel-card"><div class="panel-card-hd">Player Growth</div><div class="chart-container"><div id="chartSumPlayerGrowth"></div></div></div>' +
+                '<div class="panel-card"><div class="panel-card-hd">Monthly Plays</div><div class="chart-container"><div id="chartSumMonthlyPlays"></div></div></div>' +
+            '</div>' +
+            '<div class="panel-card" style="margin-top:14px"><div class="panel-card-hd">Accuracy Trend</div><div class="chart-container"><div id="chartSumAccTrend"></div></div></div>' +
+            '</div>';
+
+        makeChart('chartSumPlayerGrowth', areaChartConfig(trend.players, 'rgb(229,62,62)',  false));
+        makeChart('chartSumMonthlyPlays', areaChartConfig(trend.plays,   'rgb(37,99,235)',  false));
+        makeChart('chartSumAccTrend',     areaChartConfig(trend.acc,     'rgb(49,130,206)', true));
+    }
+
+    /* ── Render: Summary > Forecast ──────────────────────────── */
+
+    function renderSummaryForecast() {
+        var el = document.getElementById('dashSummaryForecast');
+        if (!el) return;
+        var trend = getMonthlyTrend(state.companyId);
+        var lr    = linearRegression(trend.plays);
+
+        var forecastLabels = ['2026-07','2026-08','2026-09','2026-10'];
+        var allLabels  = MONTHS_LABELS.concat(forecastLabels);
+        var allActual  = trend.plays.concat([undefined,undefined,undefined,undefined]);
+        var allForecast = [undefined,undefined,undefined,undefined,undefined,undefined].concat(
+            forecastLabels.map(function(_, i) {
+                return Math.max(0, Math.round(lr.intercept + lr.slope * (trend.plays.length + i)));
+            })
+        );
+        /* bridge: connect last actual to first forecast */
+        allForecast[trend.plays.length - 1] = trend.plays[trend.plays.length - 1];
+
+        var ds = allLabels.map(function(l, i) { return { arg: l, actual: allActual[i], forecast: allForecast[i] }; });
+
+        el.innerHTML =
+            '<div class="summary-page">' +
+            '<div class="panel-card"><div class="panel-card-hd">Play Volume Forecast' +
+            '<span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px">· dashed = projected</span></div>' +
+            '<div class="chart-container"><div id="chartSumForecast"></div></div></div>' +
+            '</div>';
+
+        makeChart('chartSumForecast', {
+            opts: {
+                dataSource: ds,
+                series: [
+                    { argumentField: 'arg', valueField: 'actual',   type: 'area', color: '#e11d48', opacity: 0.15, name: 'Actual',   point: { visible: true, size: 5 } },
+                    { argumentField: 'arg', valueField: 'forecast', type: 'line', color: '#3182ce', dashStyle: 'dash', name: 'Forecast', point: { visible: true, size: 4 } }
+                ],
+                commonAxisSettings: {
+                    grid: { color: 'rgba(200,200,200,0.25)', visible: true },
+                    tick: { visible: false },
+                    label: { font: { size: 10, color: '#64748b' } }
+                },
+                legend:  { visible: false },
+                tooltip: { enabled: true },
+                size:    { height: 320 }
+            }
+        });
+    }
+
+    /* ── Render: Summary > Anomalies ─────────────────────────── */
+
+    function renderSummaryAnomalies() {
+        var el = document.getElementById('dashSummaryAnomalies');
+        if (!el) return;
+        var profile  = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+        var reg      = COMPANY_REGISTERED[state.companyId] || profile.players;
+        var active   = profile.players;
+        var inactive = Math.max(0, reg - active);
+        var depts    = getDeptPlayers(state.companyId);
+        var trend    = getMonthlyTrend(state.companyId);
+
+        var deptsZero = depts.filter(function(dep) { return dep.active === 0; }).length;
+        var maxPlay   = Math.max.apply(null, trend.plays);
+        var lastPlay  = trend.plays[trend.plays.length - 1];
+        var dropPct   = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
+
+        var anomalies = [];
+        if (inactive > 0)  anomalies.push({ sev:'medium', icon:'fas fa-user-clock',       text: inactive + ' players (' + (inactive/reg*100).toFixed(1) + '%) inactive' });
+        if (deptsZero > 0) anomalies.push({ sev:'medium', icon:'fas fa-building',         text: deptsZero + ' dept' + (deptsZero > 1 ? 's' : '') + ' with no active players' });
+        if (dropPct > 25)  anomalies.push({ sev:'high',   icon:'fas fa-arrow-trend-down', text: 'Play volume dropped ' + dropPct.toFixed(1) + '% from peak' });
+
+        var itemsHtml = anomalies.length === 0
+            ? '<div class="anomaly-ok"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</div>'
+            : anomalies.map(function(a) {
+                return '<div class="anomaly-item ' + a.sev + '">' +
+                    '<div class="anomaly-item-icon"><i class="' + a.icon + '"></i></div>' +
+                    '<div class="anomaly-item-text">' + esc(a.text) + '</div>' +
+                    '<div class="anomaly-item-badge ' + a.sev + '">' + a.sev.toUpperCase() + '</div>' +
+                '</div>';
+            }).join('');
+
+        el.innerHTML =
+            '<div class="summary-page">' +
+            '<div class="panel-card"><div class="panel-card-hd">Anomalies <span class="panel-card-count">' + anomalies.length + ' found</span></div>' +
+            '<div class="anomaly-list">' + itemsHtml + '</div></div>' +
+            '</div>';
     }
 
     /* ── Render: shared Trends charts (Players / Games / Dept) ── */
@@ -445,20 +549,30 @@
         var el = document.getElementById(containerId);
         if (!el) return;
         var trend = getMonthlyTrend(state.companyId);
+        var ds    = MONTHS_LABELS.map(function(l, i) { return { arg: l, val: trend.players[i] }; });
         el.innerHTML =
             '<div class="trends-top-grid">' +
-                '<div class="chart-card"><div class="chart-card-hd">Player Activity</div><div class="chart-container"><canvas id="'+prefix+'ChartActivity" height="200"></canvas></div></div>' +
-                '<div class="chart-card"><div class="chart-card-hd">Accuracy Trend</div><div class="chart-container"><canvas id="'+prefix+'ChartAcc" height="200"></canvas></div></div>' +
+                '<div class="chart-card"><div class="chart-card-hd">Player Activity</div><div class="chart-container"><div id="'+prefix+'ChartActivity"></div></div></div>' +
+                '<div class="chart-card"><div class="chart-card-hd">Accuracy Trend</div><div class="chart-container"><div id="'+prefix+'ChartAcc"></div></div></div>' +
             '</div>' +
-            '<div class="chart-card" style="margin-top:14px"><div class="chart-card-hd">Combined Engagement Overview</div><div class="chart-card-legend"><span class="chart-legend-item"><span class="chart-legend-swatch" style="background:#e53e3e"></span>Players</span></div><div class="chart-container"><canvas id="'+prefix+'ChartEngagement" height="180"></canvas></div></div>';
+            '<div class="chart-card" style="margin-top:14px"><div class="chart-card-hd">Combined Engagement Overview</div><div class="chart-container"><div id="'+prefix+'ChartEngagement"></div></div></div>';
 
-        makeChart(prefix+'ChartActivity', areaChartConfig(trend.players, 'rgb(229,62,62)', false));
-        makeChart(prefix+'ChartAcc',      areaChartConfig(trend.acc, 'rgb(49,130,206)', true));
+        makeChart(prefix+'ChartActivity', areaChartConfig(trend.players, 'rgb(229,62,62)',  false));
+        makeChart(prefix+'ChartAcc',      areaChartConfig(trend.acc,     'rgb(49,130,206)', true));
         makeChart(prefix+'ChartEngagement', {
-            type:'bar',
-            data:{ labels:MONTHS_LABELS, datasets:[{ label:'Players', data:trend.players, backgroundColor:'#e53e3e', borderRadius:4, barThickness:32 }] },
-            options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-                scales:{ x:{grid:{display:false},ticks:{font:{size:10},color:'#666'}}, y:{beginAtZero:true,grid:{color:'rgba(200,200,200,0.2)'},ticks:{font:{size:10},color:'#666'}} } }
+            opts: {
+                dataSource: ds,
+                series: [{ argumentField: 'arg', valueField: 'val', type: 'bar', color: '#e53e3e', cornerRadius: 3 }],
+                commonAxisSettings: {
+                    grid: { visible: false },
+                    tick: { visible: false },
+                    label: { font: { size: 10, color: '#64748b' } }
+                },
+                valueAxis: { grid: { color: 'rgba(200,200,200,0.2)', visible: true } },
+                legend:  { visible: false },
+                tooltip: { enabled: true },
+                size:    { height: 180 }
+            }
         });
     }
 
@@ -567,15 +681,22 @@
                 '<div class="dash-table-card"><div class="dash-table-card-hd">Department Breakdown</div>' +
                 '<table class="dash-perf-table"><thead><tr><th>Department</th><th>Total</th><th>Active</th><th>Avg Points</th><th>Activity Rate</th></tr></thead>' +
                 '<tbody>'+rows+'</tbody></table></div>' +
-                '<div class="chart-card"><div class="chart-card-hd">Active Players by Department</div><div class="chart-container"><canvas id="chartDeptPie" height="260"></canvas></div></div>' +
+                '<div class="chart-card"><div class="chart-card-hd">Active Players by Department</div><div class="chart-container"><div id="chartDeptPie"></div></div></div>' +
             '</div>';
 
         makeChart('chartDeptPie', {
-            type:'pie',
-            data:{ labels: depts.map(function(d){return d.name;}), datasets:[{ data: depts.map(function(d){return Math.max(0,d.active);}), backgroundColor: pieColors.slice(0,depts.length), borderWidth:2, borderColor:'#fff' }] },
-            options:{ responsive:true, maintainAspectRatio:false,
-                plugins:{ legend:{ position:'right', labels:{font:{size:11},color:'#666',boxWidth:12} },
-                    tooltip:{ callbacks:{ label:function(ctx){ var pct = activeTotal>0?(ctx.parsed/activeTotal*100).toFixed(0):0; return ' '+ctx.label+': '+ctx.parsed+' ('+pct+'%)'; } } } } }
+            isPie: true,
+            opts: {
+                dataSource: depts.map(function(d) { return { name: d.name, active: Math.max(0, d.active) }; }),
+                palette: pieColors.slice(0, depts.length),
+                series: [{ argumentField: 'name', valueField: 'active', label: { visible: false } }],
+                legend: { visible: true, horizontalAlignment: 'right', verticalAlignment: 'center', font: { size: 11, color: '#64748b' } },
+                tooltip: { enabled: true, customizeTooltip: function(info) {
+                    var pct = activeTotal > 0 ? (info.value / activeTotal * 100).toFixed(0) : 0;
+                    return { text: info.argumentText + ': ' + info.value + ' (' + pct + '%)' };
+                }},
+                size: { height: 260 }
+            }
         });
     }
 
@@ -604,17 +725,24 @@
                     '<td style="display:flex;align-items:center;gap:6px"><i class="fas fa-globe" style="color:#94a3b8;font-size:12px"></i> Unknown</td>' +
                     '<td>'+profile.players+'</td><td>'+d.avgAcc.toFixed(1)+'%</td><td style="color:#e11d48;font-weight:600">'+totalPts.toLocaleString()+'</td>' +
                 '</tr></tbody></table></div>' +
-                '<div class="chart-card"><div class="chart-card-hd">Players per Region</div><div class="chart-container"><canvas id="chartRegionalPlayers" height="130"></canvas></div></div>' +
+                '<div class="chart-card"><div class="chart-card-hd">Players per Region</div><div class="chart-container"><div id="chartRegionalPlayers"></div></div></div>' +
             '</div>' +
             '<div class="dash-table-card" style="margin-top:14px"><div class="dash-table-card-hd">Top Dealers</div>' +
             '<table class="dash-perf-table"><thead><tr><th>Dealer</th><th>Players</th><th>Avg Accuracy</th><th>Points</th></tr></thead>' +
             '<tbody>'+dealerRows+'</tbody></table></div>';
 
         makeChart('chartRegionalPlayers', {
-            type:'bar',
-            data:{ labels:['Unknown'], datasets:[{ data:[profile.players], backgroundColor:'#e53e3e', borderRadius:{topRight:3,bottomRight:3}, borderSkipped:'left', barThickness:16 }] },
-            options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-                scales:{ x:{beginAtZero:true,grid:{color:'rgba(200,200,200,0.3)'},ticks:{font:{size:10},color:'#666'}}, y:{grid:{display:false},ticks:{font:{size:11},color:'#666'}} } }
+            opts: {
+                dataSource: [{ region: 'Unknown', players: profile.players }],
+                series: [{ argumentField: 'region', valueField: 'players', type: 'bar', color: '#e53e3e', cornerRadius: 3 }],
+                rotated: true,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 11, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis:    { grid: { color: 'rgba(200,200,200,0.3)', visible: true } },
+                legend:  { visible: false },
+                tooltip: { enabled: true },
+                size:    { height: 130 }
+            }
         });
     }
 
@@ -623,7 +751,10 @@
     function refreshAll() {
         renderPeriodTabs();
         renderHeaderStats();
-        renderSummaryPage();
+        renderSummaryOverview();
+        renderSummaryTrends();
+        renderSummaryForecast();
+        renderSummaryAnomalies();
         renderGamesOverview();
         renderTrendsCharts('dashGamesTrends', 'gms');
         renderPlayersOverview();
@@ -643,7 +774,7 @@
 
     window.dashMainTab = function(tab) {
         state.mainTab = tab;
-        var hasSubs = tab === 'players' || tab === 'games' || tab === 'departments';
+        var hasSubs = tab === 'summary' || tab === 'players' || tab === 'games' || tab === 'departments';
         var subRow  = document.getElementById('dashSubRow');
         if (subRow) subRow.style.display = hasSubs ? '' : 'none';
         document.querySelectorAll('.dash-nav-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab===tab); });
@@ -677,8 +808,6 @@
             var stored = JSON.parse(localStorage.getItem('gameon.scope') || '{}');
             if (stored.companyId && COMPANY_PROFILES[stored.companyId]) state.companyId = stored.companyId;
         } catch(e) {}
-        var subRow = document.getElementById('dashSubRow');
-        if (subRow) subRow.style.display = 'none';
         refreshAll();
         document.addEventListener('gameon:scope-change', function(e) {
             if (e.detail && e.detail.companyId != null) applyScope(e.detail.companyId);

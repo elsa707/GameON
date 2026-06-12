@@ -14,7 +14,7 @@
         customElements.define('dx-license-trigger', class extends HTMLElement {});
     </script>
     <script src="https://cdn3.devexpress.com/jslib/24.2.6/js/dx.all.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
 </head>
 <body>
 <div class="layout">
@@ -110,13 +110,20 @@
             </button>
         </div>
 
-        <!-- Sub-tab row (Players / Games / Departments only) -->
+        <!-- Sub-tab row -->
         <div class="dash-sub" id="dashSubRow">
             <button class="dash-sub-tab active" data-sub="overview" onclick="dashSubTab('overview')">
                 <i class="fas fa-eye"></i> Overview
             </button>
             <button class="dash-sub-tab" data-sub="trends" onclick="dashSubTab('trends')">
                 <i class="fas fa-chart-line"></i> Trends
+            </button>
+            <button class="dash-sub-tab" data-sub="forecast" onclick="dashSubTab('forecast')">
+                <i class="fas fa-wave-square"></i> Forecast
+            </button>
+            <button class="dash-sub-tab" data-sub="anomalies" onclick="dashSubTab('anomalies')">
+                <i class="fas fa-triangle-exclamation"></i> Anomalies
+                <span class="dash-sub-badge">3</span>
             </button>
         </div>
 
@@ -125,25 +132,34 @@
 
             <!-- SUMMARY panel -->
             <div class="dash-panel active" data-panel="summary">
-                <div id="dashSummaryPage"></div>
+                <div class="dash-sub-panel active" data-sub="overview"  id="dashSummaryOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"    id="dashSummaryTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecast"  id="dashSummaryForecast"></div>
+                <div class="dash-sub-panel"        data-sub="anomalies" id="dashSummaryAnomalies"></div>
             </div>
 
             <!-- PLAYERS panel -->
             <div class="dash-panel" data-panel="players">
-                <div class="dash-sub-panel active" data-sub="overview" id="dashPlayersPanel"></div>
-                <div class="dash-sub-panel" data-sub="trends" id="dashPlayersTrends"></div>
+                <div class="dash-sub-panel active" data-sub="overview"  id="dashPlayersPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"    id="dashPlayersTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- GAMES panel -->
             <div class="dash-panel" data-panel="games">
-                <div class="dash-sub-panel active" data-sub="overview" id="dashGamesOverview"></div>
-                <div class="dash-sub-panel" data-sub="trends" id="dashGamesTrends"></div>
+                <div class="dash-sub-panel active" data-sub="overview"  id="dashGamesOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"    id="dashGamesTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- DEPARTMENTS panel -->
             <div class="dash-panel" data-panel="departments">
-                <div class="dash-sub-panel active" data-sub="overview" id="dashDeptPanel"></div>
-                <div class="dash-sub-panel" data-sub="trends" id="dashDeptTrends"></div>
+                <div class="dash-sub-panel active" data-sub="overview"  id="dashDeptPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"    id="dashDeptTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- REGIONAL panel -->
