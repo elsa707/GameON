@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-12] — Dashboard UI polish: colour-fill KPI cards, improved card styling
+
+### Changed
+- **KPI cards**: replaced left-border accent design with soft colour-fill background (`--accent-light` computed from accent hex) and a 3px top accent stripe; value text enlarged to 32px bold in the accent colour; hover lifts card slightly.
+- **Buttons**: PDF button changed to brand red (`#e11d48`); Report button style lightened.
+- **Card radius**: all cards (metric, chart, panel, table) updated to `border-radius: 12px`.
+- **Card shadows**: upgraded from `shadow-sm` to `0 2px 8px rgba(0,0,0,0.06)` for subtle depth; metric cards also gain a hover shadow.
+- **Spacing**: dashboard body padding increased to `28px 32px`; nav/sub-tab/period bars aligned to 32px horizontal padding.
+- **Sub-tab bar**: faint `#fafbfc` background to visually separate it from the main nav.
+- **Typography**: dashboard title, card headings, and KPI values get tighter letter-spacing.
+- JS: added `hexRgba(hex, a)` helper; `kpiCard()` now injects `--accent-light` CSS variable.
+
 ## [2026-06-12] — Hide Incentives, Prizes, AI Analysis tabs
 
 ### Changed

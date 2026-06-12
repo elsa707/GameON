@@ -284,6 +284,10 @@
     function fmtPlays(n) { return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'')+'K' : String(n); }
     function accColor(pct) { return pct >= 75 ? 'green' : pct >= 60 ? 'orange' : 'red'; }
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function hexRgba(hex, a) {
+        var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return 'rgba('+r+','+g+','+b+','+a+')';
+    }
 
     function areaChartConfig(data, color, isPercent, h) {
         var ds = MONTHS_LABELS.map(function(l, i) { return { arg: l, val: data[i] }; });
@@ -341,7 +345,8 @@
     /* ── KPI card helper ─────────────────────────────────────── */
 
     function kpiCard(accent, label, value, sub, progress) {
-        return '<div class="kpi-card" style="--accent:' + accent + '">' +
+        var light = hexRgba(accent, 0.09);
+        return '<div class="kpi-card" style="--accent:' + accent + ';--accent-light:' + light + '">' +
             '<div class="kpi-label">' + esc(label) + '</div>' +
             '<div class="kpi-value">' + esc(String(value)) + '</div>' +
             '<div class="kpi-sub">' + esc(sub) + '</div>' +
