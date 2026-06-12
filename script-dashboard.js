@@ -323,13 +323,10 @@
         '</div>';
     }
 
-    /* ── Render: period tabs ─────────────────────────────────── */
+    /* ── Render: period selector ─────────────────────────────── */
 
     function renderPeriodTabs() {
-        document.getElementById('dashPeriodTabs').innerHTML = PERIODS.map(function(p) {
-            return '<button class="dash-period-tab' + (p===state.period?' active':'') +
-                   '" onclick="dashPeriod(\''+esc(p)+'\')">' + esc(p) + '</button>';
-        }).join('');
+        try { $('#dashPeriodSelect').dxSelectBox('instance').option('value', state.period); } catch(e) {}
     }
 
     /* ── Render: header stats ────────────────────────────────── */
@@ -396,14 +393,20 @@
             '</tr>';
         }).join('');
 
+        var lbAvatarBg = ['#dbeafe','#dcfce7','#fce7f3','#fef3c7','#ede9fe','#cffafe','#fef9c3'];
+        var lbAvatarFg = ['#2563eb','#16a34a','#db2777','#d97706','#7c3aed','#0891b2','#ca8a04'];
         var lbRows = players.map(function(p, i) {
-            var sp = Math.max(1, Math.round(p.points * scale));
-            var rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rn';
-            var ac = p.accuracy >= 75 ? '#16a34a' : p.accuracy >= 60 ? '#f59e0b' : '#ef4444';
-            return '<div class="lb-row">' +
+            var sp       = Math.max(1, Math.round(p.points * scale));
+            var rc       = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rn';
+            var rowCls   = i === 0 ? 'lb-top1' : i === 1 ? 'lb-top2' : i === 2 ? 'lb-top3' : '';
+            var ac       = p.accuracy >= 75 ? '#16a34a' : p.accuracy >= 60 ? '#f59e0b' : '#ef4444';
+            var ai       = i % lbAvatarBg.length;
+            var initials = p.name.split(' ').slice(0,2).map(function(w){return w[0];}).join('');
+            return '<div class="lb-row ' + rowCls + '">' +
                 '<div class="lb-rank ' + rc + '">' + (i + 1) + '</div>' +
+                '<div class="lb-avatar" style="background:' + lbAvatarBg[ai] + ';color:' + lbAvatarFg[ai] + '">' + esc(initials) + '</div>' +
                 '<div class="lb-info"><div class="lb-name">' + esc(p.name) + '</div><div class="lb-dept">' + esc(p.dept) + '</div></div>' +
-                '<div class="lb-pts">' + sp.toLocaleString() + '</div>' +
+                '<div class="lb-pts-badge">' + sp.toLocaleString() + ' pts</div>' +
                 '<div class="lb-acc"><div class="lb-acc-track"><div class="lb-acc-fill" style="width:' + p.accuracy + '%;background:' + ac + '"></div></div><span class="lb-acc-pct">' + p.accuracy.toFixed(1) + '%</span></div>' +
             '</div>';
         }).join('');
@@ -813,6 +816,14 @@
             var stored = JSON.parse(localStorage.getItem('gameon.scope') || '{}');
             if (stored.companyId && COMPANY_PROFILES[stored.companyId]) state.companyId = stored.companyId;
         } catch(e) {}
+        $('#dashPeriodSelect').dxSelectBox({
+            items: PERIODS,
+            value: state.period,
+            width: 175,
+            height: 32,
+            stylingMode: 'outlined',
+            onValueChanged: function(e) { dashPeriod(e.value); }
+        });
         refreshAll();
         document.addEventListener('gameon:scope-change', function(e) {
             if (e.detail && e.detail.companyId != null) applyScope(e.detail.companyId);

@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-12] — Dashboard: leaderboard redesign, table polish, period dropdown, tab fix
+
+### Added
+- **Leaderboard avatar initials**: coloured circle per player using rotating palette.
+- **Leaderboard rank medals**: top-3 badges use gold/silver/red gradients with a glow shadow; rest are plain grey.
+- **Leaderboard row tints**: first three rows have a subtle gold/grey/red gradient wash.
+- **Points pill badge** (`.lb-pts-badge`): replaces plain points number — red tint pill with "pts" suffix.
+- `.lb-avatar`, `.lb-pts-badge`, `.lb-top1/.lb-top2/.lb-top3` CSS classes.
+
+### Changed
+- **Period filter**: replaced row of pill buttons with a compact DevExtreme `dxSelectBox` dropdown (175 px). Period bar now single-line and much smaller.
+- **Tables** (perf, players, dept): header background `#f4f6f9`, `2px` bottom border, `font-weight:700`, row dividers lightened to `#f1f5f9`, row padding increased to 13px for more breathing room.
+- **Accuracy bars**: height reduced to 6px (game/players tables) and 5px (leaderboard), `font-weight:600` on percentage label.
+- **Hidden nav tabs fix**: added `.dash-nav-tab[hidden] { display:none !important }` — CSS `display:inline-flex` was overriding the HTML `hidden` attribute, causing Incentives/Prizes/AI tabs to remain visible.
+
 ## [2026-06-12] — Dashboard UI polish: colour-fill KPI cards, improved card styling
 
 ### Changed
