@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-12] — Hide Incentives, Prizes, AI Analysis tabs
+
+### Changed
+- Incentives, Prizes, and AI Analysis main nav tabs hidden (`hidden` attribute); panels and JS retained for easy restore.
+
 ## [2026-06-12] — Dashboard: restore sub-tabs; switch to DevExtreme charts
 
 ### Added
