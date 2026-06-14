@@ -5,6 +5,165 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-14] — Regional: add sub-tab navigation
+
+### Added
+- Regional tab now shows Overview, Trends, Forecast, Anomalies sub-tabs (same pattern as other main tabs).
+
+## [2026-06-14] — Fix: Games Played sub-tab visible on wrong tabs
+
+### Fixed
+- `Games Played` sub-tab was appearing on all tabs (Summary, Games, Departments) because `.dash-sub-tab { display: inline-flex }` in CSS was overriding the HTML `hidden` attribute. Added `.dash-sub-tab[hidden] { display: none !important }` to enforce it.
+
+## [2026-06-14] — Overview: Department Activity chart shows dealer groups
+
+### Changed
+- `Department Activity` chart now groups individual dealer sub-departments (e.g. all "BB Gezina Nissan - *" entries) into a single bar per dealer brand, matching the live site.
+- Added `getDealerGroups(companyId)` helper function.
+- Added `BB Gezina Nissan - Parts` (3 players, 0 active) and `Citton Cars` (2 players, 0 active) to `COMPANY_DEALERS[7]`.
+- Updated `Automotive Sales Excellence` to 3 total players (3 active).
+
+## [2026-06-14] — Players: Games Played sub-tab
+
+### Added
+- "Games Played" sub-tab under Players — only visible when the Players main tab is active.
+- `PLAYER_COVERAGE` data for company 7: 22 players (17 active + 5 inactive) with game completion counts.
+- 4 KPI cards: Games This Period, Full Coverage, Incomplete, Avg Coverage.
+- "Games loaded" chip row listing all BASE_GAMES.
+- Filter bar: live search, "Incomplete only" toggle, player count, Download button.
+- Player list with colored progress bars (green/orange/gray), X/17 count, % and missing count.
+- `gpRenderList`, `gpApplyFilter`, `gpToggleIncomplete` helpers wired to inline handlers.
+
+## [2026-06-14] — Summary Trends tab: MoM cards + 3-column chart grid
+
+### Changed
+- Added 4 metric cards at the top of Trends: Players This Month, Plays This Month, Accuracy This Month (each with MoM delta and %) and Peak Month.
+- Moved all 3 trend charts (Player Growth, Monthly Plays, Accuracy Trend) into an equal 3-column grid below the cards.
+
+## [2026-06-14] — Summary Forecast tab: 2×2 cards + chart layout
+
+### Changed
+- Forecast tab now shows 4 KPI projection cards (Projected Players, Projected Plays, Projected Accuracy, Play Growth) in a 2×2 grid on the left, with the Play Volume Forecast chart filling the right column.
+- Added "Today" dashed constant line and Actual/Forecast legend to the chart.
+
+## [2026-06-14] — Departments: modernise Active Players pie chart
+
+### Changed
+- Converted "Active Players by Department" from a flat pie to a doughnut chart with `innerRadius: 0.62`.
+- Updated color palette to a modern indigo/cyan/teal/orange/purple/pink set.
+- Added white 2px segment borders for clean separation.
+- Center of donut shows total active player count overlaid via absolute-positioned div.
+- Tooltip styled with dark background, rounded corners, and percentage breakdown.
+
+## [2026-06-14] — Players tab: Participation by Dealer and Inactive Players side by side
+
+### Changed
+- "Participation by Dealer" and "Inactive Players" cards now sit in a 50/50 grid side by side instead of stacking vertically.
+
+## [2026-06-14] — Games tab: Answer Accuracy by Game chart; Players tab: fix Inactive Players visibility
+
+### Added
+- `renderGamesOverview`: horizontal DevExtreme bar chart "Answer Accuracy by Game" added below the Game Performance table, showing accuracy % per game with blue bars.
+
+### Fixed
+- Inactive Players section under Players > Overview now falls back to the default company (Naspers) data when the current company has no specific inactive-player records defined, so the section always renders.
+
+## [2026-06-14] — Dark content area follows company theme
+
+### Changed
+- `.dash-sub` (sub-tab bar) background now uses `var(--chrome-dark)` with white-tinted tab text so it stays readable on dark.
+- `.dash-body` (content area) background now uses `var(--chrome-dark)` — white cards float on the company-branded dark background and update when switching companies.
+
+## [2026-06-14] — Company-branded chrome colours
+
+### Added
+- `COMPANY_THEMES` map in `script-dashboard.js` — a `{bg, dark}` colour pair for each company.
+- `applyCompanyTheme(id)` updates CSS variables `--chrome-bg` / `--chrome-dark` on `:root` immediately when the company scope changes (and on page load).
+
+### Changed
+- Sidebar background now uses `linear-gradient(var(--chrome-bg), var(--chrome-dark))` instead of hardcoded values.
+- `.dash-hd` and `.dash-period` now use `var(--chrome-bg)`; `.dash-nav` uses `var(--chrome-dark)` — matching the sidebar gradient and updating with company changes.
+- Added `--chrome-bg` and `--chrome-dark` CSS variables to `:root` in `styles.css` with Naspers defaults.
+
+## [2026-06-14] — Participation Rate card: add progress bar and legend
+
+### Changed
+- Featured KPI card now shows all live-site data: participation % value, "N active of N registered players" sub-text, white progress bar showing the rate, and a dot legend for registered / active / inactive counts.
+
+## [2026-06-14] — Add Top Games by Plays chart to Overview
+
+### Changed
+- Replaced Active Players list in the middle row with a "Top Games by Plays" horizontal bar chart (top 8 games, red bars, matching live GameOn site layout).
+
+## [2026-06-14] — Players tab: Participation by Dealer + Inactive Players
+
+### Added
+- `INACTIVE_PLAYERS` data map (company 7 seeded with 5 real inactive players: name, surname, email, dealer).
+- `COMPANY_DEALERS[7]` updated with `total`/`active` counts per dealer + "BB Gezina Nissan - Parts Manager" (0 active).
+- "Participation by Dealer" section below Full Player Rankings — progress bar per dealer with %, active/total count, Export CSV placeholder.
+- "Inactive Players (N)" section below Participation by Dealer — table with Name, Surname, Email, Dealer columns.
+
+### Changed
+- Main nav tab bar (`dash-nav`): white background, gray text, navy active underline (matching sub-tab bar style).
+
+## [2026-06-14] — Remove duplicate bottom stat cards from Overview
+
+### Removed
+- Bottom row of AVG ACCURACY / INACTIVE / GAMES AVAILABLE stat cards — these metrics are already shown in the top KPI row.
+
+## [2026-06-14] — Remove donut chart from Overview bottom row
+
+### Changed
+- Removed "Participation Rate" donut chart + legend from the bottom row (data already shown in featured KPI card at top).
+- Bottom row is now three equal full-width stat cards (AVG ACCURACY, INACTIVE, GAMES AVAILABLE) in a clean `ov-stat-row` grid.
+- Mini stat cards: padding increased, `min-height: 110px`, value font bumped to 32px so they read as proper cards not micro widgets.
+
+## [2026-06-14] — Fix inspo-image label bleed-through
+
+### Changed
+- Renamed "Project Progress" → "Participation Rate" (inspo label, not from GameOn).
+- Renamed "Team Collaboration" → "Active Players" (inspo label, not from GameOn).
+
+## [2026-06-14] — Dashboard visual polish: inspo image style
+
+### Changed
+- Unhid Incentives, Prizes, AI Analysis nav tabs so all 8 main tabs are visible (matching live GameOn site).
+- Fixed initial "2.3K" plays display to "2.5K" in header HTML (JS was already correct).
+- Sidebar active nav item colour: `#456eab` → `#2563eb` (vivid blue pill, matching inspo image).
+- Overview KPI card icon badges: non-featured cards now use dark navy (`#1e293b`) square badge with white icon instead of coloured light badges.
+- Overview mini stat card icons: same dark navy square treatment; icons repositioned to `top-right` absolute (matching inspo image layout).
+- Department Activity chart bars: colour changed from red/blue → dark navy (`#1e3a5f`) / sky blue (`#93c5fd`); `cornerRadius` raised from 3 → 8 for pill/capsule bar shape matching inspo image.
+
+## [2026-06-12] — Dashboard Overview: GameOn content + inspiration design
+
+### Changed
+- Overview panel rebuilt to match GameOn live dashboard content (PARTICIPATION RATE, AVG ACCURACY, INACTIVE, GAMES AVAILABLE) with inspiration image visual style.
+- PARTICIPATION RATE card: featured blue gradient (`#2563eb→#1d4ed8`), shows rate %, active/registered counts, progress bar, legend.
+- AVG ACCURACY, INACTIVE, GAMES AVAILABLE: white cards with coloured circular icon badges (green bullseye, amber warning, blue gamepad).
+- Chart section: Department Activity (grouped red/blue horizontal bars — Total Players vs Active) + Top Games by Plays (red horizontal bars).
+- Period dropdown text/icon changed to navy for legibility on white background.
+
+## [2026-06-12] — Dashboard Overview redesign
+
+### Changed
+- **Summary > Overview** completely redesigned to match target mockup:
+  - 4 KPI cards: first card is featured (blue gradient fill, white text); others white with coloured icon badge (top-right corner). Cards: Total Players, Games Played, Avg Accuracy, Dealers.
+  - Middle row: "Project Analytics" grouped bar chart (Active vs Total per department, navy/light-blue paired bars) alongside "Team Collaboration" list (avatar, name, dept, Active/Inactive status pill).
+  - Bottom row: "Project Progress" donut/ring chart (participation %, centre label) with legend; three mini stat cards beside it (Avg Accuracy, Inactive, Games Available) each with coloured icon badge.
+- Removed old KPI colour-fill cards, Monthly Plays area chart, Top Games bar chart, and Department Breakdown table from the Overview sub-tab (those charts remain in the Trends sub-tab).
+
+### Added
+- New CSS classes: `.ov-kpi-*`, `.ov-mid-row`, `.ov-bot-row`, `.ov-progress-*`, `.ov-leg-*`, `.ov-mini-*`, `.tc-*` for the redesigned Overview layout.
+
+---
+
+## [2026-06-12] — Dashboard tweaks
+
+### Changed
+- Period dxSelectBox: text and dropdown icon now navy (`#0f172a`) on white background for legibility against the dark period bar.
+
+---
+
 ## [2026-06-12] — Dashboard: dark chrome header + nav; leaderboard & table polish; period dropdown
 
 ### Added

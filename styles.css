@@ -38,6 +38,9 @@ dx-license-trigger,
     --radius: 8px;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
     --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+    /* Chrome colours — updated per-company by script-dashboard.js */
+    --chrome-bg:   #2e5795;
+    --chrome-dark: #111935;
 }
 
 body {
@@ -49,22 +52,6 @@ body {
 }
 
 /* ===== Layout ===== */
-/* ===== Top accent banner ===== */
-body::before {
-    content: '';
-    display: block;
-    height: 6px;
-    background: linear-gradient(to right, #ab7197 0%, #f9604d 100%);
-    position: fixed;
-    top: 0;
-    left: var(--sidebar-width);
-    right: 0;
-    z-index: 9999;
-}
-
-body:has(.sidebar.collapsed)::before {
-    left: 60px;
-}
 
 
 .layout {
@@ -76,7 +63,7 @@ body:has(.sidebar.collapsed)::before {
 /* ===== Sidebar ===== */
 .sidebar {
     width: var(--sidebar-width);
-    background: linear-gradient(to bottom, #2e5795 0%, #111935 100%);
+    background: linear-gradient(to bottom, var(--chrome-bg) 0%, var(--chrome-dark) 100%);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -474,7 +461,7 @@ body:has(.sidebar.collapsed)::before {
 }
 
 .nav-item.active {
-    background: #456eab;
+    background: #2563eb;
     color: var(--white);
 }
 
@@ -692,7 +679,6 @@ body:has(.sidebar.collapsed)::before {
     flex-direction: column;
     overflow: hidden;
     min-width: 0;
-    padding-top: 6px;
 }
 
 /* ===== Top Bar ===== */

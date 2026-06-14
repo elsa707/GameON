@@ -19,7 +19,7 @@
     };
 
     var NASPERS_DATA = {
-        'All Months':    { plays:2300, avgAcc:71.4, userAns:0,
+        'All Months':    { plays:2500, avgAcc:72.1, userAns:0,
             perf:[[197,70.0,0.9],[196,75.7,1.1],[177,49.6,1.2],[176,73.3,1.0],[162,70.2,0.9],[159,52.7,1.0],[153,89.8,0.7],[150,66.3,1.0],[142,78.4,0.8],[138,61.2,1.1],[127,83.1,0.9],[119,44.8,1.3],[115,91.2,0.6],[108,77.5,1.0],[98,68.9,1.2],[87,55.3,1.4],[79,82.6,0.8]] },
         'January2026':  { plays:320, avgAcc:68.4, userAns:0,
             perf:[[26,66.3,0.9],[25,71.4,1.1],[23,46.2,1.2],[22,70.1,1.0],[21,68.5,0.9],[20,49.8,1.0],[19,85.4,0.7],[19,63.7,1.0],[18,74.9,0.8],[17,58.4,1.1],[16,80.2,0.9],[15,41.7,1.3],[14,88.1,0.6],[13,73.6,1.0],[12,64.8,1.2],[11,51.2,1.4],[9,79.4,0.8]] },
@@ -46,6 +46,35 @@
     };
 
     var DEFAULT_COMPANY_ID = 7;
+
+    /* Inactive player details per company */
+    var INACTIVE_PLAYERS = {
+        7: [
+            { firstName:'Danie',   lastName:'Erasmus',    email:'wsparts@bbgezina.co.za',         dealer:'BB Gezina Nissan - Parts'             },
+            { firstName:'Ernest',  lastName:'Keyser',     email:'partsmanager@bbgezina.co.za',     dealer:'BB Gezina Nissan - Parts Manager'     },
+            { firstName:'Gilbert', lastName:'Letsoalo',   email:'usedsales5@bbgezinanissan.co.za', dealer:'BB Gezina Nissan - Used Vehicle Sales' },
+            { firstName:'Henk',    lastName:'Leibenberg', email:'partsales2@bbgezina.co.za',       dealer:'BB Gezina Nissan - Parts'             },
+            { firstName:'Letisha', lastName:'Vos',        email:'wsparts2@bbgezina.co.za',         dealer:'BB Gezina Nissan - Parts'             }
+        ]
+    };
+
+    /* Brand colours per company — drives sidebar + dashboard chrome */
+    var COMPANY_THEMES = {
+        7: { bg: '#2e5795', dark: '#111935' },  // Naspers
+        6: { bg: '#1a3a6c', dark: '#0a1e40' },  // Standard Bank
+        5: { bg: '#1a4a6c', dark: '#0a2438' },  // Anglo American
+        4: { bg: '#1a4060', dark: '#0a2030' },  // Sasol
+        3: { bg: '#1a3050', dark: '#0d1e35' },  // MTN Group
+        2: { bg: '#1a3575', dark: '#0a1e48' },  // Discovery
+        1: { bg: '#5a1a20', dark: '#2d0a10' }   // Shoprite
+    };
+
+    function applyCompanyTheme(companyId) {
+        var theme = COMPANY_THEMES[companyId] || COMPANY_THEMES[DEFAULT_COMPANY_ID];
+        var root  = document.documentElement;
+        root.style.setProperty('--chrome-bg',   theme.bg);
+        root.style.setProperty('--chrome-dark', theme.dark);
+    }
 
     var COMPANY_REGISTERED = { 7:22, 6:31, 5:15, 4:12, 3:48, 2:10, 1:38 };
 
@@ -176,13 +205,43 @@
 
     var COMPANY_DEALERS = {
         7: [
-            { name:'BB Gezina Nissan - New Vehicle Sales',          players:7, avgAcc:73.8, points:4923 },
-            { name:'BB Gezina Nissan - Used Vehicle Sales',         players:5, avgAcc:69.0, points:2585 },
-            { name:'BB Gezina Nissan - CRM',                        players:1, avgAcc:62.0, points:456  },
-            { name:'BB Gezina Nissan - Used Vehicle Sales Manager', players:1, avgAcc:67.7, points:88   },
-            { name:'BB Gezina Nissan - New Vehicle Sales Manager',  players:1, avgAcc:76.0, points:19   },
-            { name:'BB Gezina Nissan - DP',                         players:1, avgAcc:53.3, points:8    },
-            { name:'Automotive Sales Excellence',                   players:1, avgAcc:40.0, points:2    }
+            { name:'BB Gezina Nissan - Parts',                      total:3, active:0, players:0, avgAcc:0,    points:0    },
+            { name:'BB Gezina Nissan - Parts Manager',              total:1, active:0, players:0, avgAcc:0,    points:0    },
+            { name:'BB Gezina Nissan - Used Vehicle Sales',         total:6, active:5, players:5, avgAcc:69.0, points:2585 },
+            { name:'BB Gezina Nissan - New Vehicle Sales',          total:7, active:7, players:7, avgAcc:73.8, points:4923 },
+            { name:'BB Gezina Nissan - CRM',                        total:1, active:1, players:1, avgAcc:62.0, points:456  },
+            { name:'BB Gezina Nissan - Used Vehicle Sales Manager', total:1, active:1, players:1, avgAcc:67.7, points:88   },
+            { name:'BB Gezina Nissan - New Vehicle Sales Manager',  total:1, active:1, players:1, avgAcc:76.0, points:19   },
+            { name:'BB Gezina Nissan - DP',                         total:1, active:1, players:1, avgAcc:53.3, points:8    },
+            { name:'Automotive Sales Excellence',                   total:3, active:3, players:3, avgAcc:52.3, points:2    },
+            { name:'Citton Cars',                                   total:2, active:0, players:0, avgAcc:0,    points:0    }
+        ]
+    };
+
+    var PLAYER_COVERAGE = {
+        7: [
+            { name:'Lucas Schmahl',          dealer:'BB Gezina Nissan - Used Vehicle Sales',        short:'BB Gezina Niss', played:17 },
+            { name:'Branden Smith',          dealer:'BB Gezina Nissan - Used Vehicle Sales',        short:'BB Gezina Niss', played:16 },
+            { name:'Celia Motlana',          dealer:'BB Gezina Nissan - New Vehicle Sales',         short:'BB Gezina Niss', played:16 },
+            { name:'Rihcard Moroke',         dealer:'BB Gezina Nissan - New Vehicle Sales',         short:'BB Gezina Niss', played:15 },
+            { name:'Johann Kok',             dealer:'BB Gezina Nissan - Used Vehicle Sales',        short:'BB Gezina Niss', played:14 },
+            { name:'Hannes Swanepoel',       dealer:'BB Gezina Nissan - F&I',                      short:'BB Gezina Niss', played:13 },
+            { name:'Esta Modiba',            dealer:'BB Gezina Nissan - Used Vehicle Sales',        short:'BB Gezina Niss', played:12 },
+            { name:'Zelda Van Nieuwenhuizen',dealer:'BB Gezina Nissan - Parts',                    short:'BB Gezina Niss', played:10 },
+            { name:'Hein Hein',              dealer:'BB Gezina Nissan - New Vehicle Sales',         short:'BB Gezina Niss', played: 9 },
+            { name:'Johan Naude',            dealer:'BB Gezina Nissan - New Vehicle Sales',         short:'BB Gezina Niss', played: 8 },
+            { name:'Kobus Venter',           dealer:'BB Gezina Nissan - New Vehicle Sales',         short:'BB Gezina Niss', played: 7 },
+            { name:'George Hansen',          dealer:'BB Gezina Nissan - New Vehicle Sales Manager', short:'BB Gezina Niss', played: 4 },
+            { name:'Larry Ledwaba',          dealer:'BB Gezina Nissan - New Vehicle Sales',         short:'BB Gezina Niss', played: 4 },
+            { name:'Wynand Swart',           dealer:'BB Gezina Nissan - DP',                       short:'BB Gezina Niss', played: 3 },
+            { name:'Molapo Letsoalo',        dealer:'Automotive Sales Excellence',                  short:'Auto Sales Exc', played: 2 },
+            { name:'Priya Naidoo',           dealer:'Automotive Sales Excellence',                  short:'Auto Sales Exc', played: 2 },
+            { name:'Rian Van Jaarsveld',     dealer:'Automotive Sales Excellence',                  short:'Auto Sales Exc', played: 1 },
+            { name:'Danie Erasmus',          dealer:'BB Gezina Nissan - Parts',                    short:'BB Gezina Niss', played: 0 },
+            { name:'Ernest Keyser',          dealer:'BB Gezina Nissan - Parts Manager',            short:'BB Gezina Niss', played: 0 },
+            { name:'Gilbert Letsoalo',       dealer:'BB Gezina Nissan - Used Vehicle Sales',       short:'BB Gezina Niss', played: 0 },
+            { name:'Henk Leibenberg',        dealer:'BB Gezina Nissan - Parts',                    short:'BB Gezina Niss', played: 0 },
+            { name:'Letisha Vos',            dealer:'BB Gezina Nissan - Parts',                    short:'BB Gezina Niss', played: 0 }
         ]
     };
 
@@ -234,6 +293,18 @@
         return depts;
     }
 
+    function getDealerGroups(companyId) {
+        var dealers = COMPANY_DEALERS[companyId] || COMPANY_DEALERS[DEFAULT_COMPANY_ID] || [];
+        var groups = {}, order = [];
+        dealers.forEach(function(d) {
+            var groupName = d.name.indexOf(' - ') > -1 ? d.name.split(' - ')[0] : d.name;
+            if (!groups[groupName]) { groups[groupName] = { name: groupName, total: 0, active: 0 }; order.push(groupName); }
+            groups[groupName].total  += d.total;
+            groups[groupName].active += d.active;
+        });
+        return order.map(function(k) { return groups[k]; });
+    }
+
     function getMonthlyTrend(companyId) {
         var profile = COMPANY_PROFILES[companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
         var ps = profile.playScale;
@@ -256,6 +327,8 @@
     /* ── State ───────────────────────────────────────────────── */
 
     var state = { companyId: DEFAULT_COMPANY_ID, period:'All Months', mainTab:'summary', subTab:'overview' };
+
+    var _gpFilter = { search: '', incompleteOnly: false };
 
     /* ── Chart registry ──────────────────────────────────────── */
 
@@ -326,6 +399,27 @@
         '</div>';
     }
 
+    /* ── Overview v2 card helpers ───────────────────────────── */
+
+    function ovKpiCard(featured, iconColor, iconClass, label, value, sub) {
+        var iconBg = featured ? 'rgba(255,255,255,0.2)' : '#1e293b';
+        var ic     = '#fff';
+        return '<div class="ov-kpi-card' + (featured ? ' featured' : '') + '">' +
+            '<div class="ov-kpi-icon" style="background:' + iconBg + ';color:' + ic + '"><i class="' + iconClass + '"></i></div>' +
+            '<div class="ov-kpi-lbl">' + esc(label) + '</div>' +
+            '<div class="ov-kpi-val">' + esc(String(value)) + '</div>' +
+            '<div class="ov-kpi-sub">' + esc(sub) + '</div>' +
+        '</div>';
+    }
+
+    function ovMiniCard(iconClass, iconColor, iconBg, label, value) {
+        return '<div class="ov-mini-card">' +
+            '<div class="ov-mini-icon" style="background:' + iconBg + ';color:' + iconColor + '"><i class="' + iconClass + '"></i></div>' +
+            '<div class="ov-mini-lbl">' + esc(label) + '</div>' +
+            '<div class="ov-mini-val">' + esc(String(value)) + '</div>' +
+        '</div>';
+    }
+
     /* ── Render: period selector ─────────────────────────────── */
 
     function renderPeriodTabs() {
@@ -366,85 +460,83 @@
         var inactive = Math.max(0, reg - active);
         var partRate = reg > 0 ? Math.round(active / reg * 100) : 0;
         var depts    = getDeptPlayers(state.companyId);
-        var deptRaw  = COMPANY_DEPT_PLAYERS[state.companyId] || COMPANY_DEPT_PLAYERS[DEFAULT_COMPANY_ID];
         var players  = COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID];
-        var trend    = getMonthlyTrend(state.companyId);
-        var allD     = getPeriodData(state.companyId, 'All Months');
-        var scale    = allD && allD.plays > 0 ? d.plays / allD.plays : 1;
 
-        var top8 = d.perf.map(function(p, i) { return { name: BASE_GAMES[i], plays: p.plays }; })
-                         .sort(function(a, b) { return b.plays - a.plays; }).slice(0, 8);
-
-        var kpiHtml =
-            '<div class="kpi-grid">' +
-            kpiCard('#e11d48', 'Participation',  partRate + '%',            active + ' of ' + reg + ' registered', partRate) +
-            kpiCard('#16a34a', 'Active Players', active,                    fmtPlays(d.plays) + ' total plays',    null) +
-            kpiCard('#2563eb', 'Total Plays',    fmtPlays(d.plays),         profile.dealers + ' dealers',          null) +
-            kpiCard('#0891b2', 'Avg Accuracy',   d.avgAcc.toFixed(1) + '%', 'answer accuracy',                     null) +
-            kpiCard('#d97706', 'Inactive',       inactive,                  (inactive/reg*100).toFixed(1) + '% of registered', null) +
-            '</div>';
-
-        var deptRows = depts.map(function(dep, i) {
-            var dd = deptRaw[i] || {};
-            var ar = dep.total > 0 ? dep.active / dep.total * 100 : 0;
-            var bc = ar >= 70 ? '#22c55e' : ar >= 40 ? '#f59e0b' : '#ef4444';
-            return '<tr>' +
-                '<td class="summary-dept-name">' + esc(dep.name) + '</td>' +
-                '<td class="summary-dept-fraction">' + dep.active + ' / ' + dep.total + '</td>' +
-                '<td><div class="summary-act-cell"><div class="summary-act-track"><div class="summary-act-fill" style="width:' + Math.min(100, ar).toFixed(1) + '%;background:' + bc + '"></div></div><span class="summary-act-pct">' + ar.toFixed(0) + '%</span></div></td>' +
-                '<td style="font-weight:600">' + (dd.avgPoints || 0).toLocaleString() + '</td>' +
-            '</tr>';
-        }).join('');
-
-        var lbAvatarBg = ['#dbeafe','#dcfce7','#fce7f3','#fef3c7','#ede9fe','#cffafe','#fef9c3'];
-        var lbAvatarFg = ['#2563eb','#16a34a','#db2777','#d97706','#7c3aed','#0891b2','#ca8a04'];
-        var lbRows = players.map(function(p, i) {
-            var sp       = Math.max(1, Math.round(p.points * scale));
-            var rc       = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rn';
-            var rowCls   = i === 0 ? 'lb-top1' : i === 1 ? 'lb-top2' : i === 2 ? 'lb-top3' : '';
-            var ac       = p.accuracy >= 75 ? '#16a34a' : p.accuracy >= 60 ? '#f59e0b' : '#ef4444';
-            var ai       = i % lbAvatarBg.length;
-            var initials = p.name.split(' ').slice(0,2).map(function(w){return w[0];}).join('');
-            return '<div class="lb-row ' + rowCls + '">' +
-                '<div class="lb-rank ' + rc + '">' + (i + 1) + '</div>' +
-                '<div class="lb-avatar" style="background:' + lbAvatarBg[ai] + ';color:' + lbAvatarFg[ai] + '">' + esc(initials) + '</div>' +
-                '<div class="lb-info"><div class="lb-name">' + esc(p.name) + '</div><div class="lb-dept">' + esc(p.dept) + '</div></div>' +
-                '<div class="lb-pts-badge">' + sp.toLocaleString() + ' pts</div>' +
-                '<div class="lb-acc"><div class="lb-acc-track"><div class="lb-acc-fill" style="width:' + p.accuracy + '%;background:' + ac + '"></div></div><span class="lb-acc-pct">' + p.accuracy.toFixed(1) + '%</span></div>' +
-            '</div>';
-        }).join('');
-
-        var chartH = Math.max(180, top8.length * 28 + 10);
+        /* Top 8 games by plays */
+        var topGames = BASE_GAMES.slice(0, 8).map(function(name, i) {
+            return { name: name, plays: d.perf[i] ? d.perf[i].plays : 0 };
+        });
 
         el.innerHTML =
             '<div class="summary-page">' +
-            kpiHtml +
-            '<div class="summary-2col">' +
-                '<div class="panel-card"><div class="panel-card-hd">Monthly Plays</div><div class="chart-container"><div id="sumChartPlays"></div></div></div>' +
-                '<div class="panel-card"><div class="panel-card-hd">Top Games by Plays</div><div class="chart-container"><div id="sumChartTopGames"></div></div></div>' +
+
+            /* Row 1 — 4 KPI cards (inspo layout: first featured blue) */
+            '<div class="ov-kpi-row">' +
+                '<div class="ov-kpi-card featured">' +
+                    '<div class="ov-kpi-icon" style="background:rgba(255,255,255,0.2);color:#fff"><i class="fas fa-users"></i></div>' +
+                    '<div class="ov-kpi-lbl">PARTICIPATION RATE</div>' +
+                    '<div class="ov-kpi-val">' + partRate + '%</div>' +
+                    '<div class="ov-kpi-sub"><strong style="color:#fff">' + active + '</strong> active of <strong style="color:#fff">' + reg + '</strong> registered players</div>' +
+                    '<div class="ov-kpi-bar-wrap"><div class="ov-kpi-bar-fill" style="width:' + partRate + '%"></div></div>' +
+                    '<div class="ov-kpi-legend">' +
+                        '<span class="ov-kpi-leg-dot" style="background:rgba(255,255,255,0.35)"></span><span class="ov-kpi-leg-txt">' + reg + ' registered</span>' +
+                        '<span class="ov-kpi-leg-sep">·</span>' +
+                        '<span class="ov-kpi-leg-dot" style="background:#fff"></span><span class="ov-kpi-leg-txt" style="color:rgba(255,255,255,0.95)">' + active + ' active</span>' +
+                        '<span class="ov-kpi-leg-sep">·</span>' +
+                        '<span class="ov-kpi-leg-dot" style="background:rgba(255,255,255,0.2)"></span><span class="ov-kpi-leg-txt">' + inactive + ' inactive</span>' +
+                    '</div>' +
+                '</div>' +
+                ovKpiCard(false, '#16a34a', 'fas fa-bullseye',       'AVG ACCURACY',       d.avgAcc.toFixed(1) + '%','across all plays') +
+                ovKpiCard(false, '#d97706', 'fas fa-circle-exclamation','INACTIVE',         inactive,                 'need re-engagement') +
+                ovKpiCard(false, '#2563eb', 'fas fa-gamepad',        'GAMES AVAILABLE',    BASE_GAMES.length,        'this period') +
             '</div>' +
-            '<div class="summary-2col">' +
-                '<div class="panel-card"><div class="panel-card-hd">Department Breakdown</div>' +
-                '<table class="summary-dept-table"><thead><tr><th>Department</th><th>Active</th><th>Activity</th><th>Avg Pts</th></tr></thead><tbody>' + deptRows + '</tbody></table></div>' +
-                '<div class="panel-card"><div class="panel-card-hd">Player Leaderboard <span class="panel-card-count">' + players.length + ' players</span></div>' +
-                '<div class="lb-list">' + lbRows + '</div></div>' +
+
+            /* Row 2 — Department Activity chart + Top Games by Plays chart */
+            '<div class="ov-mid-row">' +
+                '<div class="panel-card"><div class="panel-card-hd">Department Activity</div>' +
+                '<div class="chart-container"><div id="sumChartDeptActivity"></div></div></div>' +
+                '<div class="panel-card"><div class="panel-card-hd">Top Games by Plays</div>' +
+                '<div class="chart-container"><div id="sumChartTopGames"></div></div></div>' +
             '</div>' +
+
+
             '</div>';
 
-        makeChart('sumChartPlays', areaChartConfig(trend.plays, 'rgb(37,99,235)', false));
+        /* Top Games by Plays: horizontal bars */
         makeChart('sumChartTopGames', {
             opts: {
-                dataSource: top8.map(function(g) { return { name: g.name, plays: g.plays }; }),
-                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: '#e11d48', cornerRadius: 3 }],
+                dataSource: topGames,
+                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: '#e11d48', cornerRadius: 8 }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
-                valueAxis:    { grid: { color: 'rgba(200,200,200,0.3)', visible: true } },
+                valueAxis:    { grid: { color: 'rgba(200,200,200,0.25)', visible: true } },
                 legend:  { visible: false },
                 tooltip: { enabled: true },
-                size:    { height: chartH }
+                size:    { height: 300 }
             }
         });
+
+        /* Department Activity: grouped horizontal bars by dealer group */
+        makeChart('sumChartDeptActivity', {
+            opts: {
+                dataSource: getDealerGroups(state.companyId).map(function(dep) {
+                    return { name: dep.name, total: dep.total, active: dep.active };
+                }),
+                series: [
+                    { argumentField: 'name', valueField: 'total',  type: 'bar', name: 'Total Players', color: '#1e3a5f', cornerRadius: 8 },
+                    { argumentField: 'name', valueField: 'active', type: 'bar', name: 'Active',        color: '#93c5fd', cornerRadius: 8 }
+                ],
+                rotated: true,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis:    { grid: { color: 'rgba(200,200,200,0.25)', visible: true } },
+                legend:  { visible: true, horizontalAlignment: 'left', verticalAlignment: 'top', font: { size: 10, color: '#64748b' } },
+                tooltip: { enabled: true },
+                size:    { height: 300 }
+            }
+        });
+
     }
 
     /* ── Render: Summary > Trends ────────────────────────────── */
@@ -453,14 +545,50 @@
         var el = document.getElementById('dashSummaryTrends');
         if (!el) return;
         var trend = getMonthlyTrend(state.companyId);
+        var n     = trend.plays.length;
+
+        function momCard(icon, iconColor, iconBg, label, curr, prev, isSuffix, suffix) {
+            var diff    = curr - prev;
+            var pct     = prev > 0 ? (diff / prev * 100).toFixed(1) : '0.0';
+            var up      = diff >= 0;
+            var arrow   = up ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+            var clr     = up ? '#16a34a' : '#dc2626';
+            var valTxt  = isSuffix ? curr + suffix : curr;
+            var diffTxt = (up ? '+' : '') + (isSuffix ? diff.toFixed(1) + suffix : diff) + ' (' + (up ? '+' : '') + pct + '%)';
+            return '<div class="metric-card">' +
+                '<div class="metric-card-body">' +
+                '<div class="metric-lbl">' + label + '</div>' +
+                '<div class="metric-val">' + valTxt + '</div>' +
+                '<div style="font-size:11px;color:' + clr + ';margin-top:2px"><i class="' + arrow + '" style="font-size:9px"></i> ' + diffTxt + ' MoM</div>' +
+                '</div>' +
+                '<div class="metric-icon" style="background:' + iconBg + ';color:' + iconColor + '"><i class="' + icon + '"></i></div>' +
+                '</div>';
+        }
+
+        var peakPlays = Math.max.apply(null, trend.plays);
+        var peakIdx   = trend.plays.indexOf(peakPlays);
+        var peakLabel = MONTHS_LABELS[peakIdx] || '-';
 
         el.innerHTML =
             '<div class="summary-page">' +
-            '<div class="summary-2col">' +
+            '<div class="dash-metrics">' +
+                momCard('fas fa-users',     '#2563eb', '#dbeafe', 'PLAYERS THIS MONTH',  trend.players[n-1], trend.players[n-2], false, '') +
+                momCard('fas fa-chart-bar', '#16a34a', '#dcfce7', 'PLAYS THIS MONTH',    trend.plays[n-1],   trend.plays[n-2],   false, '') +
+                momCard('fas fa-bullseye',  '#0891b2', '#cffafe', 'ACCURACY THIS MONTH', trend.acc[n-1],     trend.acc[n-2],     true,  '%') +
+                '<div class="metric-card">' +
+                    '<div class="metric-card-body">' +
+                    '<div class="metric-lbl">PEAK MONTH</div>' +
+                    '<div class="metric-val" style="font-size:22px">' + peakLabel + '</div>' +
+                    '<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">' + fmtPlays(peakPlays) + ' plays</div>' +
+                    '</div>' +
+                    '<div class="metric-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-star"></i></div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px">' +
                 '<div class="panel-card"><div class="panel-card-hd">Player Growth</div><div class="chart-container"><div id="chartSumPlayerGrowth"></div></div></div>' +
                 '<div class="panel-card"><div class="panel-card-hd">Monthly Plays</div><div class="chart-container"><div id="chartSumMonthlyPlays"></div></div></div>' +
+                '<div class="panel-card"><div class="panel-card-hd">Accuracy Trend</div><div class="chart-container"><div id="chartSumAccTrend"></div></div></div>' +
             '</div>' +
-            '<div class="panel-card" style="margin-top:14px"><div class="panel-card-hd">Accuracy Trend</div><div class="chart-container"><div id="chartSumAccTrend"></div></div></div>' +
             '</div>';
 
         makeChart('chartSumPlayerGrowth', areaChartConfig(trend.players, 'rgb(229,62,62)',  false));
@@ -473,32 +601,59 @@
     function renderSummaryForecast() {
         var el = document.getElementById('dashSummaryForecast');
         if (!el) return;
-        var trend = getMonthlyTrend(state.companyId);
-        var lr    = linearRegression(trend.plays);
+        var trend     = getMonthlyTrend(state.companyId);
+        var lrPlays   = linearRegression(trend.plays);
+        var lrPlayers = linearRegression(trend.players);
+        var lrAcc     = linearRegression(trend.acc);
+        var nF        = 3;
+        var fLabels   = ['+1mo', '+2mo', '+3mo'];
 
-        var forecastLabels = ['2026-07','2026-08','2026-09','2026-10'];
-        var allLabels  = MONTHS_LABELS.concat(forecastLabels);
-        var allActual  = trend.plays.concat([undefined,undefined,undefined,undefined]);
-        var allForecast = [undefined,undefined,undefined,undefined,undefined,undefined].concat(
-            forecastLabels.map(function(_, i) {
-                return Math.max(0, Math.round(lr.intercept + lr.slope * (trend.plays.length + i)));
-            })
-        );
-        /* bridge: connect last actual to first forecast */
-        allForecast[trend.plays.length - 1] = trend.plays[trend.plays.length - 1];
+        function buildDs(actuals, lr) {
+            var allLabels = MONTHS_LABELS.concat(fLabels);
+            var act  = actuals.concat([undefined, undefined, undefined]);
+            var fore = actuals.slice(0, actuals.length - 1).map(function() { return undefined; });
+            fore.push(actuals[actuals.length - 1]);
+            for (var i = 0; i < nF; i++) fore.push(Math.max(0, Math.round(lr.intercept + lr.slope * (actuals.length + i))));
+            return allLabels.map(function(l, idx) { return { arg: l, actual: act[idx], forecast: fore[idx] }; });
+        }
 
-        var ds = allLabels.map(function(l, i) { return { arg: l, actual: allActual[i], forecast: allForecast[i] }; });
+        var projPlayers = Math.max(0, Math.round(lrPlayers.intercept + lrPlayers.slope * (trend.players.length + 2)));
+        var projPlays   = Math.max(0, Math.round(lrPlays.intercept   + lrPlays.slope   * (trend.plays.length + 2)));
+        var projAcc     = Math.min(99, Math.max(0, parseFloat((lrAcc.intercept + lrAcc.slope * (trend.acc.length + 2)).toFixed(1))));
+        var growthPct   = trend.plays[0] > 0 ? Math.round((projPlays - trend.plays[0]) / trend.plays[0] * 100) : 0;
+        var growthSign  = growthPct >= 0 ? '+' : '';
+        var growthColor = growthPct >= 0 ? '#16a34a' : '#dc2626';
+        var growthBg    = growthPct >= 0 ? '#dcfce7' : '#fee2e2';
+
+        function fcastCard(icon, iconColor, iconBg, label, value, sub) {
+            return '<div class="metric-card" style="min-height:0">' +
+                '<div class="metric-card-body">' +
+                '<div class="metric-lbl">' + label + '</div>' +
+                '<div class="metric-val">' + value + '</div>' +
+                '<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">' + sub + '</div>' +
+                '</div>' +
+                '<div class="metric-icon" style="background:' + iconBg + ';color:' + iconColor + '"><i class="' + icon + '"></i></div>' +
+                '</div>';
+        }
 
         el.innerHTML =
             '<div class="summary-page">' +
-            '<div class="panel-card"><div class="panel-card-hd">Play Volume Forecast' +
-            '<span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px">· dashed = projected</span></div>' +
-            '<div class="chart-container"><div id="chartSumForecast"></div></div></div>' +
+            '<div style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:stretch">' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px">' +
+                    fcastCard('fas fa-users',          '#2563eb', '#dbeafe', 'PROJECTED PLAYERS',  projPlayers,         '+3 months') +
+                    fcastCard('fas fa-chart-bar',      '#16a34a', '#dcfce7', 'PROJECTED PLAYS',    fmtPlays(projPlays), '+3 months') +
+                    fcastCard('fas fa-bullseye',        '#0891b2', '#cffafe', 'PROJECTED ACCURACY', projAcc + '%',       '+3 months') +
+                    fcastCard('fas fa-arrow-trend-up', growthColor, growthBg,  'PLAY GROWTH',       growthSign + growthPct + '%', 'vs current month') +
+                '</div>' +
+                '<div class="panel-card"><div class="panel-card-hd">Play Volume Forecast' +
+                '<span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px">· dashed = projected</span></div>' +
+                '<div class="chart-container"><div id="chartSumForecast"></div></div></div>' +
+            '</div>' +
             '</div>';
 
         makeChart('chartSumForecast', {
             opts: {
-                dataSource: ds,
+                dataSource: buildDs(trend.plays, lrPlays),
                 series: [
                     { argumentField: 'arg', valueField: 'actual',   type: 'area', color: '#e11d48', opacity: 0.15, name: 'Actual',   point: { visible: true, size: 5 } },
                     { argumentField: 'arg', valueField: 'forecast', type: 'line', color: '#3182ce', dashStyle: 'dash', name: 'Forecast', point: { visible: true, size: 4 } }
@@ -508,7 +663,11 @@
                     tick: { visible: false },
                     label: { font: { size: 10, color: '#64748b' } }
                 },
-                legend:  { visible: false },
+                argumentAxis: {
+                    constantLines: [{ value: MONTHS_LABELS[MONTHS_LABELS.length - 1], color: '#94a3b8', dashStyle: 'dash', width: 1,
+                        label: { text: 'Today', position: 'outside', font: { size: 9, color: '#94a3b8' } } }]
+                },
+                legend:  { visible: true, horizontalAlignment: 'center', verticalAlignment: 'bottom', font: { size: 11, color: '#64748b' } },
                 tooltip: { enabled: true },
                 size:    { height: 320 }
             }
@@ -598,16 +757,42 @@
                 '<td><div class="acc-cell"><div class="acc-bar-track"><div class="acc-bar-fill '+col+'" style="width:'+p.accuracy+'%"></div></div><span class="acc-pct">'+p.accuracy+'%</span></div></td>' +
                 '<td class="td-playtime">'+p.playTime.toFixed(1)+'</td></tr>';
         }).join('');
+        var accData = BASE_GAMES.map(function(name, i) {
+            return { name: name, accuracy: d.perf[i] ? d.perf[i].accuracy : 0 };
+        }).sort(function(a, b) { return b.accuracy - a.accuracy; }).slice(0, 8);
+
         document.getElementById('dashGamesOverview').innerHTML =
-            '<div class="dash-metrics">' +
-                metricCard('Games Available', BASE_GAMES.length, '', 'fas fa-gamepad', 'pink') +
-                metricCard('Total Plays', fmtPlays(d.plays), 'green', 'fas fa-chart-line', 'blue') +
-                metricCard('Avg Answer Acc', d.avgAcc.toFixed(1)+'%', 'teal', 'fas fa-bullseye', 'teal') +
-                metricCard('User Answers', d.userAns, '', 'fas fa-list-ol', 'indigo') +
-            '</div>' +
-            '<div class="dash-table-card"><div class="dash-table-card-hd">Game Performance</div>' +
+            '<div class="dash-table-card" style="margin-bottom:16px"><div class="dash-table-card-hd">Game Performance</div>' +
             '<table class="dash-perf-table"><thead><tr><th>Game Name</th><th>Plays</th><th>Answer Accuracy</th><th>Play Time (Min)</th></tr></thead>' +
-            '<tbody>'+rows+'</tbody></table></div>';
+            '<tbody>'+rows+'</tbody></table></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 220px;gap:16px;align-items:start">' +
+                '<div class="panel-card"><div class="panel-card-hd">Answer Accuracy by Game</div>' +
+                '<div class="chart-container"><div id="chartGamesAccuracy"></div></div></div>' +
+                '<div style="display:flex;flex-direction:column;gap:12px">' +
+                    metricCard('Games Available', BASE_GAMES.length, '', 'fas fa-gamepad', 'pink') +
+                    metricCard('Total Plays', fmtPlays(d.plays), 'green', 'fas fa-chart-line', 'blue') +
+                    metricCard('Avg Answer Acc', d.avgAcc.toFixed(1)+'%', 'teal', 'fas fa-bullseye', 'teal') +
+                    metricCard('User Answers', d.userAns, '', 'fas fa-list-ol', 'indigo') +
+                '</div>' +
+            '</div>';
+
+        makeChart('chartGamesAccuracy', {
+            opts: {
+                dataSource: accData,
+                series: [{ argumentField: 'name', valueField: 'accuracy', type: 'bar', color: '#2563eb', cornerRadius: 3 }],
+                rotated: true,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis: {
+                    min: 0, max: 100,
+                    grid: { color: 'rgba(200,200,200,0.25)', visible: true },
+                    label: { customizeText: function(i) { return i.valueText + '%'; } }
+                },
+                legend:  { visible: false },
+                tooltip: { enabled: true, customizeTooltip: function(i) { return { text: i.argumentText + ': ' + i.value + '%' }; } },
+                size:    { height: 280 }
+            }
+        });
     }
 
     /* ── Render: Players > Overview ──────────────────────────── */
@@ -650,6 +835,33 @@
             '</tr>';
         }).join('');
 
+        /* Participation by Dealer */
+        var dealers = COMPANY_DEALERS[state.companyId] || [{ name:(profile.name+' — Main Office'), total:profile.players, active:profile.players, players:profile.players, avgAcc:d.avgAcc, points:0 }];
+        var dealerRows = dealers.map(function(dl) {
+            var tot = dl.total || dl.players || 1;
+            var act = dl.active !== undefined ? dl.active : dl.players;
+            var pct = tot > 0 ? Math.round(act / tot * 100) : 0;
+            var pc  = pct === 0 ? '#e11d48' : '#22c55e';
+            return '<div class="dlr-entry">' +
+                '<div class="dlr-row"><span class="dlr-name">' + esc(dl.name) + '</span><span class="dlr-pct" style="color:' + pc + '">' + pct + '%</span></div>' +
+                '<div class="dlr-bar-row"><div class="dlr-track"><div class="dlr-fill" style="width:' + pct + '%;background:' + pc + '"></div></div><span class="dlr-count">' + act + '/' + tot + '</span></div>' +
+            '</div>';
+        }).join('');
+
+        /* Inactive Players */
+        var inactivePlayers = INACTIVE_PLAYERS[state.companyId] || INACTIVE_PLAYERS[DEFAULT_COMPANY_ID] || [];
+        var inactiveInner = '';
+        if (inactivePlayers.length) {
+            var inactiveRows = inactivePlayers.map(function(p) {
+                return '<tr><td>' + esc(p.firstName) + '</td><td>' + esc(p.lastName) + '</td>' +
+                    '<td style="color:var(--text-secondary)">' + esc(p.email) + '</td>' +
+                    '<td>' + esc(p.dealer) + '</td></tr>';
+            }).join('');
+            inactiveInner = '<div class="dash-table-card-hd" style="color:#d97706"><i class="fas fa-circle-exclamation" style="margin-right:8px"></i>Inactive Players (' + inactivePlayers.length + ')</div>' +
+                '<table class="dash-players-table"><thead><tr><th>Name</th><th>Surname</th><th>Email</th><th>Dealer</th></tr></thead>' +
+                '<tbody>' + inactiveRows + '</tbody></table>';
+        }
+
         document.getElementById('dashPlayersPanel').innerHTML =
             '<div class="dash-metrics">' +
                 '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">Active Players</div><div class="metric-val">'+profile.players+'</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">'+fmtPlays(d.plays)+' total plays</div></div><div class="metric-icon pink"><i class="fas fa-users"></i></div></div>' +
@@ -660,8 +872,123 @@
             spotlightHtml +
             '<div class="dash-table-card"><div class="dash-table-card-hd">Full Player Rankings</div>' +
             '<table class="dash-players-table"><thead><tr><th>Rank</th><th>Player</th><th>Dept</th><th>Region</th><th>Points</th><th>Accuracy</th><th>Games</th></tr></thead>' +
-            '<tbody>'+rows+'</tbody></table></div>';
+            '<tbody>'+rows+'</tbody></table></div>' +
+            '<div style="display:grid;grid-template-columns:2fr 3fr;gap:16px;margin-top:16px;align-items:stretch">' +
+                '<div class="dash-table-card">' +
+                    '<div class="dlr-hd"><span class="dlr-title"><i class="fas fa-building"></i> Participation by Dealer</span>' +
+                    '<button class="dlr-export" onclick="alert(\'CSV export coming soon.\')"><i class="fas fa-download"></i> Export CSV</button></div>' +
+                    '<div class="dlr-list">' + dealerRows + '</div>' +
+                '</div>' +
+                '<div class="dash-table-card">' + inactiveInner + '</div>' +
+            '</div>';
     }
+
+    /* ── Render: Players > Games Played ──────────────────────── */
+
+    function renderPlayersGamesPlayed() {
+        var el = document.getElementById('dashPlayersGamesPlayed');
+        if (!el) return;
+        var allPlayers = PLAYER_COVERAGE[state.companyId] || PLAYER_COVERAGE[DEFAULT_COMPANY_ID] || [];
+        var total      = BASE_GAMES.length;
+        var fullCount  = allPlayers.filter(function(p) { return p.played >= total; }).length;
+        var incomplete = allPlayers.filter(function(p) { return p.played < total; }).length;
+        var avgCov     = allPlayers.length > 0 ? Math.round(allPlayers.reduce(function(s, p) { return s + p.played; }, 0) / (allPlayers.length * total) * 100) : 0;
+
+        var gameChips = BASE_GAMES.map(function(g) {
+            return '<span style="display:inline-block;background:#f1f5f9;border-radius:20px;padding:3px 10px;font-size:11px;color:#475569;margin:3px 4px 3px 0">' + esc(g) + '</span>';
+        }).join('');
+
+        _gpFilter.search = '';
+        _gpFilter.incompleteOnly = false;
+
+        el.innerHTML =
+            '<div style="padding:16px 0">' +
+            '<div class="dash-metrics">' +
+                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">GAMES THIS PERIOD</div><div class="metric-val">' + total + '</div></div><div class="metric-icon" style="background:#ede9fe;color:#7c3aed"><i class="fas fa-gamepad"></i></div></div>' +
+                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">FULL COVERAGE</div><div class="metric-val" style="color:#16a34a">' + fullCount + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">players completed every game</div></div><div class="metric-icon" style="background:#dcfce7;color:#16a34a"><i class="fas fa-check-circle"></i></div></div>' +
+                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">INCOMPLETE</div><div class="metric-val" style="color:#d97706">' + incomplete + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">players missing games</div></div><div class="metric-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-circle-exclamation"></i></div></div>' +
+                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">AVG COVERAGE</div><div class="metric-val">' + avgCov + '%</div></div><div class="metric-icon" style="background:#dbeafe;color:#2563eb"><i class="fas fa-chart-pie"></i></div></div>' +
+            '</div>' +
+            '<div class="dash-table-card" style="margin-top:14px">' +
+                '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:#64748b">' +
+                    '<strong style="color:#1e293b;font-size:13px">Games loaded:</strong>&nbsp;&nbsp;' + gameChips +
+                '</div>' +
+                '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">' +
+                    '<div style="position:relative;flex:1;max-width:260px"><i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px"></i>' +
+                    '<input id="gpSearch" type="text" placeholder="Search player or dealer..." oninput="gpApplyFilter()" style="width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;outline:none"></div>' +
+                    '<button id="gpIncompleteBtn" onclick="gpToggleIncomplete()" style="padding:6px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;color:#1e293b;background:#fff">Incomplete only</button>' +
+                    '<span style="margin-left:auto;font-size:12px;color:#64748b" id="gpCountLabel">' + allPlayers.length + ' players</span>' +
+                    '<button onclick="alert(\'Download coming soon\')" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:#1e293b"><i class="fas fa-download"></i></button>' +
+                '</div>' +
+                '<div id="gpPlayerList"></div>' +
+            '</div>' +
+            '</div>';
+
+        gpRenderList(allPlayers, total);
+    }
+
+    function gpRenderList(allPlayers, total) {
+        var search  = (_gpFilter.search || '').toLowerCase();
+        var incOnly = _gpFilter.incompleteOnly;
+        var filtered = allPlayers.filter(function(p) {
+            if (incOnly && p.played >= total) return false;
+            if (search && p.name.toLowerCase().indexOf(search) === -1 && p.dealer.toLowerCase().indexOf(search) === -1) return false;
+            return true;
+        });
+
+        var countEl = document.getElementById('gpCountLabel');
+        if (countEl) countEl.textContent = filtered.length + ' players';
+
+        var rows = filtered.map(function(p) {
+            var pct        = total > 0 ? Math.round(p.played / total * 100) : 0;
+            var missing    = total - p.played;
+            var isInact    = p.played === 0;
+            var barCol     = pct === 100 ? '#16a34a' : pct > 0 ? '#d97706' : '#e2e8f0';
+            var numCol     = pct === 100 ? '#16a34a' : pct > 0 ? '#d97706' : '#94a3b8';
+            var nameStyle  = isInact ? 'color:#94a3b8' : 'color:#1e293b;font-weight:600';
+            var dealerStyle = isInact ? 'color:#94a3b8;font-size:12px' : 'color:#64748b;font-size:12px';
+            var missingHtml = missing > 0 ? '<span style="font-size:11px;color:#d97706;margin-left:8px">' + missing + ' missing</span>' : '';
+            return '<div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:12px">' +
+                '<i class="fas fa-chevron-right" style="font-size:10px;color:#cbd5e1;flex-shrink:0"></i>' +
+                '<div style="flex:1;min-width:0">' +
+                    '<div style="' + nameStyle + ';font-size:14px">' + esc(p.name) + '</div>' +
+                    '<div style="display:flex;align-items:center;gap:6px;margin-top:3px">' +
+                        '<span style="background:#334155;color:#fff;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600">' + esc(p.short) + '</span>' +
+                        '<span style="' + dealerStyle + '">' + esc(p.dealer) + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">' +
+                    '<span style="font-size:13px;font-weight:600;color:' + numCol + ';min-width:36px;text-align:right">' + p.played + '/' + total + '</span>' +
+                    '<div style="width:120px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden">' +
+                        '<div style="height:100%;width:' + pct + '%;background:' + barCol + ';border-radius:3px"></div>' +
+                    '</div>' +
+                    '<span style="font-size:12px;color:' + numCol + ';min-width:32px">' + pct + '%</span>' +
+                    missingHtml +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        var listEl = document.getElementById('gpPlayerList');
+        if (listEl) listEl.innerHTML = rows || '<div style="padding:24px 16px;text-align:center;color:#94a3b8;font-size:13px">No players match the current filter.</div>';
+    }
+
+    window.gpApplyFilter = function() {
+        var searchEl = document.getElementById('gpSearch');
+        if (searchEl) _gpFilter.search = searchEl.value;
+        var allPlayers = PLAYER_COVERAGE[state.companyId] || PLAYER_COVERAGE[DEFAULT_COMPANY_ID] || [];
+        gpRenderList(allPlayers, BASE_GAMES.length);
+    };
+
+    window.gpToggleIncomplete = function() {
+        _gpFilter.incompleteOnly = !_gpFilter.incompleteOnly;
+        var btn = document.getElementById('gpIncompleteBtn');
+        if (btn) {
+            btn.style.background = _gpFilter.incompleteOnly ? '#1e293b' : '#fff';
+            btn.style.color      = _gpFilter.incompleteOnly ? '#fff'    : '#1e293b';
+        }
+        var allPlayers = PLAYER_COVERAGE[state.companyId] || PLAYER_COVERAGE[DEFAULT_COMPANY_ID] || [];
+        gpRenderList(allPlayers, BASE_GAMES.length);
+    };
 
     /* ── Render: Departments > Overview ──────────────────────── */
 
@@ -685,28 +1012,74 @@
             '</tr>';
         }).join('');
 
-        var pieColors = ['#e53e3e','#3182ce','#38a169','#d97706','#7c3aed','#db2777'];
+        var pieColors = ['#6366f1','#0ea5e9','#14b8a6','#f97316','#a855f7','#ec4899'];
 
         document.getElementById('dashDeptPanel').innerHTML =
             '<div class="dept-overview-grid">' +
                 '<div class="dash-table-card"><div class="dash-table-card-hd">Department Breakdown</div>' +
                 '<table class="dash-perf-table"><thead><tr><th>Department</th><th>Total</th><th>Active</th><th>Avg Points</th><th>Activity Rate</th></tr></thead>' +
                 '<tbody>'+rows+'</tbody></table></div>' +
-                '<div class="chart-card"><div class="chart-card-hd">Active Players by Department</div><div class="chart-container"><div id="chartDeptPie"></div></div></div>' +
+                '<div class="chart-card"><div class="chart-card-hd">Active Players by Department</div>' +
+                    '<div class="chart-container" style="position:relative">' +
+                        '<div id="chartDeptPie"></div>' +
+                        '<div id="chartDeptPieCenter" style="position:absolute;top:0;left:0;text-align:center;pointer-events:none;display:none">' +
+                            '<div style="font-size:28px;font-weight:700;color:#1e293b;line-height:1">' + activeTotal + '</div>' +
+                            '<div style="font-size:11px;color:#94a3b8;margin-top:2px;letter-spacing:.5px">PLAYERS</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
             '</div>';
 
         makeChart('chartDeptPie', {
             isPie: true,
             opts: {
+                type: 'doughnut',
+                innerRadius: 0.62,
                 dataSource: depts.map(function(d) { return { name: d.name, active: Math.max(0, d.active) }; }),
                 palette: pieColors.slice(0, depts.length),
-                series: [{ argumentField: 'name', valueField: 'active', label: { visible: false } }],
-                legend: { visible: true, horizontalAlignment: 'right', verticalAlignment: 'center', font: { size: 11, color: '#64748b' } },
-                tooltip: { enabled: true, customizeTooltip: function(info) {
-                    var pct = activeTotal > 0 ? (info.value / activeTotal * 100).toFixed(0) : 0;
-                    return { text: info.argumentText + ': ' + info.value + ' (' + pct + '%)' };
-                }},
-                size: { height: 260 }
+                series: [{
+                    argumentField: 'name',
+                    valueField: 'active',
+                    label: { visible: false },
+                    border: { visible: true, color: '#fff', width: 2 },
+                    hoverStyle: { border: { visible: true, color: '#fff', width: 2 } }
+                }],
+                legend: {
+                    visible: true,
+                    horizontalAlignment: 'right',
+                    verticalAlignment: 'center',
+                    font: { size: 11, color: '#64748b' },
+                    markerSize: 10,
+                    itemsAlignment: 'left'
+                },
+                tooltip: { enabled: true, cornerRadius: 6, border: { visible: false }, color: '#1e293b',
+                    font: { color: '#fff', size: 12 },
+                    customizeTooltip: function(info) {
+                        var pct = activeTotal > 0 ? (info.value / activeTotal * 100).toFixed(0) : 0;
+                        return { text: info.argumentText + '\n' + info.value + ' players (' + pct + '%)' };
+                    }
+                },
+                onDrawn: function(e) {
+                    var $container = $(e.element).closest('.chart-container');
+                    var $label     = $('#chartDeptPieCenter');
+                    var $paths     = $(e.element).find('.dxc-series path');
+                    if (!$paths.length) return;
+                    var cRect  = $container[0].getBoundingClientRect();
+                    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                    $paths.each(function() {
+                        var r = this.getBoundingClientRect();
+                        if (r.width > 0) {
+                            minX = Math.min(minX, r.left - cRect.left);
+                            maxX = Math.max(maxX, r.right - cRect.left);
+                            minY = Math.min(minY, r.top - cRect.top);
+                            maxY = Math.max(maxY, r.bottom - cRect.top);
+                        }
+                    });
+                    if (maxX > minX) {
+                        $label.css({ display:'block', left: (minX + maxX) / 2, top: (minY + maxY) / 2, transform: 'translate(-50%,-50%)' });
+                    }
+                },
+                size: { height: 280 }
             }
         });
     }
@@ -769,6 +1142,7 @@
         renderGamesOverview();
         renderTrendsCharts('dashGamesTrends', 'gms');
         renderPlayersOverview();
+        renderPlayersGamesPlayed();
         renderTrendsCharts('dashPlayersTrends', 'plr');
         renderDepartmentsOverview();
         renderTrendsCharts('dashDeptTrends', 'dpt');
@@ -785,12 +1159,21 @@
 
     window.dashMainTab = function(tab) {
         state.mainTab = tab;
-        var hasSubs = tab === 'summary' || tab === 'players' || tab === 'games' || tab === 'departments';
-        var subRow  = document.getElementById('dashSubRow');
+        /* Always reset to Overview when switching main tabs */
+        state.subTab = 'overview';
+
+        var subRow = document.getElementById('dashSubRow');
+        var hasSubs = tab === 'summary' || tab === 'players' || tab === 'games' || tab === 'departments' || tab === 'regional';
         if (subRow) subRow.style.display = hasSubs ? '' : 'none';
-        document.querySelectorAll('.dash-nav-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.tab===tab); });
-        document.querySelectorAll('.dash-panel').forEach(function(el) { el.classList.toggle('active', el.dataset.panel===tab); });
-        document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function(el) { el.classList.toggle('active', el.dataset.sub===state.subTab); });
+
+        /* Games Played sub-tab only visible under Players */
+        var gpTab = document.getElementById('subTabGamesPlayed');
+        if (gpTab) gpTab.hidden = (tab !== 'players');
+
+        document.querySelectorAll('.dash-nav-tab').forEach(function(b)  { b.classList.toggle('active', b.dataset.tab === tab); });
+        document.querySelectorAll('.dash-sub-tab').forEach(function(b)  { b.classList.toggle('active', b.dataset.sub === 'overview'); });
+        document.querySelectorAll('.dash-panel').forEach(function(el)   { el.classList.toggle('active', el.dataset.panel === tab); });
+        document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function(el) { el.classList.toggle('active', el.dataset.sub === 'overview'); });
     };
 
     window.dashSubTab = function(sub) {
@@ -809,6 +1192,7 @@
         if (!id || !COMPANY_PROFILES[id] || id === state.companyId) return;
         state.companyId = id;
         _dataCache = {};
+        applyCompanyTheme(id);
         refreshAll();
     }
 
@@ -819,6 +1203,7 @@
             var stored = JSON.parse(localStorage.getItem('gameon.scope') || '{}');
             if (stored.companyId && COMPANY_PROFILES[stored.companyId]) state.companyId = stored.companyId;
         } catch(e) {}
+        applyCompanyTheme(state.companyId);
         $('#dashPeriodSelect').dxSelectBox({
             items: PERIODS,
             value: state.period,
