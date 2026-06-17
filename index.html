@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameOn - Analytics Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="styles-dashboard.css?v=6">
+    <link rel="stylesheet" href="styles-dashboard.css?v=10">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.6/css/dx.light.css">
@@ -67,12 +67,8 @@
                     <span class="dash-hd-stat"><strong id="dashStatPlays">2.5K</strong> plays</span>
                     <span class="dash-hd-stat"><strong id="dashStatDealers">7</strong> dealers</span>
                 </div>
-                <button class="dash-btn-report" onclick="dashReport()">
-                    <i class="far fa-file-alt"></i> Report
-                </button>
-                <button class="dash-btn-pdf" onclick="dashPdfReport()">
-                    <i class="fas fa-file-pdf"></i> PDF Report
-                </button>
+                <div id="dashReportBtn" class="dash-hd-dx-btn"></div>
+                <div id="dashPdfBtn" class="dash-hd-dx-btn"></div>
             </div>
         </div>
 
@@ -82,56 +78,19 @@
             <div id="dashPeriodSelect"></div>
         </div>
 
-        <!-- Main tab navigation -->
-        <div class="dash-nav">
-            <button class="dash-nav-tab active" data-tab="summary" onclick="dashMainTab('summary')">
-                <i class="fas fa-eye"></i> Summary
-            </button>
-            <button class="dash-nav-tab" data-tab="players" onclick="dashMainTab('players')">
-                <i class="fas fa-users"></i> Players
-            </button>
-            <button class="dash-nav-tab" data-tab="games" onclick="dashMainTab('games')">
-                <i class="fas fa-gamepad"></i> Games
-            </button>
-            <button class="dash-nav-tab" data-tab="departments" onclick="dashMainTab('departments')">
-                <i class="fas fa-building"></i> Departments
-            </button>
-            <button class="dash-nav-tab" data-tab="regional" onclick="dashMainTab('regional')" hidden>
-                <i class="fas fa-map-marker-alt"></i> Regional
-            </button>
-            <button class="dash-nav-tab" data-tab="incentives" onclick="dashMainTab('incentives')" hidden>
-                <i class="fas fa-trophy"></i> Incentives
-            </button>
-            <button class="dash-nav-tab" data-tab="prizes" onclick="dashMainTab('prizes')" hidden>
-                <i class="fas fa-gift"></i> Prizes
-            </button>
-            <button class="dash-nav-tab" data-tab="ai" onclick="dashMainTab('ai')" hidden>
-                <i class="fas fa-brain"></i> AI Analysis <span class="dash-nav-badge">1</span>
-            </button>
-        </div>
+        <!-- Two-column content grid: left tab list + right content area -->
+        <div class="dash-content-grid">
 
-        <!-- Sub-tab row — shown for Summary, Players, Games, Departments -->
-        <div class="dash-sub" id="dashSubRow">
-            <button class="dash-sub-tab active" data-sub="overview" onclick="dashSubTab('overview')">
-                <i class="fas fa-eye"></i> Overview
-            </button>
-            <button class="dash-sub-tab" data-sub="gamesplayed" id="subTabGamesPlayed" onclick="dashSubTab('gamesplayed')" hidden>
-                <i class="fas fa-book-open"></i> Games Played
-            </button>
-            <button class="dash-sub-tab" data-sub="trends" onclick="dashSubTab('trends')">
-                <i class="fas fa-chart-line"></i> Trends
-            </button>
-            <button class="dash-sub-tab" data-sub="forecast" onclick="dashSubTab('forecast')">
-                <i class="fas fa-wave-square"></i> Forecast
-            </button>
-            <button class="dash-sub-tab" data-sub="anomalies" onclick="dashSubTab('anomalies')">
-                <i class="fas fa-triangle-exclamation"></i> Anomalies
-                <span class="dash-sub-badge">3</span>
-            </button>
-        </div>
+            <!-- Left: vertical main tab list -->
+            <div class="dash-left-nav" id="dashLeftNav"></div>
 
-        <!-- ===== Scrollable content body ===== -->
-        <div class="dash-body">
+            <!-- Right: sub-tab bar + scrollable panels -->
+            <div class="dash-right-area">
+                <div class="dash-subtabs-bar">
+                    <div id="dashSubTabs"></div>
+                </div>
+
+                <div class="dash-body">
 
             <!-- SUMMARY panel -->
             <div class="dash-panel active" data-panel="summary">
@@ -139,6 +98,7 @@
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashSummaryTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"  id="dashSummaryForecast"></div>
                 <div class="dash-sub-panel"        data-sub="anomalies" id="dashSummaryAnomalies"></div>
+                <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- PLAYERS panel -->
@@ -148,6 +108,7 @@
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashPlayersTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
                 <div class="dash-sub-panel"        data-sub="anomalies" id="dashPlayersAnomalies"></div>
+                <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- GAMES panel -->
@@ -156,6 +117,7 @@
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashGamesTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
                 <div class="dash-sub-panel"        data-sub="anomalies" id="dashGamesAnomalies"></div>
+                <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- DEPARTMENTS panel -->
@@ -164,6 +126,7 @@
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashDeptTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
                 <div class="dash-sub-panel"        data-sub="anomalies" id="dashDeptAnomalies"></div>
+                <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- REGIONAL panel -->
@@ -204,7 +167,9 @@
                 <div class="dash-sub-panel" data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
             </div>
 
-        </div><!-- /.dash-body -->
+                </div><!-- /.dash-body -->
+            </div><!-- /.dash-right-area -->
+        </div><!-- /.dash-content-grid -->
 
     </main>
 
@@ -214,6 +179,6 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 </script>
 <script src="script-sidebar-scope.js"></script>
-<script src="script-dashboard.js?v=26"></script>
+<script src="script-dashboard.js?v=31"></script>
 </body>
 </html>

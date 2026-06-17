@@ -449,14 +449,13 @@
 
     /* ── Overview v2 card helpers ───────────────────────────── */
 
-    function ovKpiCard(featured, iconColor, iconClass, label, value, sub) {
-        var iconBg = featured ? 'rgba(255,255,255,0.2)' : iconColor + '20';
-        var ic     = featured ? '#fff' : iconColor;
-        return '<div class="ov-kpi-card' + (featured ? ' featured' : '') + '">' +
-            '<div class="ov-kpi-icon" style="background:' + iconBg + ';color:' + ic + '"><i class="' + iconClass + '"></i></div>' +
+    function ovKpiCard(label, value, trendText, trendUp) {
+        var trendClass = trendUp === false ? 'ov-kpi-trend down' : 'ov-kpi-trend';
+        var trendIcon  = trendUp === false ? 'fa-arrow-trend-down' : 'fa-arrow-trend-up';
+        return '<div class="ov-kpi-card">' +
             '<div class="ov-kpi-lbl">' + esc(label) + '</div>' +
             '<div class="ov-kpi-val">' + esc(String(value)) + '</div>' +
-            '<div class="ov-kpi-sub">' + esc(sub) + '</div>' +
+            (trendText ? '<div class="' + trendClass + '"><i class="fas ' + trendIcon + '"></i> ' + esc(trendText) + ' vs prior period</div>' : '') +
         '</div>';
     }
 
@@ -518,12 +517,12 @@
         el.innerHTML =
             '<div class="summary-page">' +
 
-            /* Row 1 — 4 KPI cards (inspo layout: first featured blue) */
+            /* Row 1 — 4 KPI cards (clean white, dev-site style) */
             '<div class="ov-kpi-row">' +
-                ovKpiCard(false, '#2563eb', 'fas fa-users', 'PARTICIPATION RATE', partRate + '%', active + ' active of ' + reg + ' registered players') +
-                ovKpiCard(false, '#16a34a', 'fas fa-bullseye',       'AVG ACCURACY',       d.avgAcc.toFixed(1) + '%','across all plays') +
-                ovKpiCard(false, '#d97706', 'fas fa-circle-exclamation','INACTIVE',         inactive,                 'need re-engagement') +
-                ovKpiCard(false, '#2563eb', 'fas fa-gamepad',        'GAMES AVAILABLE',    BASE_GAMES.length,        'this period') +
+                ovKpiCard('Participation rate', partRate + '%', '13.6%', true) +
+                ovKpiCard('Active players',     active,        '+' + Math.max(1, Math.round(active * 0.15)) + ' players', true) +
+                ovKpiCard('Sessions',           fmtPlays(d.plays), fmtPlays(Math.round(d.plays * 0.85)) + ' plays', true) +
+                ovKpiCard('Avg. accuracy',      d.avgAcc.toFixed(1) + '%', '9.8%', true) +
             '</div>' +
 
             /* Row 2 — Department Activity chart + Top Games by Plays chart */
@@ -537,11 +536,11 @@
 
             '</div>';
 
-        /* Top Games by Plays: horizontal bars */
+        /* Top Games by Plays: horizontal bars — dark navy */
         makeChart('sumChartTopGames', {
             opts: {
                 dataSource: topGames,
-                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: (COMPANY_THEMES[state.companyId] || COMPANY_THEMES[DEFAULT_COMPANY_ID]).bg, cornerRadius: 8 }],
+                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: '#1e293b', cornerRadius: 4 }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
@@ -552,15 +551,14 @@
             }
         });
 
-        /* Department Activity: grouped horizontal bars by dealer group */
+        /* Department Activity: grouped horizontal bars — dark navy */
         makeChart('sumChartDeptActivity', {
             opts: {
                 dataSource: getDealerGroups(state.companyId).map(function(dep) {
                     return { name: dep.name, total: dep.total, active: dep.active };
                 }),
                 series: [
-                    { argumentField: 'name', valueField: 'total',  type: 'bar', name: 'Total Players', color: '#1e3a5f', cornerRadius: 8 },
-                    { argumentField: 'name', valueField: 'active', type: 'bar', name: 'Active',        color: '#93c5fd', cornerRadius: 8 }
+                    { argumentField: 'name', valueField: 'total',  type: 'bar', name: 'Sessions', color: '#1e293b', cornerRadius: 4 }
                 ],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
@@ -1044,10 +1042,10 @@
 
         document.getElementById('dashGamesOverview').innerHTML =
             '<div class="ov-kpi-row" style="margin-bottom:16px">' +
-                ovKpiCard(false, '#7c3aed', 'fas fa-gamepad',   'GAMES AVAILABLE', BASE_GAMES.length,       'this period') +
-                ovKpiCard(false, '#16a34a', 'fas fa-chart-line','TOTAL PLAYS',     fmtPlays(d.plays),       'all time') +
-                ovKpiCard(false, '#0891b2', 'fas fa-bullseye',  'AVG ANSWER ACC',  d.avgAcc.toFixed(1)+'%','across all plays') +
-                ovKpiCard(false, '#d97706', 'fas fa-list-ol',   'USER ANSWERS',    d.userAns,               'submitted') +
+                ovKpiCard('Games available', BASE_GAMES.length,       null) +
+                ovKpiCard('Total plays',     fmtPlays(d.plays),       null) +
+                ovKpiCard('Avg. accuracy',   d.avgAcc.toFixed(1)+'%', '9.8%', true) +
+                ovKpiCard('User answers',    d.userAns,               null) +
             '</div>' +
             '<div class="dash-table-card" style="margin-bottom:16px"><div class="dash-table-card-hd">Game Performance</div>' +
             '<table class="dash-perf-table"><thead><tr><th>Game Name</th><th>Plays</th><th>Accuracy</th><th>Time (min)</th></tr></thead>' +
@@ -1145,10 +1143,10 @@
 
         document.getElementById('dashPlayersPanel').innerHTML =
             '<div class="ov-kpi-row" style="margin-bottom:16px">' +
-                ovKpiCard(false, '#ec4899', 'fas fa-users',              'ACTIVE PLAYERS', profile.players,             fmtPlays(d.plays) + ' total plays') +
-                ovKpiCard(false, '#16a34a', 'fas fa-bullseye',           'AVG ACCURACY',   d.avgAcc.toFixed(1) + '%',  'across all plays') +
-                ovKpiCard(false, '#2563eb', 'fas fa-building',           'DEALERS',        profile.dealers,             'participating') +
-                ovKpiCard(false, '#d97706', 'fas fa-circle-exclamation', 'INACTIVE',       totalInact,                  'need re-engagement') +
+                ovKpiCard('Active players', profile.players,           '+' + Math.max(1,Math.round(profile.players*0.15)) + ' players', true) +
+                ovKpiCard('Avg. accuracy', d.avgAcc.toFixed(1) + '%', '9.8%', true) +
+                ovKpiCard('Dealers',       profile.dealers,           null) +
+                ovKpiCard('Inactive',      totalInact,                null) +
             '</div>' +
             spotlightHtml +
             '<div class="dash-table-card"><div class="dash-table-card-hd">Full Player Rankings</div>' +
@@ -1259,11 +1257,11 @@
         var ncActive = _gadNcOnly;
         el.innerHTML =
             '<div class="ov-kpi-row" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">' +
-                ovKpiCard(false, '#ec4899', 'fas fa-users',                'PARTICIPATION',   Math.round(partN / _gadData.length * 100) + '%',    partN + ' of ' + _gadData.length + ' players active') +
-                ovKpiCard(false, '#16a34a', 'fas fa-circle-check',         'ON TRACK',        Math.round(onTrackN / _gadData.length * 100) + '%', onTrackN + ' players meeting target') +
-                ovKpiCard(false, '#d97706', 'fas fa-triangle-exclamation', 'BELOW TARGET',    Math.round(belowN / _gadData.length * 100) + '%',   belowN + ' players below target') +
-                ovKpiCard(false, '#2563eb', 'fas fa-calendar-day',         'WORKING DAYS',    totalDays,                                            GAD_WEEKS + ' wks × ' + GAD_DAYS + ' days') +
-                ovKpiCard(false, '#0891b2', 'fas fa-gauge-high',           'AVG GAMES / DAY', avgDay,                                               'across all players') +
+                ovKpiCard('Participation',   Math.round(partN / _gadData.length * 100) + '%',    null) +
+                ovKpiCard('On track',       Math.round(onTrackN / _gadData.length * 100) + '%', null) +
+                ovKpiCard('Below target',   Math.round(belowN / _gadData.length * 100) + '%',   null) +
+                ovKpiCard('Working days',   totalDays,                                            null) +
+                ovKpiCard('Avg games/day',  avgDay,                                              null) +
             '</div>' +
             '<div class="dash-table-card">' +
                 /* Filter bar */
@@ -1635,29 +1633,75 @@
         refreshAll();
     };
 
+    /* ── Left nav + sub-tab helpers ─────────────────────────── */
+
+    var MAIN_TABS = [
+        { key: 'summary',     label: 'Summary' },
+        { key: 'players',     label: 'Players' },
+        { key: 'games',       label: 'Games' },
+        { key: 'departments', label: 'Departments' }
+    ];
+
+    function getSubTabItems(mainTab) {
+        var base = [
+            { text: 'Overview',              key: 'overview' },
+            { text: 'Trends',                key: 'trends' },
+            { text: 'Forecasts & anomalies', key: 'forecastsanomalies' }
+        ];
+        if (mainTab === 'players') {
+            return [
+                { text: 'Overview',              key: 'overview' },
+                { text: 'Games Played',          key: 'gamesplayed' },
+                { text: 'Trends',                key: 'trends' },
+                { text: 'Forecasts & anomalies', key: 'forecastsanomalies' }
+            ];
+        }
+        return base;
+    }
+
+    var _dashSubTabsInst = null;
+
+    function dashRenderLeftNav() {
+        var el = document.getElementById('dashLeftNav');
+        if (!el) return;
+        el.innerHTML = MAIN_TABS.map(function(t) {
+            var cls = 'dash-left-nav-item' + (state.mainTab === t.key ? ' active' : '');
+            return '<button class="' + cls + '" onclick="dashMainTab(\'' + t.key + '\')">' + t.label + '</button>';
+        }).join('');
+    }
+
     window.dashMainTab = function(tab) {
         state.mainTab = tab;
-        /* Always reset to Overview when switching main tabs */
-        state.subTab = 'overview';
-
-        var subRow = document.getElementById('dashSubRow');
-        var hasSubs = tab === 'summary' || tab === 'players' || tab === 'games' || tab === 'departments' || tab === 'regional';
-        if (subRow) subRow.style.display = hasSubs ? '' : 'none';
-
-        /* Games Played sub-tab only visible under Players */
-        var gpTab = document.getElementById('subTabGamesPlayed');
-        if (gpTab) gpTab.hidden = (tab !== 'players');
-
-        document.querySelectorAll('.dash-nav-tab').forEach(function(b)  { b.classList.toggle('active', b.dataset.tab === tab); });
-        document.querySelectorAll('.dash-sub-tab').forEach(function(b)  { b.classList.toggle('active', b.dataset.sub === 'overview'); });
-        document.querySelectorAll('.dash-panel').forEach(function(el)   { el.classList.toggle('active', el.dataset.panel === tab); });
-        document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function(el) { el.classList.toggle('active', el.dataset.sub === 'overview'); });
+        state.subTab  = 'overview';
+        dashRenderLeftNav();
+        if (_dashSubTabsInst) {
+            _dashSubTabsInst.option({ dataSource: getSubTabItems(tab), selectedIndex: 0 });
+        }
+        document.querySelectorAll('.dash-panel').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.panel === tab);
+        });
+        document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.sub === 'overview');
+        });
     };
 
     window.dashSubTab = function(sub) {
         state.subTab = sub;
-        document.querySelectorAll('.dash-sub-tab').forEach(function(b) { b.classList.toggle('active', b.dataset.sub===sub); });
-        document.querySelectorAll('.dash-sub-panel').forEach(function(el) { el.classList.toggle('active', el.dataset.sub===sub); });
+        if (_dashSubTabsInst) {
+            var items = getSubTabItems(state.mainTab);
+            var idx = 0;
+            items.forEach(function(item, i) { if (item.key === sub) idx = i; });
+            _dashSubTabsInst.option('selectedIndex', idx);
+        }
+        if (sub === 'forecastsanomalies') {
+            document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
+                el.classList.toggle('active', el.dataset.sub === 'forecast' || el.dataset.sub === 'anomalies');
+            });
+        } else {
+            document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
+                el.classList.toggle('active', el.dataset.sub === sub);
+            });
+        }
     };
 
     window.dashReport    = function() { alert('Report export coming soon.'); };
@@ -1682,6 +1726,8 @@
             if (stored.companyId && COMPANY_PROFILES[stored.companyId]) state.companyId = stored.companyId;
         } catch(e) {}
         applyCompanyTheme(state.companyId);
+
+        /* Period dropdown */
         $('#dashPeriodSelect').dxSelectBox({
             items: PERIODS,
             value: state.period,
@@ -1692,6 +1738,35 @@
             dropDownOptions: { wrapperAttr: { class: 'period-dropdown' } },
             onValueChanged: function(e) { dashPeriod(e.value); }
         });
+
+        /* Left vertical nav */
+        dashRenderLeftNav();
+
+        /* Sub-tab bar (dxTabs, underline style) */
+        _dashSubTabsInst = $('#dashSubTabs').dxTabs({
+            dataSource: getSubTabItems(state.mainTab),
+            keyExpr: 'key',
+            displayExpr: 'text',
+            selectedIndex: 0,
+            scrollingEnabled: false,
+            onItemClick: function(e) {
+                if (e.itemData) dashSubTab(e.itemData.key);
+            }
+        }).dxTabs('instance');
+
+        /* Header buttons */
+        $('#dashReportBtn').dxButton({
+            text: 'Report',
+            stylingMode: 'outlined',
+            onClick: function() { dashReport(); }
+        });
+        $('#dashPdfBtn').dxButton({
+            text: 'Export',
+            icon: 'exportxlsx',
+            stylingMode: 'outlined',
+            onClick: function() { dashPdfReport(); }
+        });
+
         refreshAll();
         document.addEventListener('gameon:scope-change', function(e) {
             if (e.detail && e.detail.companyId != null) applyScope(e.detail.companyId);

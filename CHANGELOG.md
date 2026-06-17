@@ -5,6 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-17] — Dev-site visual redesign; DevExtreme nav/tabs
+
+### Changed
+- **Layout**: Replaced horizontal pill nav + floating sub-menu with a two-column grid: 200 px left vertical tab list (Summary / Players / Games / Departments) + right content area with horizontal underline sub-tab bar.
+- **Header**: Background changed from dark navy to white; title enlarged to 24 px; stat pills now use dark-on-white colour scheme.
+- **Period bar**: Now white background (was dark navy).
+- **Sub-tab bar**: Implemented as a DevExtreme `dxTabs` component with underline styling matching the dev site; updates its item list when main tab changes (adds "Games Played" under Players).
+- **KPI cards**: Redesigned to clean white cards — gray label, large bold number (42 px), green trend line. Removed coloured icon circles and gradient "featured" card.
+- **Charts**: Department Activity and Top Games bars changed to dark navy (`#1e293b`) matching dev site; Department Activity series simplified to "Sessions".
+- **Header buttons** (Report / Export): Replaced plain `<button>` elements with DevExtreme `dxButton` instances.
+- Bumped `script-dashboard.js` to `?v=31`, `styles-dashboard.css` to `?v=10`.
+
+## [2026-06-17] — Leave & Exclusions; context heading; combined pill nav
+
+### Added
+- **Leave & Exclusions** sub-menu entry (icon: `fa-user-clock`) added to the floating sub-menu for all main tabs; placeholder "Coming soon" panel wired up.
+- **Context heading** (`Summary › Trends` style) shown above the content area; updates whenever main tab or sub-tab changes.
+
+### Changed
+- Main tab pills (Summary / Players / Games / Departments) are now split-buttons: clicking the label switches the tab (Overview), clicking the chevron opens a floating sub-menu. The separate sub-tab row is removed entirely.
+- Forecast and Anomalies merged into a single "Forecasts & Anomalies" sub-menu entry; activates both panels stacked.
+- Bumped `script-dashboard.js` to `?v=30`, `styles-dashboard.css` to `?v=9`.
+
 ## [2026-06-16] — Combined Trends view + Summary Trends layout + spotlight name weight
 
 ### Reverted
