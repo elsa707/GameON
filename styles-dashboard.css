@@ -163,12 +163,13 @@
     flex-shrink: 0;
 }
 
-/* ===== Main navigation tabs ===== */
+/* ===== Primary navigation — solid pill treatment ===== */
 .dash-nav {
     display: flex;
     align-items: center;
-    padding: 0 32px;
-    background: #fff;
+    gap: 4px;
+    padding: 10px 32px;
+    background: #f1f5f9;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     overflow-x: auto;
@@ -183,36 +184,38 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 13px 16px;
+    padding: 7px 18px;
     border: none;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -1px;
+    border-radius: 20px;
     background: transparent;
     color: var(--text-secondary);
     font-size: 13px;
     font-weight: 500;
     font-family: inherit;
     cursor: pointer;
-    transition: color 0.15s;
+    transition: background 0.15s, color 0.15s;
     white-space: nowrap;
 }
 
-.dash-nav-tab:hover { color: var(--text-primary); }
+.dash-nav-tab:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--text-primary);
+}
 
 .dash-nav-tab.active {
-    color: var(--chrome-dark);
-    border-bottom-color: var(--chrome-dark);
+    background: var(--chrome-bg);
+    color: #fff;
     font-weight: 600;
 }
 
 .dash-nav-badge {
     background: #e11d48;
     color: #fff;
-    box-shadow: 0 0 0 2px #fff;
+    box-shadow: 0 0 0 2px var(--chrome-bg);
     font-size: 10px;
     font-weight: 700;
-    min-width: 18px;
-    height: 18px;
+    min-width: 17px;
+    height: 17px;
     border-radius: 9px;
     display: inline-flex;
     align-items: center;
@@ -220,15 +223,15 @@
     padding: 0 4px;
 }
 
-/* ===== Sub-tabs ===== */
+/* ===== Sub-tabs — light underline treatment ===== */
 .dash-sub {
     display: flex;
     align-items: center;
+    gap: 2px;
     padding: 0 32px;
-    background: #fff;
+    background: transparent;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    gap: 2px;
 }
 
 .dash-sub-tab[hidden] { display: none !important; }
@@ -237,13 +240,14 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 9px 14px;
+    padding: 8px 14px;
     border: none;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     background: transparent;
-    color: var(--text-secondary);
-    font-size: 13px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 400;
     font-family: inherit;
     cursor: pointer;
     transition: color 0.15s;
@@ -256,6 +260,7 @@
     color: var(--chrome-dark);
     border-bottom-color: var(--chrome-dark);
     font-weight: 600;
+    font-size: 12px;
 }
 
 .dash-sub-count {
@@ -952,7 +957,7 @@
 .player-spotlight-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 16px;
     margin-bottom: 16px;
 }
 
@@ -1088,6 +1093,47 @@
 }
 
 .anomaly-details:hover { text-decoration: underline; }
+
+.anomaly-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    color: #2563eb;
+    cursor: pointer;
+    font-family: inherit;
+}
+.anomaly-toggle:hover { text-decoration: underline; }
+
+.anomaly-detail {
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+}
+
+.anomaly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.anomaly-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: #f8fafc;
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+}
+.anomaly-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-primary);
+}
+.anomaly-table tbody tr:last-child td { border-bottom: none; }
 
 .anomaly-empty {
     display: flex;
@@ -1715,7 +1761,7 @@
 /* KPI row: featured card wider, 3 metric cards narrower */
 .ov-kpi-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 16px;
     align-items: stretch;
 }

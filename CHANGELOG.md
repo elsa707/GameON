@@ -5,6 +5,184 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-16] — Combined Trends view + Summary Trends layout + spotlight name weight
+
+### Reverted
+- Trends shared-routing reverted — Players/Games/Departments each keep their own Trends panel again.
+
+### Changed
+- Summary > Trends: moved Accuracy Trend to top-right (next to Player Growth) to mirror Players > Trends layout (gray area left, blue area right).
+- Summary > Trends: bottom chart changed from Accuracy area to a bar chart (Monthly Plays, `#334155`) — same visual style as Combined Engagement on other tabs.
+- Players > Overview spotlight cards: player name `font-weight` 400 → 500 (slightly bolder). Bumped `script-dashboard.js` to `?v=25`.
+
+## [2026-06-16] — Games & Departments Anomalies implemented
+
+### Added
+- `renderGamesAnomalies()` — checks: low accuracy games (<60%), zero-play games, play volume drop. Uses same `anomalyCard` + `anomalySevRow` pattern.
+- `renderDeptAnomalies()` — checks: departments with zero active players, departments with participation <50%, play volume drop.
+- `id="dashGamesAnomalies"` and `id="dashDeptAnomalies"` added to `index.html`.
+- Both called during init. Bumped `script-dashboard.js` to `?v=23`.
+
+## [2026-06-16] — Chart colour fixes + Regional tab hidden
+
+### Changed
+- Regional nav tab hidden (`hidden` attribute) until content is ready.
+- Summary Trends Monthly Plays chart: `#334155` → `#1e3a5f` so it matches Player Growth and the other tabs.
+- Games Overview "Answer Accuracy by Game" bar chart: `#2563eb` bright blue → `#1e3a5f` dark navy to match other bar charts. Bumped `script-dashboard.js` to `?v=22`.
+
+## [2026-06-16] — Games Overview: revert table/chart to stacked layout
+
+### Changed
+- Game Performance table and Answer Accuracy chart reverted from side-by-side grid to stacked vertically (table full-width, chart full-width below). KPI cards at top retained. Bumped `script-dashboard.js` to `?v=21`.
+
+## [2026-06-16] — Summary > Trends: navy colour palette
+
+### Changed
+- Player Growth area chart: red → `#1e3a5f` dark navy.
+- Monthly Plays area chart: blue → `#334155` slate-navy.
+- Accuracy Trend area chart: blue → `#2563eb` (already consistent with other tabs).
+- All four trends sections (Summary, Players, Games, Departments) now share the same navy palette. Bumped `script-dashboard.js` to `?v=20`.
+
+## [2026-06-16] — Players > Anomalies + severity count row
+
+### Added
+- `renderPlayersAnomalies()` — same `anomalyCard` pattern as Summary, with player-specific checks: inactive players, low accuracy (<65%), play volume drop.
+- `anomalySevRow(cards)` helper builds the High / Medium / Low severity count row shown above the anomaly list in both Summary and Players > Anomalies.
+- `id="dashPlayersAnomalies"` added to the Players anomalies panel in `index.html`.
+- `renderPlayersAnomalies()` called during init alongside the other Players renders.
+
+## [2026-06-16] — Games Overview: table and chart side by side
+
+### Changed
+- Game Performance table and Answer Accuracy by Game chart now sit in a 1fr/1fr grid side by side instead of stacked vertically.
+- KPI cards at the top now use `ovKpiCard()` (matching other overview tabs) instead of the old `metricCard` + sidebar layout.
+- Bumped `script-dashboard.js` to `?v=19`.
+
+## [2026-06-16] — Trends charts: navy colour palette
+
+### Changed
+- Player Activity area chart: `rgb(229,62,62)` red → `#1e3a5f` dark navy.
+- Accuracy Trend area chart: `rgb(49,130,206)` blue → `#2563eb` company blue.
+- Combined Engagement bar chart: `#e53e3e` red → `#334155` slate-navy.
+- Applies to Players, Games, and Departments Trends tabs (all use `renderTrendsCharts`). Bumped `script-dashboard.js` to `?v=18`.
+
+## [2026-06-16] — Players Overview: row gap + spotlight card styling
+
+### Fixed
+- Added `margin-bottom: 16px` to the KPI row so there is visible spacing between the KPI cards and the spotlight leaderboard row.
+- Spotlight cards reverted to plain white `ov-kpi-card` style (no tinted background, no coloured border/shadow) to match the KPI cards above. Bumped `script-dashboard.js` to `?v=17`.
+
+## [2026-06-16] — Game-a-Day: filter bar + horizontal scroll table
+
+### Added
+- Filter bar above the Game-a-Day table: search input (player/dealer), "All departments" dropdown, "Non-compliant only" toggle, player count, Download button.
+- Table uses `overflow-x: auto` with `width: max-content` so it scrolls horizontally for 12 weeks of data.
+- Player name column is sticky (left:0) so it stays visible while scrolling.
+- Filters update only the table body without re-rendering the full view (no lost focus on search).
+- Bumped `script-dashboard.js` to `?v=16`.
+
+## [2026-06-16] — Players spotlight cards: consistent spacing and visible border/shadow
+
+### Fixed
+- `.player-spotlight-row` gap changed 14px → 16px to match `.ov-kpi-row` (equal horizontal spacing).
+- Spotlight cards now carry an inline `border-color` and `box-shadow` derived from the rank colour at ~25% / ~13% opacity respectively, so the shadow remains visible against the tinted background. Bumped `styles-dashboard.css?v=6`, `script-dashboard.js?v=15`.
+
+## [2026-06-16] — Players > Games Played: Game-a-Day view implemented
+
+### Added
+- `renderGadView()` builds the full Game-a-Day section: 5 KPI cards (Participation, On Track, Below Target, Working Days, Avg games/day), and a horizontally-scrollable 12-week compliance table (WK1–WK12) with colour-coded cells — green (5/5), amber (1–4/5), red (0/5).
+- "Non-compliant only" toggle filters the table to players with at least one zero-play week.
+- Synthetic week data generated deterministically per player using their `played` score as a compliance proxy.
+- `_gadNcOnly` state variable; `window.gadToggleNc` handler.
+
+## [2026-06-16] — Players spotlight cards: name not bold; rank-tinted card background
+
+### Changed
+- Top-3 spotlight cards: player name `font-weight` changed from 800 → 400 (not bold).
+- Card background now uses the rank colour at ~9% opacity (e.g. gold `#d9770618`) so each card has a subtle tint matching its badge.
+- Bumped `script-dashboard.js` to `?v=14`.
+
+## [2026-06-16] — Players spotlight cards: match ov-kpi-card layout
+
+### Fixed
+- Top-3 leaderboard cards now use the identical HTML structure as `ovKpiCard()` — icon absolutely positioned top-right, rank label → name (value) → dept → pts flowing below. Previously used an inline flex layout that didn't match. Bumped `script-dashboard.js` to `?v=12`.
+
+## [2026-06-16] — KPI cards: coloured icon backgrounds restored
+
+### Fixed
+- `ovKpiCard()` was hardcoding `#1e293b` (dark navy) for every icon background and ignoring the `iconColor` parameter entirely. Fixed to use `iconColor` as the icon tint and `iconColor + '20'` (8-digit hex alpha, ~12% opacity) as the pastel background — matching the original metric-card pink/teal/blue/amber style. Bumped `script-dashboard.js` to `?v=11`.
+
+## [2026-06-16] — Summary Overview: KPI cards align to chart columns
+
+### Changed
+- `ov-kpi-row` changed from `2fr 1fr 1fr 1fr` to `1fr 1fr 1fr 1fr` — all four KPI cards are now equal width, so cards 1+2 span exactly the same total width as the left chart and cards 3+4 span the right chart (same gap arithmetic). Bumped `styles-dashboard.css` to `?v=5`.
+
+## [2026-06-16] — Sub-tab row: transparent background
+
+### Changed
+- `.dash-sub` background changed from `#fff` to `transparent` so the sub-tab row blends with the page background instead of showing a white band.
+
+## [2026-06-16] — Players > Overview: cards match Summary Overview styling
+
+### Changed
+- KPI row (Active Players, Avg Accuracy, Dealers, Inactive) now uses `ovKpiCard()` — same white card with coloured icon as Summary > Overview.
+- Top-3 spotlight leaderboard cards restyled to `ov-kpi-card` layout: rank label, player name as headline value in rank colour, dept as subtitle, points below, rank number badge as the icon block.
+- Bumped `script-dashboard.js` to `?v=10` and `styles-dashboard.css` to `?v=4`.
+
+## [2026-06-14] — Navigation: tiered hierarchy with pill + underline treatment
+
+### Changed
+- Primary nav tabs (Summary, Players, etc.) now use a solid filled pill for the active state on a slate-100 background — communicates top-level hierarchy.
+- Sub-tabs (Overview, Trends, etc.) retain the lighter underline-only active indicator on a white background — communicates child level.
+- Inactive primary tabs: ghost/transparent; inactive sub-tabs: muted grey (#94a3b8), smaller font (12px).
+
+## [2026-06-14] — Summary > Trends: real dates on chart x-axis
+
+### Changed
+- Daily view now shows actual calendar dates (e.g. "May 17", "Jun 13") for the last 30 days instead of "D01…D30".
+- Weekly view now shows the Monday start-date of each week (e.g. "Jan 12", "Jan 19") instead of "2026-01/W1".
+
+## [2026-06-14] — Summary > Trends: Accuracy Trend moved to full-width bottom row
+
+### Changed
+- Trends layout changed from 3-equal-column to 2-column top (Player Growth + Plays) with Accuracy Trend spanning full width below.
+
+## [2026-06-14] — Summary > Trends: Daily / Weekly / Monthly granularity toggle
+
+### Added
+- Segmented toggle (Daily / Weekly / Monthly) at the top-right of the Trends charts.
+- Switching granularity re-renders all three charts with the appropriate data density.
+- Chart title updates to match granularity (e.g. "Weekly Plays", "Daily Plays").
+
+## [2026-06-14] — Players > Games Played: Content Coverage / Game-a-Day toggle
+
+### Added
+- "Content Coverage" and "Game-a-Day" view-toggle buttons at the top of the Games Played sub-tab.
+- Active view highlights in the company chrome colour; Game-a-Day shows a "coming soon" placeholder.
+
+## [2026-06-14] — Summary > Forecast: remove KPI cards
+
+### Changed
+- Removed the 4 projected KPI cards (Projected Players, Projected Plays, Projected Accuracy, Play Growth) from Summary > Forecast — page now shows only the Play Volume Forecast chart full-width.
+
+## [2026-06-14] — Players > Games Played: compact games-loaded row
+
+### Changed
+- Replaced the sprawling chip list under "Games loaded" with a compact badge showing the count (`17 games`) and a "show games / hide games" toggle that expands the chip list on demand.
+
+## [2026-06-14] — Summary > Trends: remove KPI cards
+
+### Changed
+- Removed the 4 MoM KPI cards from Summary > Trends — page now shows only the 3 trend charts (Player Growth, Monthly Plays, Accuracy Trend).
+
+## [2026-06-14] — Summary > Anomalies: expandable detail rows
+
+### Changed
+- Anomaly cards are now collapsed by default; click "Show details (N rows)" to expand the detail table.
+- Inactive-players card expands a Name / Email / Dealer table from `INACTIVE_PLAYERS` data.
+- Zero-active-departments card expands a Department / Enrolled / Active table.
+- Added `toggleAnomalyDetail()` global handler and `.anomaly-toggle` / `.anomaly-table` CSS.
+
 ## [2026-06-14] — Regional: add sub-tab navigation
 
 ### Added

@@ -328,7 +328,54 @@
 
     var state = { companyId: DEFAULT_COMPANY_ID, period:'All Months', mainTab:'summary', subTab:'overview' };
 
-    var _gpFilter = { search: '', incompleteOnly: false };
+    var _gpFilter          = { search: '', incompleteOnly: false };
+    var _gpView            = 'coverage'; /* 'coverage' | 'gameaday' */
+    var _trendsGranularity = 'monthly';  /* 'daily' | 'weekly' | 'monthly' */
+    var _gadNcOnly         = false;
+    var _gadSearch         = '';
+    var _gadDept           = '';
+
+    function getTrendDataForGranularity(companyId, gran) {
+        var m    = getMonthlyTrend(companyId);
+        var MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        function fmtDate(dt) { return MON[dt.getMonth()] + ' ' + dt.getDate(); }
+
+        if (gran === 'monthly') return { labels: MONTHS_LABELS, players: m.players, plays: m.plays, acc: m.acc };
+
+        var labels = [], players = [], plays = [], acc = [];
+        if (gran === 'weekly') {
+            var wkStart = new Date(2026, 0, 12); /* Jan 12 2026 — first week of data */
+            MONTHS_LABELS.forEach(function(ml, mi) {
+                for (var w = 0; w < 4; w++) {
+                    var idx = mi * 4 + w;
+                    var v   = 0.82 + Math.abs(Math.sin(idx * 11 + companyId * 3)) * 0.36;
+                    var dt  = new Date(wkStart); dt.setDate(dt.getDate() + idx * 7);
+                    labels.push(fmtDate(dt));
+                    players.push(Math.max(0, Math.round(m.players[mi] * v)));
+                    plays.push(Math.max(0, Math.round(m.plays[mi] / 4 * v)));
+                    acc.push(Math.min(99, Math.max(20, Math.round(m.acc[mi] * (0.94 + Math.abs(Math.sin(idx * 7)) * 0.12)))));
+                }
+            });
+        } else { /* daily — last 30 days ending yesterday */
+            var li = m.players.length - 1, pi = Math.max(0, li - 1);
+            var today = new Date();
+            for (var d = 0; d < 30; d++) {
+                var t  = d / 29;
+                var v  = 0.78 + Math.abs(Math.sin(d * 13 + companyId * 7)) * 0.44;
+                var dt = new Date(today); dt.setDate(dt.getDate() - (29 - d));
+                labels.push(fmtDate(dt));
+                players.push(Math.max(0, Math.round((m.players[pi] + (m.players[li] - m.players[pi]) * t) * v)));
+                plays.push(Math.max(0, Math.round((m.plays[pi] + (m.plays[li] - m.plays[pi]) * t) / 22 * v)));
+                acc.push(Math.min(99, Math.max(20, Math.round((m.acc[pi] + (m.acc[li] - m.acc[pi]) * t) * (0.88 + Math.abs(Math.sin(d * 9)) * 0.24)))));
+            }
+        }
+        return { labels: labels, players: players, plays: plays, acc: acc };
+    }
+
+    window.setTrendsGranularity = function(g) {
+        _trendsGranularity = g;
+        renderSummaryTrends();
+    };
 
     /* ── Chart registry ──────────────────────────────────────── */
 
@@ -365,8 +412,9 @@
         return p === 'All Months' ? p : p.replace(/(\d{4})$/, ' $1');
     }
 
-    function areaChartConfig(data, color, isPercent, h) {
-        var ds = MONTHS_LABELS.map(function(l, i) { return { arg: l, val: data[i] }; });
+    function areaChartConfig(data, color, isPercent, h, labels) {
+        var lbs = labels || MONTHS_LABELS;
+        var ds  = lbs.map(function(l, i) { return { arg: l, val: data[i] }; });
         return {
             opts: {
                 dataSource: ds,
@@ -402,8 +450,8 @@
     /* ── Overview v2 card helpers ───────────────────────────── */
 
     function ovKpiCard(featured, iconColor, iconClass, label, value, sub) {
-        var iconBg = featured ? 'rgba(255,255,255,0.2)' : '#1e293b';
-        var ic     = '#fff';
+        var iconBg = featured ? 'rgba(255,255,255,0.2)' : iconColor + '20';
+        var ic     = featured ? '#fff' : iconColor;
         return '<div class="ov-kpi-card' + (featured ? ' featured' : '') + '">' +
             '<div class="ov-kpi-icon" style="background:' + iconBg + ';color:' + ic + '"><i class="' + iconClass + '"></i></div>' +
             '<div class="ov-kpi-lbl">' + esc(label) + '</div>' +
@@ -472,20 +520,7 @@
 
             /* Row 1 — 4 KPI cards (inspo layout: first featured blue) */
             '<div class="ov-kpi-row">' +
-                '<div class="ov-kpi-card featured">' +
-                    '<div class="ov-kpi-icon" style="background:rgba(255,255,255,0.2);color:#fff"><i class="fas fa-users"></i></div>' +
-                    '<div class="ov-kpi-lbl">PARTICIPATION RATE</div>' +
-                    '<div class="ov-kpi-val">' + partRate + '%</div>' +
-                    '<div class="ov-kpi-sub"><strong style="color:#fff">' + active + '</strong> active of <strong style="color:#fff">' + reg + '</strong> registered players</div>' +
-                    '<div class="ov-kpi-bar-wrap"><div class="ov-kpi-bar-fill" style="width:' + partRate + '%"></div></div>' +
-                    '<div class="ov-kpi-legend">' +
-                        '<span class="ov-kpi-leg-dot" style="background:rgba(255,255,255,0.35)"></span><span class="ov-kpi-leg-txt">' + reg + ' registered</span>' +
-                        '<span class="ov-kpi-leg-sep">·</span>' +
-                        '<span class="ov-kpi-leg-dot" style="background:#fff"></span><span class="ov-kpi-leg-txt" style="color:rgba(255,255,255,0.95)">' + active + ' active</span>' +
-                        '<span class="ov-kpi-leg-sep">·</span>' +
-                        '<span class="ov-kpi-leg-dot" style="background:rgba(255,255,255,0.2)"></span><span class="ov-kpi-leg-txt">' + inactive + ' inactive</span>' +
-                    '</div>' +
-                '</div>' +
+                ovKpiCard(false, '#2563eb', 'fas fa-users', 'PARTICIPATION RATE', partRate + '%', active + ' active of ' + reg + ' registered players') +
                 ovKpiCard(false, '#16a34a', 'fas fa-bullseye',       'AVG ACCURACY',       d.avgAcc.toFixed(1) + '%','across all plays') +
                 ovKpiCard(false, '#d97706', 'fas fa-circle-exclamation','INACTIVE',         inactive,                 'need re-engagement') +
                 ovKpiCard(false, '#2563eb', 'fas fa-gamepad',        'GAMES AVAILABLE',    BASE_GAMES.length,        'this period') +
@@ -506,7 +541,7 @@
         makeChart('sumChartTopGames', {
             opts: {
                 dataSource: topGames,
-                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: '#e11d48', cornerRadius: 8 }],
+                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: (COMPANY_THEMES[state.companyId] || COMPANY_THEMES[DEFAULT_COMPANY_ID]).bg, cornerRadius: 8 }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
@@ -544,56 +579,53 @@
     function renderSummaryTrends() {
         var el = document.getElementById('dashSummaryTrends');
         if (!el) return;
-        var trend = getMonthlyTrend(state.companyId);
-        var n     = trend.plays.length;
+        var td = getTrendDataForGranularity(state.companyId, _trendsGranularity);
 
-        function momCard(icon, iconColor, iconBg, label, curr, prev, isSuffix, suffix) {
-            var diff    = curr - prev;
-            var pct     = prev > 0 ? (diff / prev * 100).toFixed(1) : '0.0';
-            var up      = diff >= 0;
-            var arrow   = up ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-            var clr     = up ? '#16a34a' : '#dc2626';
-            var valTxt  = isSuffix ? curr + suffix : curr;
-            var diffTxt = (up ? '+' : '') + (isSuffix ? diff.toFixed(1) + suffix : diff) + ' (' + (up ? '+' : '') + pct + '%)';
-            return '<div class="metric-card">' +
-                '<div class="metric-card-body">' +
-                '<div class="metric-lbl">' + label + '</div>' +
-                '<div class="metric-val">' + valTxt + '</div>' +
-                '<div style="font-size:11px;color:' + clr + ';margin-top:2px"><i class="' + arrow + '" style="font-size:9px"></i> ' + diffTxt + ' MoM</div>' +
-                '</div>' +
-                '<div class="metric-icon" style="background:' + iconBg + ';color:' + iconColor + '"><i class="' + icon + '"></i></div>' +
-                '</div>';
+        function granBtn(label, value) {
+            var active = _trendsGranularity === value;
+            var radius = value === 'daily' ? '6px 0 0 6px' : value === 'monthly' ? '0 6px 6px 0' : '0';
+            return '<button onclick="setTrendsGranularity(\'' + value + '\')" style="' +
+                'padding:5px 16px;border:1px solid ' + (active ? 'var(--chrome-bg)' : 'var(--border)') + ';' +
+                'background:' + (active ? 'var(--chrome-bg)' : '#fff') + ';' +
+                'color:' + (active ? '#fff' : '#64748b') + ';' +
+                'font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;border-radius:' + radius + ';' +
+                'margin-left:-1px;position:relative">' + label + '</button>';
         }
 
-        var peakPlays = Math.max.apply(null, trend.plays);
-        var peakIdx   = trend.plays.indexOf(peakPlays);
-        var peakLabel = MONTHS_LABELS[peakIdx] || '-';
+        var playsLabel = { daily: 'Daily Plays', weekly: 'Weekly Plays', monthly: 'Monthly Plays' }[_trendsGranularity];
+        var showPoints = td.labels.length <= 30;
 
         el.innerHTML =
             '<div class="summary-page">' +
-            '<div class="dash-metrics">' +
-                momCard('fas fa-users',     '#2563eb', '#dbeafe', 'PLAYERS THIS MONTH',  trend.players[n-1], trend.players[n-2], false, '') +
-                momCard('fas fa-chart-bar', '#16a34a', '#dcfce7', 'PLAYS THIS MONTH',    trend.plays[n-1],   trend.plays[n-2],   false, '') +
-                momCard('fas fa-bullseye',  '#0891b2', '#cffafe', 'ACCURACY THIS MONTH', trend.acc[n-1],     trend.acc[n-2],     true,  '%') +
-                '<div class="metric-card">' +
-                    '<div class="metric-card-body">' +
-                    '<div class="metric-lbl">PEAK MONTH</div>' +
-                    '<div class="metric-val" style="font-size:22px">' + peakLabel + '</div>' +
-                    '<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">' + fmtPlays(peakPlays) + ' plays</div>' +
-                    '</div>' +
-                    '<div class="metric-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-star"></i></div>' +
+            '<div style="display:flex;justify-content:flex-end;margin-bottom:14px">' +
+                '<div style="display:inline-flex">' +
+                    granBtn('Daily', 'daily') + granBtn('Weekly', 'weekly') + granBtn('Monthly', 'monthly') +
                 '</div>' +
             '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
                 '<div class="panel-card"><div class="panel-card-hd">Player Growth</div><div class="chart-container"><div id="chartSumPlayerGrowth"></div></div></div>' +
-                '<div class="panel-card"><div class="panel-card-hd">Monthly Plays</div><div class="chart-container"><div id="chartSumMonthlyPlays"></div></div></div>' +
                 '<div class="panel-card"><div class="panel-card-hd">Accuracy Trend</div><div class="chart-container"><div id="chartSumAccTrend"></div></div></div>' +
             '</div>' +
+            '<div class="panel-card" style="margin-top:14px"><div class="panel-card-hd">' + playsLabel + '</div><div class="chart-container"><div id="chartSumMonthlyPlays"></div></div></div>' +
             '</div>';
 
-        makeChart('chartSumPlayerGrowth', areaChartConfig(trend.players, 'rgb(229,62,62)',  false));
-        makeChart('chartSumMonthlyPlays', areaChartConfig(trend.plays,   'rgb(37,99,235)',  false));
-        makeChart('chartSumAccTrend',     areaChartConfig(trend.acc,     'rgb(49,130,206)', true));
+        makeChart('chartSumPlayerGrowth', areaChartConfig(td.players, '#1e3a5f', false, undefined, td.labels));
+        makeChart('chartSumAccTrend',     areaChartConfig(td.acc,     '#2563eb', true,  undefined, td.labels));
+        makeChart('chartSumMonthlyPlays', {
+            opts: {
+                dataSource: td.labels.map(function(l, i) { return { arg: l, val: td.plays[i] }; }),
+                series: [{ argumentField: 'arg', valueField: 'val', type: 'bar', color: '#334155', cornerRadius: 3 }],
+                commonAxisSettings: {
+                    grid: { visible: false },
+                    tick: { visible: false },
+                    label: { font: { size: 10, color: '#64748b' } }
+                },
+                valueAxis: { grid: { color: 'rgba(200,200,200,0.2)', visible: true } },
+                legend:  { visible: false },
+                tooltip: { enabled: true },
+                size:    { height: 180 }
+            }
+        });
     }
 
     /* ── Render: Summary > Forecast ──────────────────────────── */
@@ -638,17 +670,9 @@
 
         el.innerHTML =
             '<div class="summary-page">' +
-            '<div style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:stretch">' +
-                '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px">' +
-                    fcastCard('fas fa-users',          '#2563eb', '#dbeafe', 'PROJECTED PLAYERS',  projPlayers,         '+3 months') +
-                    fcastCard('fas fa-chart-bar',      '#16a34a', '#dcfce7', 'PROJECTED PLAYS',    fmtPlays(projPlays), '+3 months') +
-                    fcastCard('fas fa-bullseye',        '#0891b2', '#cffafe', 'PROJECTED ACCURACY', projAcc + '%',       '+3 months') +
-                    fcastCard('fas fa-arrow-trend-up', growthColor, growthBg,  'PLAY GROWTH',       growthSign + growthPct + '%', 'vs current month') +
-                '</div>' +
-                '<div class="panel-card"><div class="panel-card-hd">Play Volume Forecast' +
-                '<span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px">· dashed = projected</span></div>' +
-                '<div class="chart-container"><div id="chartSumForecast"></div></div></div>' +
-            '</div>' +
+            '<div class="panel-card"><div class="panel-card-hd">Play Volume Forecast' +
+            '<span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px">· dashed = projected</span></div>' +
+            '<div class="chart-container"><div id="chartSumForecast"></div></div></div>' +
             '</div>';
 
         makeChart('chartSumForecast', {
@@ -676,6 +700,53 @@
 
     /* ── Render: Summary > Anomalies ─────────────────────────── */
 
+    window.toggleAnomalyDetail = function(id) {
+        var body = document.getElementById(id);
+        var btn  = document.querySelector('[data-anomaly-toggle="' + id + '"]');
+        if (!body || !btn) return;
+        var open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : '';
+        var rows = body.querySelectorAll('tbody tr').length;
+        btn.innerHTML = (open ? '<i class="fas fa-chevron-right"></i> Show details (' : '<i class="fas fa-chevron-down"></i> Hide details (') + rows + ' rows)';
+    };
+
+    function anomalySevRow(cards) {
+        var high   = cards.filter(function(c) { return c.sev === 'high'; }).length;
+        var medium = cards.filter(function(c) { return c.sev === 'medium'; }).length;
+        var low    = cards.filter(function(c) { return c.sev === 'low'; }).length;
+        function sevCard(count, label, color) {
+            return '<div style="flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.06)">' +
+                '<div style="font-size:36px;font-weight:800;color:' + color + ';line-height:1">' + count + '</div>' +
+                '<div style="font-size:13px;color:#64748b;margin-top:6px">' + label + '</div>' +
+            '</div>';
+        }
+        return '<div style="display:flex;gap:16px;margin-bottom:20px">' +
+            sevCard(high,   'High Severity',   '#e11d48') +
+            sevCard(medium, 'Medium Severity', '#d97706') +
+            sevCard(low,    'Low Severity',    '#2563eb') +
+        '</div>';
+    }
+
+    function anomalyCard(sev, category, title, desc, detailId, detailHtml) {
+        var toggleBtn = detailHtml
+            ? '<button class="anomaly-toggle" data-anomaly-toggle="' + detailId + '" onclick="toggleAnomalyDetail(\'' + detailId + '\')">' +
+              '<i class="fas fa-chevron-right"></i> Show details (' + (detailHtml.match(/<tr/g) || []).length + ' rows)</button>'
+            : '';
+        var detailBlock = detailHtml
+            ? '<div id="' + detailId + '" class="anomaly-detail" style="display:none">' + detailHtml + '</div>'
+            : '';
+        return '<div class="anomaly-card ' + sev + '">' +
+            '<div class="anomaly-card-hd">' +
+                '<i class="fas fa-triangle-exclamation anomaly-card-icon"></i>' +
+                '<span class="anomaly-badge ' + sev + '">' + sev + '</span>' +
+                '<span class="anomaly-category">' + esc(category) + '</span>' +
+            '</div>' +
+            '<div class="anomaly-title">' + esc(title) + '</div>' +
+            '<div class="anomaly-desc">' + esc(desc) + '</div>' +
+            toggleBtn + detailBlock +
+        '</div>';
+    }
+
     function renderSummaryAnomalies() {
         var el = document.getElementById('dashSummaryAnomalies');
         if (!el) return;
@@ -686,31 +757,241 @@
         var depts    = getDeptPlayers(state.companyId);
         var trend    = getMonthlyTrend(state.companyId);
 
-        var deptsZero = depts.filter(function(dep) { return dep.active === 0; }).length;
-        var maxPlay   = Math.max.apply(null, trend.plays);
-        var lastPlay  = trend.plays[trend.plays.length - 1];
-        var dropPct   = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
+        var deptsZero    = depts.filter(function(d) { return d.active === 0; });
+        var maxPlay      = Math.max.apply(null, trend.plays);
+        var lastPlay     = trend.plays[trend.plays.length - 1];
+        var dropPct      = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
 
-        var anomalies = [];
-        if (inactive > 0)  anomalies.push({ sev:'medium', icon:'fas fa-user-clock',       text: inactive + ' players (' + (inactive/reg*100).toFixed(1) + '%) inactive' });
-        if (deptsZero > 0) anomalies.push({ sev:'medium', icon:'fas fa-building',         text: deptsZero + ' dept' + (deptsZero > 1 ? 's' : '') + ' with no active players' });
-        if (dropPct > 25)  anomalies.push({ sev:'high',   icon:'fas fa-arrow-trend-down', text: 'Play volume dropped ' + dropPct.toFixed(1) + '% from peak' });
+        var cards = [];
 
-        var itemsHtml = anomalies.length === 0
-            ? '<div class="anomaly-ok"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</div>'
-            : anomalies.map(function(a) {
-                return '<div class="anomaly-item ' + a.sev + '">' +
-                    '<div class="anomaly-item-icon"><i class="' + a.icon + '"></i></div>' +
-                    '<div class="anomaly-item-text">' + esc(a.text) + '</div>' +
-                    '<div class="anomaly-item-badge ' + a.sev + '">' + a.sev.toUpperCase() + '</div>' +
-                '</div>';
+        /* Inactive players */
+        if (inactive > 0) {
+            var inactivePlayers = INACTIVE_PLAYERS[state.companyId] || INACTIVE_PLAYERS[DEFAULT_COMPANY_ID] || [];
+            var pct = (inactive / reg * 100).toFixed(1);
+            var tableRows = inactivePlayers.map(function(p) {
+                return '<tr><td>' + esc(p.firstName + ' ' + p.lastName) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.dealer) + '</td></tr>';
             }).join('');
+            var tableHtml = tableRows
+                ? '<table class="anomaly-table"><thead><tr><th>Name</th><th>Email</th><th>Dealer</th></tr></thead><tbody>' + tableRows + '</tbody></table>'
+                : '';
+            cards.push(anomalyCard(
+                'medium', 'Engagement',
+                inactive + ' players (' + pct + '%) are inactive — re-engagement needed',
+                'Send personalised re-engagement messages or reset player streaks to incentivise return.',
+                'anomalyDetailInactive', tableHtml
+            ));
+        }
 
-        el.innerHTML =
-            '<div class="summary-page">' +
-            '<div class="panel-card"><div class="panel-card-hd">Anomalies <span class="panel-card-count">' + anomalies.length + ' found</span></div>' +
-            '<div class="anomaly-list">' + itemsHtml + '</div></div>' +
-            '</div>';
+        /* Departments with zero active */
+        if (deptsZero.length > 0) {
+            var deptRows = deptsZero.map(function(d) {
+                return '<tr><td>' + esc(d.name) + '</td><td>' + d.total + '</td><td>0</td></tr>';
+            }).join('');
+            var deptTableHtml = '<table class="anomaly-table"><thead><tr><th>Department</th><th>Enrolled</th><th>Active</th></tr></thead><tbody>' + deptRows + '</tbody></table>';
+            cards.push(anomalyCard(
+                'medium', 'Departments',
+                deptsZero.length + ' department' + (deptsZero.length > 1 ? 's' : '') + ' with zero active players',
+                'Reach out to department managers and promote the platform.',
+                'anomalyDetailDepts', deptTableHtml
+            ));
+        }
+
+        /* Play volume drop */
+        if (dropPct > 25) {
+            cards.push(anomalyCard(
+                'high', 'Volume',
+                'Play volume dropped ' + dropPct.toFixed(1) + '% from peak',
+                'Investigate potential causes and consider launching a new incentive.',
+                'anomalyDetailVolume', ''
+            ));
+        }
+
+        var tagged = cards.map(function(html, idx) { return { sev: idx === 2 ? 'high' : 'medium', html: html }; });
+        var bodyHtml = cards.length === 0
+            ? '<div class="anomaly-ok"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</div>'
+            : cards.join('');
+
+        el.innerHTML = '<div class="summary-page">' + anomalySevRow(tagged) + '<div class="anomaly-list">' + bodyHtml + '</div></div>';
+    }
+
+    /* ── Render: Players > Anomalies ────────────────────────── */
+
+    function renderPlayersAnomalies() {
+        var el = document.getElementById('dashPlayersAnomalies');
+        if (!el) return;
+        var profile  = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+        var reg      = COMPANY_REGISTERED[state.companyId] || profile.players;
+        var active   = profile.players;
+        var inactive = Math.max(0, reg - active);
+        var players  = COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID];
+        var trend    = getMonthlyTrend(state.companyId);
+        var maxPlay  = Math.max.apply(null, trend.plays);
+        var lastPlay = trend.plays[trend.plays.length - 1];
+        var dropPct  = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
+
+        var lowAccPlayers = players.filter(function(p) { return p.accuracy < 65; });
+        var cards = [];
+        var tagged = [];
+
+        /* Inactive players */
+        if (inactive > 0) {
+            var inactivePlayers = INACTIVE_PLAYERS[state.companyId] || INACTIVE_PLAYERS[DEFAULT_COMPANY_ID] || [];
+            var pct = (inactive / reg * 100).toFixed(1);
+            var tableRows = inactivePlayers.map(function(p) {
+                return '<tr><td>' + esc(p.firstName + ' ' + p.lastName) + '</td><td>' + esc(p.email) + '</td><td>' + esc(p.dealer) + '</td></tr>';
+            }).join('');
+            var tbl = tableRows ? '<table class="anomaly-table"><thead><tr><th>Name</th><th>Email</th><th>Dealer</th></tr></thead><tbody>' + tableRows + '</tbody></table>' : '';
+            cards.push(anomalyCard('medium', 'Engagement',
+                inactive + ' players (' + pct + '%) are inactive — re-engagement needed',
+                'Send personalised re-engagement messages or reset player streaks to incentivise return.',
+                'plrAnomalyInactive', tbl));
+            tagged.push({ sev: 'medium' });
+        }
+
+        /* Low accuracy players */
+        if (lowAccPlayers.length > 0) {
+            var accRows = lowAccPlayers.map(function(p) {
+                return '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.dept) + '</td><td>' + p.accuracy.toFixed(1) + '%</td></tr>';
+            }).join('');
+            var accTbl = '<table class="anomaly-table"><thead><tr><th>Player</th><th>Dept</th><th>Accuracy</th></tr></thead><tbody>' + accRows + '</tbody></table>';
+            cards.push(anomalyCard('medium', 'Accuracy',
+                lowAccPlayers.length + ' player' + (lowAccPlayers.length > 1 ? 's' : '') + ' with accuracy below 65%',
+                'Review game difficulty or provide additional coaching for these players.',
+                'plrAnomalyAcc', accTbl));
+            tagged.push({ sev: 'medium' });
+        }
+
+        /* Play volume drop */
+        if (dropPct > 25) {
+            var sev = dropPct > 40 ? 'high' : 'medium';
+            cards.push(anomalyCard(sev, 'Trends',
+                'Play volume dropped ' + dropPct.toFixed(1) + '% from peak',
+                'Investigate whether there were platform issues or engagement drops. Consider a re-engagement campaign.',
+                'plrAnomalyVolume', ''));
+            tagged.push({ sev: sev });
+        }
+
+        var bodyHtml = cards.length === 0
+            ? '<div class="anomaly-ok"><i class="fas fa-circle-check"></i> No player anomalies detected for this period.</div>'
+            : cards.join('');
+
+        el.innerHTML = '<div class="summary-page">' + anomalySevRow(tagged) + '<div class="anomaly-list">' + bodyHtml + '</div></div>';
+    }
+
+    /* ── Render: Games > Anomalies ──────────────────────────── */
+
+    function renderGamesAnomalies() {
+        var el = document.getElementById('dashGamesAnomalies');
+        if (!el) return;
+        var d       = getPeriodData(state.companyId, state.period);
+        var trend   = getMonthlyTrend(state.companyId);
+        var maxPlay = Math.max.apply(null, trend.plays);
+        var lastPlay = trend.plays[trend.plays.length - 1];
+        var dropPct  = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
+
+        var lowAccGames = BASE_GAMES.map(function(name, i) {
+            return { name: name, accuracy: d.perf[i] ? d.perf[i].accuracy : 0, plays: d.perf[i] ? d.perf[i].plays : 0 };
+        }).filter(function(g) { return g.accuracy < 60; });
+
+        var zeroGames = BASE_GAMES.map(function(name, i) {
+            return { name: name, plays: d.perf[i] ? d.perf[i].plays : 0 };
+        }).filter(function(g) { return g.plays === 0; });
+
+        var cards = [];
+        var tagged = [];
+
+        if (lowAccGames.length > 0) {
+            var accRows = lowAccGames.map(function(g) {
+                return '<tr><td>' + esc(g.name) + '</td><td>' + g.accuracy.toFixed(1) + '%</td><td>' + g.plays + '</td></tr>';
+            }).join('');
+            var tbl = '<table class="anomaly-table"><thead><tr><th>Game</th><th>Accuracy</th><th>Plays</th></tr></thead><tbody>' + accRows + '</tbody></table>';
+            cards.push(anomalyCard('medium', 'Accuracy',
+                lowAccGames.length + ' game' + (lowAccGames.length > 1 ? 's' : '') + ' with answer accuracy below 60%',
+                'Review question difficulty or content relevance for these games.',
+                'gmsAnomalyAcc', tbl));
+            tagged.push({ sev: 'medium' });
+        }
+
+        if (zeroGames.length > 0) {
+            var zRows = zeroGames.map(function(g) { return '<tr><td>' + esc(g.name) + '</td></tr>'; }).join('');
+            var zTbl  = '<table class="anomaly-table"><thead><tr><th>Game</th></tr></thead><tbody>' + zRows + '</tbody></table>';
+            cards.push(anomalyCard('high', 'Engagement',
+                zeroGames.length + ' game' + (zeroGames.length > 1 ? 's' : '') + ' with zero plays this period',
+                'Check if these games are published and accessible to players.',
+                'gmsAnomalyZero', zTbl));
+            tagged.push({ sev: 'high' });
+        }
+
+        if (dropPct > 25) {
+            var sev = dropPct > 40 ? 'high' : 'medium';
+            cards.push(anomalyCard(sev, 'Trends',
+                'Overall play volume dropped ' + dropPct.toFixed(1) + '% from peak',
+                'Investigate whether there were platform issues or engagement drops. Consider a re-engagement campaign.',
+                'gmsAnomalyVolume', ''));
+            tagged.push({ sev: sev });
+        }
+
+        var bodyHtml = cards.length === 0
+            ? '<div class="anomaly-ok"><i class="fas fa-circle-check"></i> No game anomalies detected for this period.</div>'
+            : cards.join('');
+        el.innerHTML = '<div class="summary-page">' + anomalySevRow(tagged) + '<div class="anomaly-list">' + bodyHtml + '</div></div>';
+    }
+
+    /* ── Render: Departments > Anomalies ─────────────────────── */
+
+    function renderDeptAnomalies() {
+        var el = document.getElementById('dashDeptAnomalies');
+        if (!el) return;
+        var depts    = getDeptPlayers(state.companyId);
+        var trend    = getMonthlyTrend(state.companyId);
+        var maxPlay  = Math.max.apply(null, trend.plays);
+        var lastPlay = trend.plays[trend.plays.length - 1];
+        var dropPct  = maxPlay > 0 ? (maxPlay - lastPlay) / maxPlay * 100 : 0;
+
+        var zeroDepts = depts.filter(function(d) { return d.active === 0; });
+        var lowDepts  = depts.filter(function(d) { return d.active > 0 && d.total > 0 && (d.active / d.total) < 0.5; });
+
+        var cards = [];
+        var tagged = [];
+
+        if (zeroDepts.length > 0) {
+            var zRows = zeroDepts.map(function(d) {
+                return '<tr><td>' + esc(d.name) + '</td><td>' + d.total + '</td><td>0</td></tr>';
+            }).join('');
+            var zTbl = '<table class="anomaly-table"><thead><tr><th>Department</th><th>Enrolled</th><th>Active</th></tr></thead><tbody>' + zRows + '</tbody></table>';
+            cards.push(anomalyCard('high', 'Participation',
+                zeroDepts.length + ' department' + (zeroDepts.length > 1 ? 's' : '') + ' with zero active players',
+                'Reach out to department managers and promote the platform.',
+                'dptAnomalyZero', zTbl));
+            tagged.push({ sev: 'high' });
+        }
+
+        if (lowDepts.length > 0) {
+            var lRows = lowDepts.map(function(d) {
+                var pct = Math.round(d.active / d.total * 100);
+                return '<tr><td>' + esc(d.name) + '</td><td>' + d.active + '/' + d.total + '</td><td>' + pct + '%</td></tr>';
+            }).join('');
+            var lTbl = '<table class="anomaly-table"><thead><tr><th>Department</th><th>Active/Total</th><th>Rate</th></tr></thead><tbody>' + lRows + '</tbody></table>';
+            cards.push(anomalyCard('medium', 'Participation',
+                lowDepts.length + ' department' + (lowDepts.length > 1 ? 's' : '') + ' with participation below 50%',
+                'Consider targeted communications or incentives to boost engagement in these departments.',
+                'dptAnomalyLow', lTbl));
+            tagged.push({ sev: 'medium' });
+        }
+
+        if (dropPct > 25) {
+            var sev = dropPct > 40 ? 'high' : 'medium';
+            cards.push(anomalyCard(sev, 'Trends',
+                'Department play volume dropped ' + dropPct.toFixed(1) + '% from peak',
+                'Review which departments are contributing to the decline and investigate root causes.',
+                'dptAnomalyVolume', ''));
+            tagged.push({ sev: sev });
+        }
+
+        var bodyHtml = cards.length === 0
+            ? '<div class="anomaly-ok"><i class="fas fa-circle-check"></i> No department anomalies detected for this period.</div>'
+            : cards.join('');
+        el.innerHTML = '<div class="summary-page">' + anomalySevRow(tagged) + '<div class="anomaly-list">' + bodyHtml + '</div></div>';
     }
 
     /* ── Render: shared Trends charts (Players / Games / Dept) ── */
@@ -727,12 +1008,12 @@
             '</div>' +
             '<div class="chart-card" style="margin-top:14px"><div class="chart-card-hd">Combined Engagement Overview</div><div class="chart-container"><div id="'+prefix+'ChartEngagement"></div></div></div>';
 
-        makeChart(prefix+'ChartActivity', areaChartConfig(trend.players, 'rgb(229,62,62)',  false));
-        makeChart(prefix+'ChartAcc',      areaChartConfig(trend.acc,     'rgb(49,130,206)', true));
+        makeChart(prefix+'ChartActivity', areaChartConfig(trend.players, '#1e3a5f', false));
+        makeChart(prefix+'ChartAcc',      areaChartConfig(trend.acc,     '#2563eb', true));
         makeChart(prefix+'ChartEngagement', {
             opts: {
                 dataSource: ds,
-                series: [{ argumentField: 'arg', valueField: 'val', type: 'bar', color: '#e53e3e', cornerRadius: 3 }],
+                series: [{ argumentField: 'arg', valueField: 'val', type: 'bar', color: '#334155', cornerRadius: 3 }],
                 commonAxisSettings: {
                     grid: { visible: false },
                     tick: { visible: false },
@@ -762,24 +1043,22 @@
         }).sort(function(a, b) { return b.accuracy - a.accuracy; }).slice(0, 8);
 
         document.getElementById('dashGamesOverview').innerHTML =
+            '<div class="ov-kpi-row" style="margin-bottom:16px">' +
+                ovKpiCard(false, '#7c3aed', 'fas fa-gamepad',   'GAMES AVAILABLE', BASE_GAMES.length,       'this period') +
+                ovKpiCard(false, '#16a34a', 'fas fa-chart-line','TOTAL PLAYS',     fmtPlays(d.plays),       'all time') +
+                ovKpiCard(false, '#0891b2', 'fas fa-bullseye',  'AVG ANSWER ACC',  d.avgAcc.toFixed(1)+'%','across all plays') +
+                ovKpiCard(false, '#d97706', 'fas fa-list-ol',   'USER ANSWERS',    d.userAns,               'submitted') +
+            '</div>' +
             '<div class="dash-table-card" style="margin-bottom:16px"><div class="dash-table-card-hd">Game Performance</div>' +
-            '<table class="dash-perf-table"><thead><tr><th>Game Name</th><th>Plays</th><th>Answer Accuracy</th><th>Play Time (Min)</th></tr></thead>' +
+            '<table class="dash-perf-table"><thead><tr><th>Game Name</th><th>Plays</th><th>Accuracy</th><th>Time (min)</th></tr></thead>' +
             '<tbody>'+rows+'</tbody></table></div>' +
-            '<div style="display:grid;grid-template-columns:1fr 220px;gap:16px;align-items:start">' +
-                '<div class="panel-card"><div class="panel-card-hd">Answer Accuracy by Game</div>' +
-                '<div class="chart-container"><div id="chartGamesAccuracy"></div></div></div>' +
-                '<div style="display:flex;flex-direction:column;gap:12px">' +
-                    metricCard('Games Available', BASE_GAMES.length, '', 'fas fa-gamepad', 'pink') +
-                    metricCard('Total Plays', fmtPlays(d.plays), 'green', 'fas fa-chart-line', 'blue') +
-                    metricCard('Avg Answer Acc', d.avgAcc.toFixed(1)+'%', 'teal', 'fas fa-bullseye', 'teal') +
-                    metricCard('User Answers', d.userAns, '', 'fas fa-list-ol', 'indigo') +
-                '</div>' +
-            '</div>';
+            '<div class="panel-card"><div class="panel-card-hd">Answer Accuracy by Game</div>' +
+            '<div class="chart-container"><div id="chartGamesAccuracy"></div></div></div>';
 
         makeChart('chartGamesAccuracy', {
             opts: {
                 dataSource: accData,
-                series: [{ argumentField: 'name', valueField: 'accuracy', type: 'bar', color: '#2563eb', cornerRadius: 3 }],
+                series: [{ argumentField: 'name', valueField: 'accuracy', type: 'bar', color: '#1e3a5f', cornerRadius: 3 }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
@@ -810,14 +1089,16 @@
         var badgeBg     = ['#fef3c7','#f1f5f9','#fee2e2'];
         var top3 = players.slice(0,3);
 
+        var rankLabels = ['1ST PLACE', '2ND PLACE', '3RD PLACE'];
         var spotlightHtml = '<div class="player-spotlight-row">' + top3.map(function(p,i) {
-            return '<div class="player-spotlight-card">' +
-                '<div class="player-spotlight-rank" style="background:'+badgeBg[i]+';color:'+badgeColors[i]+'">'+(i+1)+'</div>' +
-                '<div class="player-spotlight-body">' +
-                    '<div class="player-spotlight-name">'+esc(p.name)+'</div>' +
-                    '<div class="player-spotlight-dept">'+esc(p.dept)+'</div>' +
-                    '<div class="player-spotlight-pts" style="color:'+badgeColors[i]+'">' + Math.round(p.points*scale).toLocaleString()+' pts</div>' +
-                '</div></div>';
+            var pts = Math.round(p.points * scale).toLocaleString() + ' pts';
+            return '<div class="ov-kpi-card">' +
+                '<div class="ov-kpi-icon" style="background:' + badgeBg[i] + ';color:' + badgeColors[i] + ';font-size:16px;font-weight:800">' + (i+1) + '</div>' +
+                '<div class="ov-kpi-lbl">' + rankLabels[i] + '</div>' +
+                '<div class="ov-kpi-val" style="font-size:20px;font-weight:500;color:#0f172a;line-height:1.2">' + esc(p.name) + '</div>' +
+                '<div class="ov-kpi-sub">' + esc(p.dept) + '</div>' +
+                '<div class="ov-kpi-sub" style="font-weight:600;color:#1e3a5f;margin-top:6px">' + pts + '</div>' +
+            '</div>';
         }).join('') + '</div>';
 
         var rows = players.map(function(p,i) {
@@ -863,11 +1144,11 @@
         }
 
         document.getElementById('dashPlayersPanel').innerHTML =
-            '<div class="dash-metrics">' +
-                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">Active Players</div><div class="metric-val">'+profile.players+'</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">'+fmtPlays(d.plays)+' total plays</div></div><div class="metric-icon pink"><i class="fas fa-users"></i></div></div>' +
-                metricCard('Avg Accuracy', d.avgAcc.toFixed(1)+'%', 'green', 'fas fa-bullseye', 'teal', 'across all plays') +
-                metricCard('Dealers', profile.dealers, '', 'fas fa-building', 'blue', 'participating') +
-                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">Inactive</div><div class="metric-val" style="color:#d97706">'+totalInact+'</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">need re-engagement</div></div><div class="metric-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-circle-exclamation"></i></div></div>' +
+            '<div class="ov-kpi-row" style="margin-bottom:16px">' +
+                ovKpiCard(false, '#ec4899', 'fas fa-users',              'ACTIVE PLAYERS', profile.players,             fmtPlays(d.plays) + ' total plays') +
+                ovKpiCard(false, '#16a34a', 'fas fa-bullseye',           'AVG ACCURACY',   d.avgAcc.toFixed(1) + '%',  'across all plays') +
+                ovKpiCard(false, '#2563eb', 'fas fa-building',           'DEALERS',        profile.dealers,             'participating') +
+                ovKpiCard(false, '#d97706', 'fas fa-circle-exclamation', 'INACTIVE',       totalInact,                  'need re-engagement') +
             '</div>' +
             spotlightHtml +
             '<div class="dash-table-card"><div class="dash-table-card-hd">Full Player Rankings</div>' +
@@ -883,6 +1164,156 @@
             '</div>';
     }
 
+    /* ── Game-a-Day helpers ──────────────────────────────────── */
+
+    var GAD_WEEKS = 12;
+    var GAD_DAYS  = 5;
+
+    function gadWeeks(player, companyId) {
+        var compliance = (player.played || 0) / 17;
+        var weeks = [];
+        for (var w = 0; w < GAD_WEEKS; w++) {
+            var seed = Math.abs(Math.sin((player.name.charCodeAt(0) || 65) + w * 13 + companyId * 7));
+            var raw  = seed * 0.35 + compliance * 0.65;
+            var plays = raw > 0.85 ? GAD_DAYS :
+                        raw > 0.65 ? 4 :
+                        raw > 0.48 ? 3 :
+                        raw > 0.32 ? 2 :
+                        raw > 0.18 ? 1 : 0;
+            weeks.push(Math.max(0, Math.min(GAD_DAYS, plays)));
+        }
+        return weeks;
+    }
+
+    function gadCellStyle(plays) {
+        if (plays >= GAD_DAYS) return 'background:#dcfce7;color:#15803d';
+        if (plays > 0)         return 'background:#fef3c7;color:#b45309';
+        return 'background:#fee2e2;color:#b91c1c';
+    }
+
+    /* _gadData holds the generated rows — populated once per renderGadView call */
+    var _gadData = [];
+
+    function gadRenderTable() {
+        var totalDays = GAD_WEEKS * GAD_DAYS;
+        var search = (_gadSearch || '').toLowerCase();
+        var shown = _gadData.filter(function(d) {
+            if (_gadNcOnly && !d.nc) return false;
+            if (_gadDept && d.dealer !== _gadDept) return false;
+            if (search && d.name.toLowerCase().indexOf(search) === -1 && d.dealer.toLowerCase().indexOf(search) === -1) return false;
+            return true;
+        });
+
+        var lbl = document.getElementById('gadCountLabel');
+        if (lbl) lbl.textContent = shown.length + ' players';
+
+        var rows = shown.map(function(d) {
+            var ts    = gadCellStyle(d.total >= totalDays ? GAD_DAYS : (d.total > 0 ? 1 : 0));
+            var cells = d.weeks.map(function(plays) {
+                var cs = gadCellStyle(plays);
+                return '<td style="padding:3px 3px;text-align:center"><div style="' + cs + ';border-radius:4px;font-size:11px;font-weight:600;padding:3px 0;white-space:nowrap">' + plays + '/' + GAD_DAYS + '</div></td>';
+            }).join('');
+            return '<tr style="border-bottom:1px solid var(--border)">' +
+                '<td style="padding:10px 14px;min-width:170px;position:sticky;left:0;background:#fff;z-index:1">' +
+                    '<div style="font-size:13px;font-weight:600;color:#1e293b">' + esc(d.name) + '</div>' +
+                    '<div style="font-size:11px;color:#64748b;margin-top:1px">' + esc(d.dealer) + '</div></td>' +
+                '<td style="padding:3px 8px;text-align:center;position:sticky;left:170px;background:#fff;z-index:1">' +
+                    '<div style="' + ts + ';border-radius:4px;font-size:11px;font-weight:700;padding:3px 6px;white-space:nowrap">' + d.total + '/' + totalDays + '</div></td>' +
+                cells +
+            '</tr>';
+        }).join('') || '<tr><td colspan="' + (GAD_WEEKS + 2) + '" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">No players match.</td></tr>';
+
+        var tbody = document.getElementById('gadTbody');
+        if (tbody) tbody.innerHTML = rows;
+    }
+
+    function renderGadView() {
+        var el = document.getElementById('gpGameaDayView');
+        if (!el) return;
+        var allPlayers = PLAYER_COVERAGE[state.companyId] || PLAYER_COVERAGE[DEFAULT_COMPANY_ID] || [];
+        var totalDays  = GAD_WEEKS * GAD_DAYS;
+
+        _gadData = allPlayers.map(function(p) {
+            var weeks = gadWeeks(p, state.companyId);
+            var total = weeks.reduce(function(s, w) { return s + w; }, 0);
+            return { name: p.name, dealer: p.dealer, weeks: weeks, total: total, nc: weeks.some(function(w) { return w === 0; }) };
+        });
+
+        var partN    = _gadData.filter(function(d) { return d.total > 0; }).length;
+        var onTrackN = _gadData.filter(function(d) { return d.total >= totalDays; }).length;
+        var belowN   = _gadData.filter(function(d) { return d.total > 0 && d.total < totalDays; }).length;
+        var allPlays = _gadData.reduce(function(s, d) { return s + d.total; }, 0);
+        var avgDay   = _gadData.length > 0 ? (allPlays / (_gadData.length * totalDays)).toFixed(2) : '0.00';
+
+        /* Unique dealer list for dropdown */
+        var dealers = [];
+        _gadData.forEach(function(d) { if (dealers.indexOf(d.dealer) === -1) dealers.push(d.dealer); });
+        var deptOptions = '<option value="">All departments</option>' +
+            dealers.map(function(dl) { return '<option value="' + esc(dl) + '"' + (_gadDept === dl ? ' selected' : '') + '>' + esc(dl) + '</option>'; }).join('');
+
+        var wkHeaders = '';
+        for (var w = 1; w <= GAD_WEEKS; w++) {
+            wkHeaders += '<th style="min-width:54px;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:#64748b">WK' + w + '</th>';
+        }
+
+        var ncActive = _gadNcOnly;
+        el.innerHTML =
+            '<div class="ov-kpi-row" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">' +
+                ovKpiCard(false, '#ec4899', 'fas fa-users',                'PARTICIPATION',   Math.round(partN / _gadData.length * 100) + '%',    partN + ' of ' + _gadData.length + ' players active') +
+                ovKpiCard(false, '#16a34a', 'fas fa-circle-check',         'ON TRACK',        Math.round(onTrackN / _gadData.length * 100) + '%', onTrackN + ' players meeting target') +
+                ovKpiCard(false, '#d97706', 'fas fa-triangle-exclamation', 'BELOW TARGET',    Math.round(belowN / _gadData.length * 100) + '%',   belowN + ' players below target') +
+                ovKpiCard(false, '#2563eb', 'fas fa-calendar-day',         'WORKING DAYS',    totalDays,                                            GAD_WEEKS + ' wks × ' + GAD_DAYS + ' days') +
+                ovKpiCard(false, '#0891b2', 'fas fa-gauge-high',           'AVG GAMES / DAY', avgDay,                                               'across all players') +
+            '</div>' +
+            '<div class="dash-table-card">' +
+                /* Filter bar */
+                '<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+                    '<div style="position:relative;flex:1;min-width:160px;max-width:240px">' +
+                        '<i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px"></i>' +
+                        '<input id="gadSearchInput" type="text" placeholder="Search player or dealer..." oninput="gadSearch(this.value)" value="' + esc(_gadSearch) + '" style="width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;outline:none;box-sizing:border-box;font-family:inherit">' +
+                    '</div>' +
+                    '<select onchange="gadSetDept(this.value)" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer;font-family:inherit">' + deptOptions + '</select>' +
+                    '<button id="gadNcBtn" onclick="gadToggleNc()" style="padding:6px 14px;border:1px solid ' + (ncActive ? 'var(--chrome-bg)' : 'var(--border)') + ';border-radius:6px;font-size:12px;cursor:pointer;color:' + (ncActive ? '#fff' : '#1e293b') + ';background:' + (ncActive ? 'var(--chrome-bg)' : '#fff') + ';font-family:inherit">Non-compliant only</button>' +
+                    '<span style="flex:1"></span>' +
+                    '<span id="gadCountLabel" style="font-size:12px;color:#64748b">' + _gadData.length + ' players</span>' +
+                    '<button onclick="alert(\'Download coming soon\')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:#1e293b;font-family:inherit"><i class="fas fa-download"></i> Download</button>' +
+                '</div>' +
+                /* Scrollable table */
+                '<div style="overflow-x:auto">' +
+                '<table style="width:max-content;min-width:100%;border-collapse:collapse">' +
+                    '<thead><tr style="background:#f8fafc;border-bottom:1px solid var(--border)">' +
+                        '<th style="padding:8px 14px;text-align:left;font-size:11px;font-weight:600;color:#64748b;min-width:170px;position:sticky;left:0;background:#f8fafc;z-index:2">PLAYER</th>' +
+                        '<th style="min-width:70px;padding:8px 6px;text-align:center;font-size:11px;font-weight:600;color:#64748b;position:sticky;left:170px;background:#f8fafc;z-index:2">TOTAL</th>' +
+                        wkHeaders +
+                    '</tr></thead>' +
+                    '<tbody id="gadTbody"></tbody>' +
+                '</table></div>' +
+            '</div>';
+
+        gadRenderTable();
+    }
+
+    window.gadToggleNc = function() {
+        _gadNcOnly = !_gadNcOnly;
+        var btn = document.getElementById('gadNcBtn');
+        if (btn) {
+            btn.style.background    = _gadNcOnly ? 'var(--chrome-bg)' : '#fff';
+            btn.style.color         = _gadNcOnly ? '#fff' : '#1e293b';
+            btn.style.borderColor   = _gadNcOnly ? 'var(--chrome-bg)' : 'var(--border)';
+        }
+        gadRenderTable();
+    };
+
+    window.gadSearch = function(val) {
+        _gadSearch = val;
+        gadRenderTable();
+    };
+
+    window.gadSetDept = function(val) {
+        _gadDept = val;
+        gadRenderTable();
+    };
+
     /* ── Render: Players > Games Played ──────────────────────── */
 
     function renderPlayersGamesPlayed() {
@@ -895,24 +1326,46 @@
         var avgCov     = allPlayers.length > 0 ? Math.round(allPlayers.reduce(function(s, p) { return s + p.played; }, 0) / (allPlayers.length * total) * 100) : 0;
 
         var gameChips = BASE_GAMES.map(function(g) {
-            return '<span style="display:inline-block;background:#f1f5f9;border-radius:20px;padding:3px 10px;font-size:11px;color:#475569;margin:3px 4px 3px 0">' + esc(g) + '</span>';
+            return '<span style="display:inline-block;background:#f1f5f9;border-radius:20px;padding:3px 10px;font-size:11px;color:#475569;margin:2px 4px 2px 0">' + esc(g) + '</span>';
         }).join('');
 
         _gpFilter.search = '';
         _gpFilter.incompleteOnly = false;
 
+        function viewBtn(label, view) {
+            var active = _gpView === view;
+            return '<button onclick="gpSetView(\'' + view + '\')" style="padding:7px 18px;border-radius:6px;border:1px solid ' +
+                (active ? 'var(--chrome-bg)' : 'var(--border)') + ';background:' +
+                (active ? 'var(--chrome-bg)' : '#fff') + ';color:' +
+                (active ? '#fff' : '#1e293b') + ';font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">' + label + '</button>';
+        }
+
         el.innerHTML =
-            '<div style="padding:16px 0">' +
-            '<div class="dash-metrics">' +
+            '<div style="padding:0 0 16px">' +
+            '<div style="padding:16px 0 0;display:flex;gap:8px">' +
+                viewBtn('Content Coverage', 'coverage') +
+                viewBtn('Game-a-Day', 'gameaday') +
+            '</div>' +
+
+            /* ── Content Coverage view ── */
+            '<div id="gpCoverageView" style="' + (_gpView === 'coverage' ? '' : 'display:none') + '">' +
+            '<div class="dash-metrics" style="margin-top:14px">' +
                 '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">GAMES THIS PERIOD</div><div class="metric-val">' + total + '</div></div><div class="metric-icon" style="background:#ede9fe;color:#7c3aed"><i class="fas fa-gamepad"></i></div></div>' +
                 '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">FULL COVERAGE</div><div class="metric-val" style="color:#16a34a">' + fullCount + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">players completed every game</div></div><div class="metric-icon" style="background:#dcfce7;color:#16a34a"><i class="fas fa-check-circle"></i></div></div>' +
                 '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">INCOMPLETE</div><div class="metric-val" style="color:#d97706">' + incomplete + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">players missing games</div></div><div class="metric-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-circle-exclamation"></i></div></div>' +
                 '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">AVG COVERAGE</div><div class="metric-val">' + avgCov + '%</div></div><div class="metric-icon" style="background:#dbeafe;color:#2563eb"><i class="fas fa-chart-pie"></i></div></div>' +
             '</div>' +
             '<div class="dash-table-card" style="margin-top:14px">' +
-                '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:#64748b">' +
-                    '<strong style="color:#1e293b;font-size:13px">Games loaded:</strong>&nbsp;&nbsp;' + gameChips +
+                '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">' +
+                    '<span style="font-size:12px;color:#64748b;font-weight:500">Games loaded:</span>' +
+                    '<span style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:20px;padding:3px 12px;font-size:12px;color:#475569;font-weight:600">' +
+                        '<i class="fas fa-gamepad" style="font-size:11px;color:#7c3aed"></i> ' + total + ' games' +
+                    '</span>' +
+                    '<button onclick="gpToggleGameList(this)" style="background:none;border:none;font-size:11px;color:#2563eb;cursor:pointer;padding:0;font-family:inherit">' +
+                        '<i class="fas fa-chevron-down" style="font-size:9px;margin-right:3px"></i>show games' +
+                    '</button>' +
                 '</div>' +
+                '<div id="gpGameList" style="display:none;padding:10px 16px;border-bottom:1px solid var(--border);line-height:1.8">' + gameChips + '</div>' +
                 '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">' +
                     '<div style="position:relative;flex:1;max-width:260px"><i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px"></i>' +
                     '<input id="gpSearch" type="text" placeholder="Search player or dealer..." oninput="gpApplyFilter()" style="width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;outline:none"></div>' +
@@ -922,9 +1375,16 @@
                 '</div>' +
                 '<div id="gpPlayerList"></div>' +
             '</div>' +
+            '</div>' +
+
+            /* ── Game-a-Day view ── */
+            '<div id="gpGameaDayView" style="margin-top:14px;' + (_gpView === 'gameaday' ? '' : 'display:none') + '">' +
+            '</div>' +
+
             '</div>';
 
-        gpRenderList(allPlayers, total);
+        if (_gpView === 'coverage') gpRenderList(allPlayers, total);
+        if (_gpView === 'gameaday') renderGadView();
     }
 
     function gpRenderList(allPlayers, total) {
@@ -971,6 +1431,21 @@
         var listEl = document.getElementById('gpPlayerList');
         if (listEl) listEl.innerHTML = rows || '<div style="padding:24px 16px;text-align:center;color:#94a3b8;font-size:13px">No players match the current filter.</div>';
     }
+
+    window.gpSetView = function(view) {
+        _gpView = view;
+        renderPlayersGamesPlayed();
+    };
+
+    window.gpToggleGameList = function(btn) {
+        var list = document.getElementById('gpGameList');
+        if (!list) return;
+        var open = list.style.display !== 'none';
+        list.style.display = open ? 'none' : '';
+        btn.innerHTML = open
+            ? '<i class="fas fa-chevron-down" style="font-size:9px;margin-right:3px"></i>show games'
+            : '<i class="fas fa-chevron-up" style="font-size:9px;margin-right:3px"></i>hide games';
+    };
 
     window.gpApplyFilter = function() {
         var searchEl = document.getElementById('gpSearch');
@@ -1140,11 +1615,14 @@
         renderSummaryForecast();
         renderSummaryAnomalies();
         renderGamesOverview();
+        renderGamesAnomalies();
         renderTrendsCharts('dashGamesTrends', 'gms');
         renderPlayersOverview();
         renderPlayersGamesPlayed();
+        renderPlayersAnomalies();
         renderTrendsCharts('dashPlayersTrends', 'plr');
         renderDepartmentsOverview();
+        renderDeptAnomalies();
         renderTrendsCharts('dashDeptTrends', 'dpt');
         renderRegionalOverview();
     }

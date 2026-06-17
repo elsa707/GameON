@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameOn - Analytics Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="styles-dashboard.css">
+    <link rel="stylesheet" href="styles-dashboard.css?v=6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.6/css/dx.light.css">
@@ -96,7 +96,7 @@
             <button class="dash-nav-tab" data-tab="departments" onclick="dashMainTab('departments')">
                 <i class="fas fa-building"></i> Departments
             </button>
-            <button class="dash-nav-tab" data-tab="regional" onclick="dashMainTab('regional')">
+            <button class="dash-nav-tab" data-tab="regional" onclick="dashMainTab('regional')" hidden>
                 <i class="fas fa-map-marker-alt"></i> Regional
             </button>
             <button class="dash-nav-tab" data-tab="incentives" onclick="dashMainTab('incentives')" hidden>
@@ -147,7 +147,7 @@
                 <div class="dash-sub-panel"        data-sub="gamesplayed" id="dashPlayersGamesPlayed"></div>
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashPlayersTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
-                <div class="dash-sub-panel"        data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies" id="dashPlayersAnomalies"></div>
             </div>
 
             <!-- GAMES panel -->
@@ -155,7 +155,7 @@
                 <div class="dash-sub-panel active" data-sub="overview"  id="dashGamesOverview"></div>
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashGamesTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
-                <div class="dash-sub-panel"        data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies" id="dashGamesAnomalies"></div>
             </div>
 
             <!-- DEPARTMENTS panel -->
@@ -163,7 +163,7 @@
                 <div class="dash-sub-panel active" data-sub="overview"  id="dashDeptPanel"></div>
                 <div class="dash-sub-panel"        data-sub="trends"    id="dashDeptTrends"></div>
                 <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
-                <div class="dash-sub-panel"        data-sub="anomalies"><div class="dash-sub-placeholder"><i class="fas fa-triangle-exclamation"></i><h4>Anomalies</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies" id="dashDeptAnomalies"></div>
             </div>
 
             <!-- REGIONAL panel -->
@@ -214,6 +214,6 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 </script>
 <script src="script-sidebar-scope.js"></script>
-<script src="script-dashboard.js"></script>
+<script src="script-dashboard.js?v=26"></script>
 </body>
 </html>
