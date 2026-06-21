@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameOn - Analytics Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="styles-dashboard.css?v=10">
+    <link rel="stylesheet" href="styles-dashboard.css?v=40">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.6/css/dx.light.css">
@@ -41,7 +41,19 @@
                 <a href="#" class="nav-item" data-tooltip="Game Calendar"><i class="fas fa-calendar-alt"></i><span>Game Calendar</span></a>
                 <a href="#" class="nav-item" data-tooltip="Rewards"><i class="fas fa-medal"></i><span>Rewards</span></a>
                 <a href="index-users-dept-grid.html" class="nav-item" data-tooltip="Players"><i class="fas fa-users"></i><span>Players</span></a>
-                <a href="reports.html" class="nav-item" data-tooltip="Reports"><i class="fas fa-chart-bar"></i><span>Reports</span></a>
+                <div class="nav-group open" id="reportsNavGroup">
+                    <a href="javascript:void(0)" class="nav-item" onclick="toggleReportsNav()" data-tooltip="Reports">
+                        <i class="fas fa-chart-bar"></i><span>Reports</span>
+                        <i class="fas fa-chevron-right nav-arrow"></i>
+                    </a>
+                    <div class="nav-sub">
+                        <a href="javascript:void(0)" class="nav-sub-item active" data-tab="summary"     onclick="dashMainTab('summary')">Summary</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="players"     onclick="dashMainTab('players')">Players</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="games"       onclick="dashMainTab('games')">Games</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="departments"   onclick="dashMainTab('departments')">Departments</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="gamification" onclick="dashMainTab('gamification')">Gamification</a>
+                    </div>
+                </div>
             </div>
             <div class="nav-section nav-section-admin">
                 <div class="nav-section-label">Admin</div>
@@ -62,27 +74,21 @@
         <div class="dash-hd">
             <h1 class="dash-hd-title">Analytics Dashboard</h1>
             <div class="dash-hd-right">
-                <div class="dash-hd-stats">
-                    <span class="dash-hd-stat"><strong id="dashStatPlayers">17</strong> players</span>
-                    <span class="dash-hd-stat"><strong id="dashStatPlays">2.5K</strong> plays</span>
-                    <span class="dash-hd-stat"><strong id="dashStatDealers">7</strong> dealers</span>
-                </div>
-                <div id="dashReportBtn" class="dash-hd-dx-btn"></div>
                 <div id="dashPdfBtn" class="dash-hd-dx-btn"></div>
             </div>
         </div>
 
         <!-- Period filter -->
-        <div class="dash-period">
-            <span class="dash-period-lbl">DATA PERIOD</span>
-            <div id="dashPeriodSelect"></div>
+        <div class="dash-period" id="dashPeriodBar">
+            <div id="dashDateRangeBox"></div>
+            <div class="dash-period-months" id="dashPeriodMonths"></div>
+            <button class="dash-period-toggle" id="dashPeriodToggle" onclick="window.dashTogglePeriodMode()" title="Switch to custom date range">
+                <i class="fas fa-calendar-alt"></i>
+            </button>
         </div>
 
         <!-- Two-column content grid: left tab list + right content area -->
         <div class="dash-content-grid">
-
-            <!-- Left: vertical main tab list -->
-            <div class="dash-left-nav" id="dashLeftNav"></div>
 
             <!-- Right: sub-tab bar + scrollable panels -->
             <div class="dash-right-area">
@@ -94,21 +100,20 @@
 
             <!-- SUMMARY panel -->
             <div class="dash-panel active" data-panel="summary">
-                <div class="dash-sub-panel active" data-sub="overview"  id="dashSummaryOverview"></div>
-                <div class="dash-sub-panel"        data-sub="trends"    id="dashSummaryTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecast"  id="dashSummaryForecast"></div>
-                <div class="dash-sub-panel"        data-sub="anomalies" id="dashSummaryAnomalies"></div>
+                <div class="dash-sub-panel active" data-sub="overview"           id="dashSummaryOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"             id="dashSummaryTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashSummaryForecastAnomalies"></div>
                 <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- PLAYERS panel -->
             <div class="dash-panel" data-panel="players">
-                <div class="dash-sub-panel active" data-sub="overview"    id="dashPlayersPanel"></div>
-                <div class="dash-sub-panel"        data-sub="gamesplayed" id="dashPlayersGamesPlayed"></div>
-                <div class="dash-sub-panel"        data-sub="trends"    id="dashPlayersTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
-                <div class="dash-sub-panel"        data-sub="anomalies" id="dashPlayersAnomalies"></div>
-                <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel active" data-sub="overview"           id="dashPlayersPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"             id="dashPlayersTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashPlayersForecastAnomalies"></div>
+                <div class="dash-sub-panel"        data-sub="inactive"           id="dashPlayersInactive"></div>
+                <div class="dash-sub-panel"        data-sub="gamecoverage"       id="dashPlayersGamesPlayed"></div>
+                <div class="dash-sub-panel"        data-sub="leave"             id="dashPlayersLeave"></div>
             </div>
 
             <!-- GAMES panel -->
@@ -122,11 +127,18 @@
 
             <!-- DEPARTMENTS panel -->
             <div class="dash-panel" data-panel="departments">
-                <div class="dash-sub-panel active" data-sub="overview"  id="dashDeptPanel"></div>
-                <div class="dash-sub-panel"        data-sub="trends"    id="dashDeptTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
-                <div class="dash-sub-panel"        data-sub="anomalies" id="dashDeptAnomalies"></div>
+                <div class="dash-sub-panel active" data-sub="overview"          id="dashDeptPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"            id="dashDeptTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashDeptForecastAnomalies"></div>
                 <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
+            </div>
+
+            <!-- GAMIFICATION panel -->
+            <div class="dash-panel" data-panel="gamification">
+                <div class="dash-sub-panel active" data-sub="leagues"    id="dashGamLeagues"></div>
+                <div class="dash-sub-panel"        data-sub="scoreboard" id="dashGamScoreboard"></div>
+                <div class="dash-sub-panel"        data-sub="streaks"    id="dashGamStreaks"></div>
+                <div class="dash-sub-panel"        data-sub="playdays"   id="dashGamPlayDays"></div>
             </div>
 
             <!-- REGIONAL panel -->
@@ -179,6 +191,6 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 </script>
 <script src="script-sidebar-scope.js"></script>
-<script src="script-dashboard.js?v=31"></script>
+<script src="script-dashboard.js?v=70"></script>
 </body>
 </html>

@@ -5,6 +5,371 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-21] — KPI cards: green arrow trend indicator
+
+### Changed
+- KPI trend row now shows the `fa-arrow-trend-up` / `fa-arrow-trend-down` icon (was hidden via `display:none`).
+- Removed pill badge wrapper from trend text — value and "vs prior period" now render as plain inline text.
+- `.ov-kpi-trend` colour changed to `#22c55e` (green); `.ov-kpi-trend.down` colour changed to `#dc2626` (red).
+- Bumped to `script-dashboard.js?v=70`, `styles-dashboard.css?v=40`.
+
+## [2026-06-21] — Players overview: search bar right-aligned, spacing fix
+
+### Changed
+- Search bar in the Players table card moved to the right side using a flex row wrapper with `justify-content: flex-end`.
+- Added `padding: 14px 16px 12px` to the search row for proper spacing inside the card.
+- Bumped to `script-dashboard.js?v=69`, `styles-dashboard.css?v=39`.
+
+## [2026-06-21] — Players spotlight cards restyled to match KPI cards
+
+### Changed
+- Top-3 player spotlight cards now use the `ov-kpi-card` style (white background, `#1C2333` left accent border, uppercase rank label, bold name as value, dept in grey, points as pill badge) — matching the Summary Overview KPI cards.
+- Bumped to `script-dashboard.js?v=64`.
+
+## [2026-06-21] — Period bar: month pills default, calendar toggle for custom range
+
+### Changed
+- Month pills now shown by default; date range picker hidden. A small calendar icon button toggles between the two modes — clicking it swaps to the date range picker (button fills `#1C2333`), clicking again returns to pills. Only one control visible at a time, saving significant horizontal space.
+- Bumped to `script-dashboard.js?v=68`, `styles-dashboard.css?v=38`.
+
+## [2026-06-21] — Period bar: right-aligned; divider line removed
+
+### Changed
+- Period filter bar (date range + month pills) right-aligned with `justify-content: flex-end` — filters sit on the right, tabs on the left, creating a clear navigation vs. filter split.
+- Removed `border-top` divider line from sub-tab bar.
+- Bumped to `styles-dashboard.css?v=37`.
+
+## [2026-06-21] — Period bar / sub-tab bar: visual separation + pill colour fix
+
+### Changed
+- Added a thin `#e5e7eb` border-top and extra top margin to `.dash-subtabs-bar` so the filter zone (date range + month pills) and the navigation zone (segmented tabs) read as distinct areas.
+- Month pill (`dxButtonGroup`) text colour overridden from DevExtreme orange/teal to `#4b5563`; selected pill uses `#1C2333` fill with white text; hover uses `#f1f5f9`. Consistent with the rest of the UI.
+- Bumped to `styles-dashboard.css?v=36`.
+
+## [2026-06-21] — Players spotlight cards: rank number top-right, larger
+
+### Changed
+- Rank number (#1, #2, #3) repositioned to top-right corner of the card using absolute positioning; increased to 22px bold. Player name gets right padding to avoid overlap.
+- Bumped to `script-dashboard.js?v=67`.
+
+## [2026-06-21] — Players spotlight cards: larger rank label, spaced name
+
+### Changed
+- Rank label (#1, #2, #3) increased from 12px to 15px.
+- Player name letter-spacing increased for a more open, readable feel.
+- Bumped to `script-dashboard.js?v=66`.
+
+## [2026-06-21] — Departments Overview: reverted to stacked layout
+
+### Changed
+- Reverted Departments Overview back to stacked layout (table above, pie chart below) at user request.
+- Bumped to `script-dashboard.js?v=65`.
+
+## [2026-06-21] — Background; period bar; Players inner tabs; divider lines removed
+
+### Added
+- Players sub-tab (in `index2.html`): secondary underline tab row — Inactive | Game coverage | Leave & exclusions — rendered within the Players panel. Clicking a tab hides the overview and shows the relevant screen. Panels populated by existing render functions (`renderPlayersInactive`, `renderPlayersGamesPlayed`, `renderPlayersLeave`). Not rendered in `index.html` where those screens are accessible via the main segmented sub-tab bar.
+
+### Changed
+- Page background unified to `#f8fafc` throughout: updated `--bg` CSS variable, header, period bar, and sub-tab bar backgrounds all changed from `#fff` to `#f8fafc`. White cards stand out on the consistent light background.
+- Period filter bar: increased padding, gap and added `align-items: center` wrappers so the date range box and month pills sit at the same vertical midpoint. Date range box given explicit `height: 38px` and `border-radius: 8px`; button group matched to same height.
+- Header and period bar horizontal divider lines removed.
+- Bumped to `script-dashboard.js?v=62`, `styles-dashboard.css?v=35`.
+
+## [2026-06-21] — Header: Report button removed
+
+### Removed
+- "Report" button from the dashboard header top-right. Export button remains.
+- Bumped to `script-dashboard.js?v=61`.
+
+## [2026-06-21] — KPI trend pills: primary-colour tint; sub-tab init fix
+
+### Changed
+- KPI trend pills (positive) changed from green (`#dcfce7` / `#15803d`) to a light tint of the primary colour (`#d8dde8` background, `#1C2333` text). Down-trend pills remain red.
+- Sub-tab widget init: removed conflicting `selectedIndex`/`selectedItemKeys` on construction; now sets `selectedItemKeys` after the instance is created so the first tab reliably shows the active fill on page load.
+- Bumped to `script-dashboard.js?v=60`, `styles-dashboard.css?v=33`.
+
+## [2026-06-21] — Sub-tabs: first tab selected on load; chart bars square
+
+### Fixed
+- First sub-tab was not visually selected on page load. When `keyExpr` is set on `dxTabs`, selection is driven by `selectedItemKeys`, not `selectedIndex`. Added `selectedItemKeys: [firstKey]` on both widget init and when `dashMainTab` resets sub-tabs.
+- Chart bars now have square corners — removed `cornerRadius: 3` from Top Games and Department Activity series.
+- Bumped to `script-dashboard.js?v=59`.
+
+## [2026-06-21] — Sub-tabs: active tab tracks click correctly; chart bar labels removed
+
+### Fixed
+- Clicking a sub-tab updated the panel content but left the previous tab visually active. Root cause: `onItemClick` was calling `dashSubTab()` which wrote `selectedIndex` back to the `dxTabs` instance, causing DX to re-render and reset its own selection state. Separated panel-switching (`_applySubPanel`) from the programmatic widget update (`dashSubTab`). `onItemClick` now calls `_applySubPanel` only — DX manages its own visual selection on click; `dashSubTab` still updates `selectedIndex` when called programmatically (e.g., from `dashMainTab`).
+
+### Changed
+- Removed data labels (count values printed on bars) from Top Games and Department Activity charts — values are already visible on hover tooltip.
+- Bumped to `script-dashboard.js?v=57`.
+
+## [2026-06-21] — Sub-tabs: segmented control no longer stretches full width
+
+### Fixed
+- DevExtreme's `.dx-tabs` root element defaults to `display: block; width: 100%`, causing the segmented pill group border to span the entire header. Added `display: inline-block; width: auto` override so the group only occupies the space its tabs need.
+- Bumped to `styles-dashboard.css?v=32`.
+
+## [2026-06-21] — Segmented tabs; #1C2333 color sweep; nested gamification dropdown; header stats removed
+
+### Added
+- Gamification filter controls: replaced separate Department and Player dropdowns with a single `dxDropDownBox` + `dxTreeView` nested dropdown. Departments are expandable nodes; players are leaves. Selecting a department filters to all players in that department; selecting a player sets both filters. "All players" root item and the clear button both reset all filters.
+
+### Changed
+- Sub-tab bar restyled to connected segmented-button appearance: `.dx-tabs-wrapper` rendered as a single pill group (`border: 1.5px solid #d1d5db; border-radius: 8px; overflow: hidden`), tabs divided by right-border separators, active tab filled solid `#1C2333` with white text.
+- Primary accent color changed to `#1C2333` throughout the dashboard — KPI card left-border accents, Department Activity and Top Games chart bar colors, and Export button background all updated. Green (`#16a34a`) is reserved for success indicators only; red for danger/error only.
+- Header stat strip ("17 players · 2.5K plays · 7 dealers") removed from `index.html`. Hidden stub elements retained in `index2.html` for JS compatibility.
+- Bumped to `script-dashboard.js?v=56`, `styles-dashboard.css?v=31`.
+
+## [2026-06-21] — Sub-tabs: remove focus/active border box on tabs
+
+### Fixed
+- DevExtreme applies a full `border` and `box-shadow` directly on `.dx-state-focused` / `.dx-state-active` tab elements, drawing a visible black rectangle when a tab is clicked. Suppressed `box-shadow`, `outline`, and all non-bottom borders on those states; selected focused tabs keep only the `#2563eb` bottom underline.
+- Bumped to `styles-dashboard.css?v=29`.
+
+## [2026-06-21] — Sub-tabs: colour fix + white background; gamification player dropdown
+
+### Fixed
+- Sub-tab text colour was being overridden by DevExtreme's inner `.dx-tab-text` span. Added `* { color: inherit !important; font-weight: inherit !important; }` on tab children to force our colour through.
+- Active tab colour changed to `#2563eb` (blue-700), weight 600; inactive updated to `#9ca3af`.
+- Tab bar underline thickened to 2px, subtle box-shadow added; `margin-bottom: -2px` on tabs so the active underline sits exactly on the bar's border line.
+
+### Changed
+- Gamification "Player name" text input replaced with a `dxSelectBox` dropdown. The list populates from the current company's players and is re-filtered whenever the Department dropdown changes. Selecting a player applies the filter immediately; clearing returns to "All players".
+- `_gamInitDeptBox` now also resets `_gamNameFilter` when the department changes so the player picker resets to "All players".
+- Bumped to `script-dashboard.js?v=54`, `styles-dashboard.css?v=28`.
+
+## [2026-06-21] — Sub-tabs: bold active tab; gamification search removed
+
+### Changed
+- Active sub-tab now uses `font-weight: 700` (bold) to match the reference screenshot.
+- Search bar removed from Leagues and Play Days gamification controls rows — no gamification tab shows a search input now.
+- Bumped to `script-dashboard.js?v=53`, `styles-dashboard.css?v=27`.
+
+## [2026-06-21] — Sub-tabs: mixed-case labels matching screenshot style
+
+### Changed
+- Removed `text-transform: uppercase` and `letter-spacing` from sub-tab items — labels now render in their natural mixed-case form (Summary, Players, etc.).
+- Increased font-size from 12px to 14px and vertical padding from 8px to 10px for a more comfortable tap target.
+- Active tab colour changed to `#3b82f6` (blue-500) with `font-weight: 500`; inactive tabs remain `#94a3b8`.
+- Bumped to `styles-dashboard.css?v=26`.
+
+## [2026-06-21] — Sub-tabs: don't stretch to full width; gamification controls in one row
+
+### Changed
+- Sub-tab items no longer stretch to fill the full bar width — added `flex: 0 0 auto` so each tab is only as wide as its label.
+- Gamification toolbar restructured: Department dropdown, Player name input, period/week/toggle nav, and Search bar are now all in a single flex row (`.gam-controls-row`) for all four sub-tabs (Leagues, Scoreboard, Streaks, Play Days). Export button is pushed to the far right with `margin-left: auto`.
+- Replaced three old helper functions (`_gamToolbarHtml`, `_gamPeriodRowHtml`, `_gamSearchBarHtml`) with two new composable ones (`_gamPeriodNavHtml`, `_gamControlsRowHtml`).
+- Bumped to `script-dashboard.js?v=52`, `styles-dashboard.css?v=25`.
+
+## [2026-06-21] — Sub-tabs: compact uppercase style matching DevExtreme screenshot
+
+### Changed
+- Sub-tab bar tabs now much smaller: font-size 12px (was 14px), vertical padding 8px (was 13px), gap 20px (was 28px).
+- Active tab colour changed from dark `#0f172a` to DevExtreme blue `#0ea5e9`; underline indicator matches.
+- Tab labels now uppercase with slight letter-spacing to match the DevExtreme native tab look.
+- Inactive colour lightened to `#94a3b8` for better contrast against the active blue.
+- Bumped to `styles-dashboard.css?v=24`.
+
+## [2026-06-21] — index2.html: Trends section has no sub-tabs
+
+### Changed
+- `script-dashboard2.js` (v=2): Trends main-tab now returns an empty sub-tab list; `dashMainTab` hides `.dash-subtabs-bar` entirely when there are no sub-tabs and restores it when switching to any other section. The single `dashSummaryTrends` panel is shown directly — no Summary/Players/Games redundant tabs.
+- Bumped to `script-dashboard2.js?v=2` in `index2.html`.
+
+## [2026-06-19] — index2.html: alternative nav layout (preview only)
+
+### Added
+- `index2.html` — preview file for an alternative navigation structure where the main Reports sections are **Overview / Trends / Forecasts & anomalies / Gamification** and the sub-tabs within each are **Summary / Players / Games / Departments**.
+- `script-dashboard2.js` — small shim (~50 lines) that runs after `script-dashboard.js` and patches only `dashMainTab` + the dxTabs data-source. Does not modify any existing files.
+- All existing chart/grid/card render functions reuse the same element IDs so content renders correctly in the new layout.
+- No changes to `index.html`, `script-dashboard.js`, or any CSS files.
+
+## [2026-06-19] — Trends: granularity tabs outside chart card, right-aligned
+
+### Changed
+- Daily/Weekly/Monthly toggle buttons moved outside the chart card entirely — rendered in a right-aligned row directly above the card so they sit "just above the chart". The chart title "Participation and achievement over time" remains inside the card at the top left.
+- Bumped to `script-dashboard.js?v=50`, `styles-dashboard.css?v=22`.
+
+## [2026-06-19] — Period bar: date range box styling fix
+
+### Fixed
+- Labels changed from "Start Date"/"End Date" to "From"/"To" (`startDateLabel`/`endDateLabel` options).
+- Removed aggressive custom padding overrides that made the widget tall and misaligned; let DX's default `labelMode: 'floating'` + `stylingMode: 'outlined'` produce the compact floating-label look matching the target design.
+- Reduced `.dash-period` padding to `6px 24px` for tighter bar height.
+- Bumped to `script-dashboard.js?v=51`, `styles-dashboard.css?v=23`.
+
+## [2026-06-19] — Period bar: date range picker + month pills
+
+### Changed
+- Replaced "DATA PERIOD" label + `dxSelectBox` dropdown with a `dxDateRangeBox` (From → To) plus six month quick-select pill buttons (Jan–Jun 2026).
+- Clicking a month pill calls `dashPeriod()` and highlights the active month; the date range box updates to show that month's date range.
+- Changing the date range box attempts to match to a month period; partial/custom ranges default to All Months.
+- Removed old `#dashPeriodSelect` CSS; added `.dash-period-months`, `.dash-month-btn`, `.dash-month-btn.active` styles.
+- Bumped to `script-dashboard.js?v=48`, `styles-dashboard.css?v=20`.
+
+## [2026-06-18] — Players Overview table: badge truncation + name colour fix
+
+### Fixed
+- **"Bronze ..." badge truncation**: DevExtreme's `.dx-datagrid-text-content` applies `overflow: hidden` on cell template containers, clipping the badge. Added `cssClass: 'plr-league-col'` to the LEAGUE column and a CSS rule `.plr-league-col .dx-datagrid-text-content { overflow: visible; }` to prevent clipping. Column width increased from 120 → 130 for additional breathing room.
+- **Name colour specificity**: Added `!important` to `.plr-name-link { color: #1d4ed8 }` so DevExtreme's cell-level colour rules cannot override it.
+- Bumped to `script-dashboard.js?v=47`, `styles-dashboard.css?v=19`.
+
+## [2026-06-18] — Gamification tab — all 4 sub-tabs complete
+
+### Added
+- **Scoreboard sub-tab** (`renderGamificationScoreboard()`): Department + Player name toolbar with Export to Excel right-aligned, period nav row, dxDataGrid with RANK (gray) / PLAYER (blue link) / DEPARTMENT / POINTS / ACCURACY (1 dp) / GAMES PLAYED columns.
+- **Streaks sub-tab** (`renderGamificationStreaks()`): shared toolbar, Weekly/Monthly toggle + right-aligned period label, description text, 3 KPI cards (Active streaks / Avg. current / Avg. longest), Department averages card, dxDataGrid with PLAYER / DEPARTMENT / CURRENT STREAK / LONGEST STREAK / ACTIVE DAYS / GAMES COMPLETED. `window.gamStreakGran()` toggles granularity.
+- **Play days sub-tab** (`renderGamificationPlayDays()`): shared toolbar, week arrow navigator (< | Week: date range | >) with right-aligned threshold label, custom search bar, HTML table with PLAYER / DEPARTMENT / DAYS PLAYED / MET THRESH... / MON–SAT columns (blue checkmarks via `.gam-check`). `window.gamWeekOlder/gamWeekNewer()` navigate week index.
+- New CSS: `.gam-player-name-input`, `.gam-period-row`, `.gam-toggle-row/group/btn`, `.gam-streak-period-lbl`, `.gam-streak-desc`, `.gam-streak-kpi-row/card/lbl/val`, `.gam-dept-avg-card/title/row/right`, `.gam-week-nav-row/left/btn/label`, `.gam-threshold-lbl`, `.gam-pdy-table`, `.gam-check`.
+
+### Changed
+- **Leagues sub-tab**: export button moved to right of toolbar (not in left group); period nav moved to its own `.gam-period-row` below toolbar; search upgraded to `.plr-search-bar` style (matching Players Overview); badges changed from solid `.league-X` to outline `.plr-league-X` classes; player names now plain text (not `.gam-player-link` span).
+- `_gamLeagueTier()`: thresholds updated to Diamond ≥ 20 000 / Gold ≥ 5 000 / Silver ≥ 2 000, returns `.plr-league-X` classes.
+- `_applyGamFilter()`: now reads `row.cells[0].textContent` directly instead of `.gam-player-link` selector.
+- `gamPeriodOlder/Newer`: now re-render both Leagues and Scoreboard.
+- `refreshAll()`: now calls `renderGamificationScoreboard()`, `renderGamificationStreaks()`, `renderGamificationPlayDays()`.
+- `index.html` gamification sub-panels: placeholders removed, IDs added (`dashGamScoreboard`, `dashGamStreaks`, `dashGamPlayDays`).
+- Bumped to `script-dashboard.js?v=46`, `styles-dashboard.css?v=18`.
+
+## [2026-06-18] — Players Overview table styling
+
+### Changed
+- **League badge style**: Players table now uses outline pill badges (`.plr-league-badge`) — border + text colour only, no fill — matching dev site. Classes: `.plr-league-diamond` (teal), `.plr-league-gold` (amber), `.plr-league-silver` (gray), `.plr-league-bronze` (brown).
+- **`getLeague` thresholds** aligned to dev site: Diamond ≥ 20 000 XP, Gold ≥ 5 000, Silver ≥ 2 000, Bronze < 2 000.
+- **Player name**: rendered in blue (`.plr-name-link`) via `cellTemplate`.
+- **Search bar**: replaced DX built-in `searchPanel` with a custom styled input + teal icon button (`.plr-search-bar`). DX `searchPanel` kept hidden for programmatic filtering via `window.plrSearch`.
+- **SCORE column**: now shows `x.x%` (deterministic score metric, float with 1 decimal), distinct from PASS RATE.
+- **LAST PLAY column**: now shows actual dates (e.g. "02 Jun 2026") computed deterministically from player name and session count.
+- **Action column**: ⋮ dots button added as last column.
+- Bumped to `script-dashboard.js?v=45`, `styles-dashboard.css?v=17`.
+
+## [2026-06-18] — Trends panel: correct chart headings and series
+
+### Changed
+- **All Trends tabs** (Summary, Players, Games, Departments): main chart retitled to "Participation and achievement over time"; series renamed "Participation" (dark, participation %) and "Achievement" (green, accuracy %). Small chart order changed to "Sessions" (plays) + "Active players" (player count). Bumped to `script-dashboard.js?v=44`.
+
+## [2026-06-18] — Gamification tab — Leagues
+
+### Added
+- **Gamification** added as a 5th main tab (sidebar sub-item + `MAIN_TABS` entry + `dashGamification` panel in `index.html`).
+- `getSubTabItems` extended: Gamification returns Leagues / Scoreboard / Streaks / Play days; Scoreboard/Streaks/Play days show "Coming soon" placeholder.
+- **Leagues sub-tab** (`renderGamificationLeagues()`): Department dxSelectBox filter, Player name input, Export to Excel button, period navigator (< Older | June 2026 | Newer >), Search input, table (PLAYER / DEPARTMENT / LEAGUE badge / SEASON XP). XP scaled from player `points × 5`, period-adjusted via play-ratio vs All Months. Rows hide/show on filter changes without full re-render.
+- League badge pills: Diamond (teal `#0d9488` ≥ 15000 XP), Gold (amber ≥ 5000), Silver (gray ≥ 2000), Bronze (brown < 2000).
+- CSS: `.gam-leagues-container`, `.gam-toolbar`, `.gam-period-nav`, `.gam-period-label`, `.gam-period-btn`, `.gam-search-input`, `.gam-text-input`, `.gam-export-btn`, `.gam-table`, `.gam-player-link`, `.gam-xp`, `.league-badge`, `.league-diamond`, `.league-gold`, `.league-silver`, `.league-bronze`.
+- `dashMainTab()` now activates the first sub-tab by key (not hardcoded `overview`) so Gamification correctly opens Leagues by default.
+
+### Changed
+- Bumped to `script-dashboard.js?v=43`, `styles-dashboard.css?v=16`.
+
+## [2026-06-18] — Games Overview redesign + topic collapsible rows
+
+### Added
+- **`GAME_TOPICS`** data: groups BASE_GAMES into 9 topics (Sales Objections, Emotional Intelligence, Customer Service, Compliance, Digital Skills, Leadership, Financial Products, Product Knowledge, No topic).
+- **Games Overview** fully rewritten: collapsible topic-group rows (chevron, topic name, count) that expand to show a table (GAME / ASSIGNED / ATTEMPTED / COMPLETION % / AVG. ACCURACY / AVG. PLAY TIME); "Top 10 games by completion rate" horizontal bar chart below.
+- `fmtGamePlayTime(ptMult)` helper for 0h:mm:ss formatted play-time.
+- CSS: `.gtopic-list`, `.gtopic-row`, `.gtopic-chevron`, `.gtopic-name`, `.gtopic-count`, `.gtopic-body`.
+- Bumped to `script-dashboard.js?v=41`, `styles-dashboard.css?v=15`.
+
+## [2026-06-18] — Departments Forecasts & anomalies tab
+
+### Added
+- **Departments > Forecasts & anomalies** tab implemented: "Forecasts" section with "Participation rate forecast" card listing each department with its projected next-period participation %; "Anomalies" section with "Underperforming departments" card (departments > 15% below company average, or "No underperforming departments in this period").
+- `dashDeptForecastAnomalies` div added to departments panel replacing old separate `forecast`/`anomalies` divs.
+
+### Changed
+- Bumped to `script-dashboard.js?v=40`.
+
+## [2026-06-18] — Departments Overview redesign + Players KPI removed + sidebar nav + gridlines
+
+### Added
+- **Departments > Overview** redesigned to match dev site: search box, full-width table (DEPARTMENT / TOTAL USERS / ACTIVE PLAYERS / PARTICIPATION / SESSIONS / AVG. POINTS / ACTIVITY RATE with dot+bar), full-width solid pie chart below.
+- **Reports sub-navigation in sidebar**: Summary / Players / Games / Departments are now sub-items under "Reports" in the main sidebar (using existing `.nav-group` / `.nav-sub-item` pattern). Clicking a sub-item calls `dashMainTab()` and syncs the active highlight. `toggleReportsNav()` collapses/expands the group.
+
+### Changed
+- **Players > Overview KPI cards removed**: "Active players", "Avg. pass rate", "Dealers", "Inactive" cards removed to match dev site (no KPI row).
+- **Dashboard left-nav column removed** from layout; Reports sub-nav in sidebar replaces it.
+- Bumped to `script-dashboard.js?v=39`.
+
+## [2026-06-18] — Charts: horizontal gridlines only
+
+### Changed
+- All dxChart instances now show horizontal gridlines only: `argumentAxis.grid` hidden on non-rotated charts; `valueAxis.grid` hidden on rotated bar charts. Affects area sparklines, Summary/Games bar charts, all Trends spline charts, Forecast chart, Games accuracy chart, Players dept chart, Regional chart.
+- Bumped to `script-dashboard.js?v=38`.
+
+## [2026-06-18] — Trends redesign + Leave & exclusions tab
+
+### Added
+- **Shared `renderTrendsPanel(elId, gran, setGranFn)`** function: renders the standard trends layout (Daily/Weekly/Monthly granularity toggle, combined dual-series spline chart "Active players and participation over time", two smaller spline charts "Active players" / "Participation rate") used by all Trends sub-tabs.
+- **`_gamesTrendsGran`**, **`_deptTrendsGran`** state vars + **`window.setGamesTrendsGran`** / **`window.setDeptTrendsGran`** so Games and Departments Trends panels each have independent granularity toggles.
+- **Players > Leave & exclusions** tab fully implemented: "Leave" section with "Record leave" form (Player dxSelectBox, Start/End date inputs, Reason field, Add leave button) + search + table (NAME / DEPARTMENT / START DATE / END DATE / REASON); "Exclusions" section with search + table (NAME / REASON / EXCLUDED SINCE). Both tables start empty ("No records found.").
+- CSS: `.lve-heading`, `.lve-subtext`, `.lve-form-card`, `.lve-form-row`, `.lve-daterange`, `.lve-date-wrap`, `.lve-date-lbl`, `.lve-date-input`, `.lve-text-input`, `.lve-add-btn`, `.lve-search-row`, `.lve-search-input`, `.lve-search-btn`.
+
+### Changed
+- `renderSummaryTrends()`, `renderPlayersTrends()`, `renderTrendsCharts()` all replaced with one-liner calls to `renderTrendsPanel()` — unified look across Summary, Players, Games, Departments Trends tabs.
+- Participation rate series colour updated to `#22c55e` (green), Active players to `#1e293b` (dark navy), both spline type with dot markers.
+- Bumped to `script-dashboard.js?v=37`, `styles-dashboard.css?v=14`.
+
+## [2026-06-18] — Players: Inactive tab + Game coverage redesign
+
+### Added
+- **Players > Inactive** tab fully implemented: KPI card ("Inactive players"), "Days inactive (threshold)" number input (default 30), search box, and a four-column table (NAME, DEPARTMENT, LAST PLAYED, DAYS INACTIVE). Threshold is live-filtered — changing it re-computes the count instantly.
+- **`INACTIVE_PLAYERS`** data restructured to `{ name, dept, lastPlayed, daysInactive }` format with entries for companies 5, 6, 7. Players with `lastPlayed: null` always show (never played).
+- **Players > Game coverage** tab completely rewritten to match dev site:
+  - "By game" / "By player" underline sub-tabs
+  - KPI card: "Game coverage X%"
+  - dxChart spline line chart: "Game coverage over time" (31-day daily data)
+  - Scrollable game card list per game: game name, avg. accuracy, coverage %, colour-coded progress bar (amber ≥ 50%, red > 0%, gray 0%), player count
+- **`GAME_COVERAGE`** data for company 7 (17 games with players and avgAcc values).
+- **`getGameCoverageDaily()`** deterministic daily coverage data generator (May 18 – Jun 17).
+- **`.plr-rank-card`** and related CSS classes (`.plr-rank-label`, `.plr-rank-name`, `.plr-rank-dept`, `.plr-rank-pts`) for spotlight card vertical layout.
+- **`.gc-sub-tabs`**, **`.gc-sub-btn`**, **`.gc-game-card`** and related CSS for game coverage cards.
+- **Game coverage "By player" view**: 4 KPI cards (Games this period, Full coverage, Incomplete, Avg. coverage), "Games loaded (N)" link, search input, Department dxSelectBox filter, "Incomplete only" and "Group by department" checkboxes, Export button, and player rows sorted by games played desc — each row shows player name, X/total count, colour-coded progress bar (amber ≥ 50%, red > 0%, gray 0%), "N missing" link, coverage %, department.
+- **`.gc-kpi-row`**, **`.gc-filter-bar`**, **`.gc-filter-check`**, **`.gc-player-row`** and related CSS for player coverage rows.
+
+### Changed
+- dxDataGrid (Players > Overview) column widths increased: SESSIONS 90→110px, LEAGUE 100→130px, LAST PLAY 130→150px — prevents header/badge truncation.
+- Bumped to `script-dashboard.js?v=36`, `styles-dashboard.css?v=13`.
+
+## [2026-06-18] — Fix: Forecasts & anomalies tab blank
+
+### Fixed
+- `dashSubTab()` had a leftover special-case for `forecastsanomalies` that toggled the old separate `data-sub="forecast"` / `data-sub="anomalies"` panels (since removed). Removed the branch; all sub-tab keys now use the standard toggle path. Bumped to `?v=35`.
+
+## [2026-06-17] — Forecasts & anomalies combined tab
+
+### Added
+- **`renderForecastsAnomaliesPanel()`** shared helper: builds a "Forecasts" section (Participation forecast card with projected participation rate and avg. accuracy) + "Anomalies" section (list of daily dates with red drop-percentage rows, matching dev site style).
+- **`renderSummaryForecastsAnomalies()`** and **`renderPlayersForecastsAnomalies()`** wired to `dashSummaryForecastAnomalies` and `dashPlayersForecastAnomalies` panel IDs.
+- CSS: `.fc-section-title`, `.fc-card`, `.fc-metrics-row / .fc-metric-*`, `.fc-anomaly-list / .fc-anomaly-row / .fc-anomaly-date / .fc-anomaly-pct`, `.fc-no-anomalies`.
+
+### Changed
+- Summary HTML: replaced separate `data-sub="forecast"` + `data-sub="anomalies"` panels with single `data-sub="forecastsanomalies"` panel.
+- Players HTML: `data-sub="forecastsanomalies"` placeholder upgraded to real panel with id.
+- Bumped `script-dashboard.js` to `?v=34`, `styles-dashboard.css` to `?v=12`.
+
+## [2026-06-17] — Chart bars: remove corner radius
+
+### Changed
+- All dashboard bar chart series now use `cornerRadius: 0` (straight corners) across every chart in `script-dashboard.js`. Bumped to `?v=33`.
+
+## [2026-06-17] — Players > Overview & Trends redesign
+
+### Changed
+- **Players sub-tabs**: Updated from 4 items (Overview / Games Played / Trends / Forecasts & anomalies) to 6 matching dev site: Overview | Trends | Forecasts & anomalies | Inactive | Game coverage | Leave & exclusions.
+- **Players > Overview** rewritten to match dev site layout:
+  - Top 3 spotlight rank cards with gold/silver/bronze border & background styling.
+  - "Participation by dealer" bar chart (dark navy) and "Active players by department" horizontal bar chart side-by-side.
+  - Player performance `dxDataGrid` replacing plain HTML table; columns: NAME, DEPARTMENT, PASS RATE, SCORE, SESSIONS, XP, LEAGUE (coloured badge), LAST PLAY.
+- **Players > Trends** rewritten with granularity toggle (Daily / Weekly / Monthly) and three charts: combined Active players + Participation rate line chart; two smaller area charts below.
+
+### Added
+- Helper functions: `getLeague(xp)`, `getPlayerLastPlay(sessions)`, `devSpotlightCard(rank, name, dept, xp)`.
+- `window.setPlayerTrendsGran` for granularity toggle click handler.
+- CSS: `.plr-charts-row` (2-col chart grid), `.plr-gran-row / .plr-gran-btn` (granularity toggle), `.league-badge` + `.bronze / .silver / .gold / .diamond` variants.
+- Bumped `script-dashboard.js` to `?v=32`, `styles-dashboard.css` to `?v=11`.
+
 ## [2026-06-17] — Dev-site visual redesign; DevExtreme nav/tabs
 
 ### Changed

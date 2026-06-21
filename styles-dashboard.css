@@ -9,8 +9,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 20px 32px 18px;
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
     flex-shrink: 0;
     gap: 16px;
 }
@@ -34,18 +33,26 @@
     display: flex;
     align-items: center;
     gap: 0;
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 4px 4px;
     font-size: 13px;
     color: #64748b;
 }
 
 .dash-hd-stat {
-    padding: 0 14px;
+    padding: 4px 14px;
     border-right: 1px solid #e2e8f0;
     white-space: nowrap;
 }
 
-.dash-hd-stat:first-child { padding-left: 0; }
 .dash-hd-stat:last-child { border-right: none; }
+
+.dash-hd-stat i {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-right: 5px;
+}
 
 .dash-hd-stat strong {
     color: #0f172a;
@@ -63,73 +70,81 @@
 .dash-period {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 32px;
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-    flex-shrink: 0;
-}
-
-/* Period dxSelectBox input (on white background) */
-#dashPeriodSelect .dx-texteditor.dx-editor-outlined {
-    border-radius: 8px;
-    border-color: #e2e8f0 !important;
-    background: #fff !important;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    font-family: inherit;
-}
-
-#dashPeriodSelect .dx-texteditor.dx-editor-outlined.dx-state-hover {
-    border-color: #94a3b8 !important;
-}
-
-#dashPeriodSelect .dx-texteditor.dx-editor-outlined.dx-state-focused {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
-}
-
-#dashPeriodSelect .dx-texteditor-input {
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f172a !important;
-    font-family: inherit;
-    background: transparent !important;
-}
-
-#dashPeriodSelect .dx-dropdowneditor-icon { color: #64748b !important; }
-
-/* Period dropdown popup */
-.period-dropdown .dx-list-item {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-    font-family: inherit;
-    padding: 0 !important;
-}
-
-.period-dropdown .dx-list-item .dx-list-item-content {
-    padding: 9px 16px !important;
-}
-
-.period-dropdown .dx-list-item.dx-state-hover .dx-list-item-content {
+    justify-content: flex-end;
+    gap: 20px;
+    padding: 10px 28px;
     background: #f8fafc;
-    color: var(--text-primary);
-}
-
-.period-dropdown .dx-list-item.dx-list-item-selected .dx-list-item-content {
-    background: rgba(225,29,72,0.06);
-    color: #e11d48;
-    font-weight: 700;
-}
-
-.dash-period-lbl {
-    font-size: 10px;
-    font-weight: 700;
-    color: #94a3b8;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    white-space: nowrap;
     flex-shrink: 0;
+}
+
+/* Date range box hidden by default; shown only in custom mode */
+.dash-period #dashDateRangeBox { display: none; align-items: center; }
+.dash-period.custom-mode #dashDateRangeBox { display: flex; }
+.dash-period.custom-mode #dashPeriodMonths { display: none; }
+.dash-period #dashPeriodMonths { display: flex; align-items: center; }
+
+/* Toggle button */
+.dash-period-toggle {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+.dash-period-toggle:hover { background: #f1f5f9; color: #1C2333; }
+.dash-period.custom-mode .dash-period-toggle { background: #1C2333; color: #fff; border-color: #1C2333; }
+
+/* Date range box in period bar */
+#dashDateRangeBox .dx-texteditor.dx-editor-outlined {
+    border-color: #e2e8f0 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    font-family: inherit;
+    height: 38px !important;
+}
+/* Match button group height to date range box; override DX theme colours */
+.dash-period #dashPeriodMonths .dx-buttongroup { height: 38px !important; }
+.dash-period #dashPeriodMonths .dx-button { height: 38px !important; color: #4b5563 !important; border-color: #e2e8f0 !important; }
+.dash-period #dashPeriodMonths .dx-button .dx-button-text { color: #4b5563 !important; font-size: 13px !important; font-family: inherit !important; }
+.dash-period #dashPeriodMonths .dx-button.dx-item-selected,
+.dash-period #dashPeriodMonths .dx-button.dx-state-selected { background: #1C2333 !important; border-color: #1C2333 !important; color: #fff !important; }
+.dash-period #dashPeriodMonths .dx-button.dx-item-selected .dx-button-text,
+.dash-period #dashPeriodMonths .dx-button.dx-state-selected .dx-button-text { color: #fff !important; }
+.dash-period #dashPeriodMonths .dx-button:hover:not(.dx-item-selected):not(.dx-state-selected) { background: #f1f5f9 !important; color: #1C2333 !important; }
+#dashDateRangeBox .dx-texteditor-input { font-size: 13px; font-family: inherit; }
+#dashDateRangeBox .dx-label { font-family: inherit; }
+
+/* Month quick-select pills */
+.dash-period-months {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dash-month-btn {
+    padding: 5px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    color: #475569;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s;
+}
+.dash-month-btn:hover { border-color: #94a3b8; color: #334155; }
+.dash-month-btn.active {
+    border-color: #1e293b;
+    color: #1e293b;
+    font-weight: 600;
 }
 
 /* ===== Two-column content grid ===== */
@@ -185,52 +200,82 @@
     background: #f8fafc;
 }
 
-/* ===== Sub-tab bar (dxTabs, underline style) ===== */
+/* ===== Sub-tab bar — segmented button style ===== */
 .dash-subtabs-bar {
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 0 28px;
+    background: #f8fafc;
+    padding: 6px 28px 14px;
     flex-shrink: 0;
 }
 
-/* DevExtreme dxTabs overrides — match dev screenshot underline style */
+/* Strip all default DX chrome; shrink-wrap so the group doesn't stretch full-width */
 .dash-subtabs-bar .dx-tabs {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
+    display: inline-block !important;
+    width: auto !important;
 }
 
+/* The wrapper becomes the segmented control border */
+.dash-subtabs-bar .dx-tabs-wrapper {
+    display: inline-flex !important;
+    border: 1.5px solid #d1d5db !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    background: #f9fafb !important;
+    box-shadow: none !important;
+}
+
+/* Individual segments */
 .dash-subtabs-bar .dx-tab {
     background: transparent !important;
     border: none !important;
+    border-right: 1.5px solid #d1d5db !important;
     border-radius: 0 !important;
-    padding: 13px 2px !important;
-    margin-right: 28px !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    color: #64748b !important;
-    border-bottom: 2px solid transparent !important;
-    transition: color 0.15s !important;
+    padding: 7px 20px !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+    flex: 0 0 auto !important;
+    transition: background 0.12s, color 0.12s !important;
+    cursor: pointer !important;
 }
 
-.dash-subtabs-bar .dx-tab:hover {
-    color: #0f172a !important;
-    background: transparent !important;
+.dash-subtabs-bar .dx-tab:last-child { border-right: none !important; }
+
+/* Force colour onto DX inner spans */
+.dash-subtabs-bar .dx-tab .dx-tab-text,
+.dash-subtabs-bar .dx-tab .dx-item-content,
+.dash-subtabs-bar .dx-tab * { color: inherit !important; font-weight: inherit !important; }
+
+/* Hover */
+.dash-subtabs-bar .dx-tab:hover:not(.dx-tab-selected) {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
 }
 
+/* Active segment — filled with primary */
 .dash-subtabs-bar .dx-tab.dx-tab-selected {
-    color: #0f172a !important;
+    background: #1C2333 !important;
+    color: #fff !important;
     font-weight: 600 !important;
-    border-bottom-color: #0f172a !important;
-    background: transparent !important;
+    border-right-color: #1C2333 !important;
 }
 
-/* Remove dxTabs border-box and hover overlay */
-.dash-subtabs-bar .dx-tabs-wrapper { border: none !important; }
+/* Kill all DX focus/active overlays */
+.dash-subtabs-bar .dx-inkripple,
+.dash-subtabs-bar .dx-tabs-nav-button,
 .dash-subtabs-bar .dx-state-hover::before,
-.dash-subtabs-bar .dx-state-focused::before { display: none !important; }
+.dash-subtabs-bar .dx-state-focused::before,
+.dash-subtabs-bar .dx-state-active::before { display: none !important; }
 .dash-subtabs-bar .dx-tab-content { padding: 0 !important; }
+.dash-subtabs-bar .dx-tab.dx-state-focused,
+.dash-subtabs-bar .dx-tab.dx-state-active {
+    box-shadow: none !important; outline: none !important;
+}
 
 /* ===== Scrollable content body ===== */
 .dash-body {
@@ -913,6 +958,28 @@
 @media (max-width: 860px) {
     .trends-top-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== Players secondary section tabs (Inactive / Game coverage / Leave) ===== */
+.plr-sec-nav {
+    display: flex;
+    gap: 28px;
+    border-bottom: 1.5px solid #e5e7eb;
+    margin-bottom: 20px;
+}
+.plr-sec-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 0 0 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+.plr-sec-tab:hover:not(.active) { color: #374151; }
+.plr-sec-tab.active { color: #1C2333; font-weight: 600; border-bottom-color: #1C2333; }
 
 /* ===== Player spotlight (top 3 badges) ===== */
 .player-spotlight-row {
@@ -1731,24 +1798,30 @@
     background: #fff;
     border-radius: 12px;
     padding: 22px 22px 20px;
-    border: 1px solid #e8eef4;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: none;
+    border-left: 4px solid #e8eef4; /* overridden per-card by inline style */
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
     gap: 6px;
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, transform 0.15s;
 }
 
-.ov-kpi-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+.ov-kpi-card:hover {
+    box-shadow: 0 4px 18px rgba(0,0,0,0.11);
+    transform: translateY(-1px);
+}
 
 .ov-kpi-lbl {
-    font-size: 13px;
-    font-weight: 400;
-    color: #64748b;
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .ov-kpi-val {
-    font-size: 42px;
+    font-size: 38px;
     font-weight: 700;
     color: #0f172a;
     line-height: 1;
@@ -1758,10 +1831,28 @@
 .ov-kpi-trend {
     font-size: 12px;
     font-weight: 500;
-    color: #16a34a;
+    color: #22c55e;
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-wrap: wrap;
+}
+
+.ov-kpi-trend i { display: inline-block; font-size: 13px; }
+
+.ov-kpi-pill {
+    display: inline-block;
+    background: #d8dde8;
+    color: #1C2333;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+}
+
+.ov-kpi-trend.down .ov-kpi-pill {
+    background: #fee2e2;
+    color: #dc2626;
 }
 
 .ov-kpi-trend.down { color: #dc2626; }
@@ -1791,6 +1882,188 @@
     gap: 16px;
     align-items: start;
 }
+
+/* ===== Forecasts & anomalies combined tab ===== */
+.fc-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 12px;
+}
+
+.fc-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px 24px;
+}
+
+.fc-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 16px;
+}
+
+.fc-card-sub {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 14px;
+}
+
+.fc-metrics-row {
+    display: flex;
+    gap: 48px;
+}
+
+.fc-metric-lbl {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.fc-metric-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1;
+}
+
+.fc-metric-sub {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.fc-anomaly-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fc-anomaly-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.fc-anomaly-date { color: #0f172a; }
+.fc-anomaly-pct  { color: #dc2626; font-weight: 600; }
+
+.fc-no-anomalies {
+    font-size: 13px;
+    color: #16a34a;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ===== Players: rank spotlight cards (vertical layout) ===== */
+.plr-rank-card {
+    border-radius: 12px;
+    padding: 20px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;
+}
+
+.plr-rank-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 10px;
+}
+
+.plr-rank-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.plr-rank-dept {
+    font-size: 13px;
+    color: #64748b;
+    flex: 1;
+}
+
+.plr-rank-pts {
+    font-size: 13px;
+    color: #475569;
+    margin-top: 14px;
+}
+
+.plr-rank-pts strong {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-right: 3px;
+    letter-spacing: -0.5px;
+}
+
+/* ===== Players: two-chart row ===== */
+.plr-charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 860px) {
+    .plr-charts-row { grid-template-columns: 1fr; }
+}
+
+/* ===== Players: granularity toggle ===== */
+.plr-gran-row {
+    display: flex;
+    gap: 0;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.plr-gran-btn {
+    padding: 7px 18px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.plr-gran-btn:first-child { border-radius: 6px 0 0 6px; }
+.plr-gran-btn:last-child  { border-radius: 0 6px 6px 0; }
+.plr-gran-btn + .plr-gran-btn { border-left: none; }
+
+.plr-gran-btn.active {
+    background: #1e293b;
+    color: #fff;
+    border-color: #1e293b;
+}
+
+/* ===== League badges ===== */
+.league-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.league-badge.bronze  { background: #ffedd5; color: #c2410c; }
+.league-badge.silver  { background: #e2e8f0; color: #475569; }
+.league-badge.gold    { background: #fef3c7; color: #d97706; }
+.league-badge.diamond { background: #ede9fe; color: #7c3aed; }
 
 /* Project Progress card */
 .ov-progress-card {
@@ -1974,6 +2247,176 @@
 .tc-status.active   { background: #dcfce7; color: #16a34a; }
 .tc-status.inactive { background: #f1f5f9; color: #64748b; }
 
+/* ===== Games Overview — topic-group collapsible rows ===== */
+.gtopic-list { margin-bottom: 4px; }
+
+.gtopic-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 4px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    user-select: none;
+}
+.gtopic-row:hover { background: #f8fafc; }
+
+.gtopic-chevron {
+    color: #94a3b8;
+    font-size: 11px;
+    width: 14px;
+    flex-shrink: 0;
+    transition: transform 0.18s ease;
+}
+
+.gtopic-name {
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+}
+
+.gtopic-count {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.gtopic-body {
+    padding: 8px 0 8px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafafa;
+}
+
+/* ===== Leave & exclusions panel ===== */
+.lve-heading {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 6px;
+}
+
+.lve-subtext {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0 0 20px;
+    line-height: 1.5;
+}
+
+.lve-form-card {
+    background: #fff;
+    border: 1px solid #e8eef4;
+    border-radius: 12px;
+    padding: 20px 20px 16px;
+    margin-bottom: 20px;
+}
+
+.lve-form-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 14px;
+}
+
+.lve-form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.lve-daterange {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    flex: 1;
+    min-width: 260px;
+    background: #fff;
+}
+
+.lve-date-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.lve-date-lbl {
+    font-size: 11px;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+.lve-date-input {
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #0f172a;
+    font-family: inherit;
+    background: transparent;
+    padding: 0;
+}
+
+.lve-text-input {
+    flex: 1;
+    min-width: 160px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #0f172a;
+    font-family: inherit;
+    outline: none;
+}
+
+.lve-add-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 20px;
+    background: #475569;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.lve-add-btn:hover { background: #334155; }
+
+.lve-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 0;
+}
+
+.lve-search-input {
+    padding: 9px 14px;
+    border: 1px solid #e2e8f0;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    font-size: 13px;
+    color: #0f172a;
+    font-family: inherit;
+    outline: none;
+    width: 280px;
+}
+
+.lve-search-btn {
+    padding: 9px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 0 8px 8px 0;
+    background: #fff;
+    color: #64748b;
+    font-size: 13px;
+    cursor: pointer;
+}
+
 /* Responsive for Overview v2 */
 @media (max-width: 1200px) {
     .ov-kpi-row { grid-template-columns: 1fr 1fr 1fr; }
@@ -1985,4 +2428,599 @@
 @media (max-width: 600px) {
     .ov-kpi-row { grid-template-columns: 1fr 1fr; }
     .ov-mini-stats { grid-template-columns: 1fr; }
+}
+
+/* ===== Players: Game coverage sub-tabs ===== */
+.gc-sub-tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 0;
+}
+
+.gc-sub-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: -1px;
+    transition: color 0.12s, border-color 0.12s;
+}
+
+.gc-sub-btn.active {
+    color: #0f172a;
+    border-bottom-color: #0f172a;
+    font-weight: 600;
+}
+
+.gc-sub-btn:hover:not(.active) { color: #1e293b; }
+
+/* ===== Players: Game coverage game cards ===== */
+.gc-game-card {
+    background: #fff;
+    border: 1px solid #e8eef4;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+}
+
+.gc-game-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.gc-game-acc {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.gc-game-pct {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    min-width: 48px;
+    text-align: right;
+}
+
+.gc-game-bar-wrap {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.gc-game-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.gc-game-sub {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* ===== Players: Game coverage – By player ===== */
+.gc-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.gc-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.gc-filter-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.gc-filter-check input[type="checkbox"] { cursor: pointer; }
+
+.gc-player-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 20px;
+    background: #fff;
+    border: 1px solid #e8eef4;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.gc-player-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    min-width: 180px;
+    flex-shrink: 0;
+}
+
+.gc-player-progress {
+    flex: 1;
+    min-width: 0;
+}
+
+.gc-player-count {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.gc-player-bar-wrap {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.gc-player-bar {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.gc-player-missing {
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.gc-player-pct {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    min-width: 44px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.gc-player-dept {
+    font-size: 13px;
+    color: #64748b;
+    min-width: 140px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ===== Gamification — Leagues panel ===== */
+.gam-leagues-container {
+    background: #fff;
+    border: 1px solid #e8eef4;
+    border-radius: 12px;
+    padding: 20px 20px 4px;
+}
+
+.gam-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+/* Single-row controls bar (dept + player name + nav + search + export) */
+.gam-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 0 10px;
+    flex-wrap: wrap;
+}
+.gam-controls-row .gam-export-btn { margin-left: auto; }
+.gam-ctrl-period,
+.gam-ctrl-weeknav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.gam-ctrl-toggle { display: flex; }
+
+.gam-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.gam-dept-filter {
+    display: inline-block;
+}
+
+.gam-text-input {
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+    width: 170px;
+}
+.gam-text-input:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+}
+
+.gam-export-btn {
+    height: 36px;
+    padding: 0 14px;
+    background: #1C2333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.gam-export-btn:hover { background: #2d3748; }
+
+.gam-period-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gam-period-btn {
+    height: 32px;
+    padding: 0 12px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+}
+.gam-period-btn:hover:not(:disabled) { background: #e2e8f0; }
+.gam-period-btn--disabled, .gam-period-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.gam-period-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    min-width: 100px;
+    text-align: center;
+}
+
+.gam-search-row {
+    margin-bottom: 16px;
+}
+
+.gam-search-input {
+    width: 260px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #0f172a;
+    outline: none;
+}
+.gam-search-input:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+}
+
+.gam-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.gam-table thead th {
+    padding: 10px 14px;
+    background: #f8fafc;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e8eef4;
+    text-align: left;
+}
+.gam-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .12s;
+}
+.gam-table tbody tr:hover { background: #f8fafc; }
+.gam-table tbody td {
+    padding: 11px 14px;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.gam-player-link {
+    color: #1d4ed8;
+    font-weight: 500;
+    cursor: pointer;
+}
+.gam-player-link:hover { text-decoration: underline; }
+
+.gam-xp {
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+}
+
+/* League badge pills */
+.league-badge {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.league-diamond {
+    background: #0d9488;
+    color: #fff;
+}
+.league-gold {
+    background: #f59e0b;
+    color: #fff;
+}
+.league-silver {
+    background: #94a3b8;
+    color: #fff;
+}
+.league-bronze {
+    background: #b45309;
+    color: #fff;
+}
+
+/* ===== Players Overview — custom search bar ===== */
+.plr-search-row {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 16px 12px;
+}
+
+.plr-search-bar {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 280px;
+}
+
+.plr-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #334155;
+    background: #fff;
+}
+.plr-search-input::placeholder { color: #94a3b8; }
+
+.plr-search-btn {
+    width: 40px;
+    height: 38px;
+    background: #1C2333;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.plr-search-btn:hover { background: #334155; }
+
+/* ===== Players Overview — table cell styles ===== */
+.plr-name-link {
+    color: #1d4ed8 !important;
+    font-weight: 500;
+    cursor: pointer;
+}
+.plr-name-link:hover { text-decoration: underline; }
+
+/* Allow badge pill to render without DX clipping it */
+.plr-league-col .dx-datagrid-text-content {
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.plr-action-dots {
+    color: #94a3b8;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: block;
+    text-align: center;
+}
+.plr-action-dots:hover { color: #475569; }
+
+/* ===== Players Overview — outline league badge pills ===== */
+.plr-league-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1.5px solid;
+    background: transparent;
+    white-space: nowrap;
+}
+.plr-league-diamond { border-color: #0d9488; color: #0d9488; }
+.plr-league-gold    { border-color: #d97706; color: #d97706; }
+.plr-league-silver  { border-color: #94a3b8; color: #94a3b8; }
+.plr-league-bronze  { border-color: #b45309; color: #b45309; }
+
+/* ── Shared gamification toolbar updates ─────────────────── */
+.gam-player-name-input {
+    padding: 5px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    width: 150px;
+}
+.gam-player-name-input:focus { border-color: #94a3b8; }
+
+/* Period nav as its own row (below toolbar) */
+.gam-period-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 4px 0;
+}
+
+/* ── Scoreboard ──────────────────────────────────────────── */
+/* (uses shared toolbar + period row + dxDataGrid — no extra classes needed) */
+
+/* ── Streaks ─────────────────────────────────────────────── */
+.gam-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0;
+}
+.gam-toggle-group {
+    display: flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.gam-toggle-btn {
+    background: #fff;
+    border: none;
+    padding: 5px 16px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+}
+.gam-toggle-btn.active {
+    background: #1e293b;
+    color: #fff;
+}
+.gam-streak-period-lbl {
+    font-size: 12px;
+    color: #94a3b8;
+}
+.gam-streak-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 4px 0 12px 0;
+}
+.gam-streak-kpi-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.gam-streak-kpi-card {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+.gam-streak-kpi-lbl {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+.gam-streak-kpi-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.gam-dept-avg-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+}
+.gam-dept-avg-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.gam-dept-avg-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #334155;
+    padding: 3px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.gam-dept-avg-row:last-child { border-bottom: none; }
+.gam-dept-avg-right { color: #64748b; }
+
+/* ── Play days ───────────────────────────────────────────── */
+.gam-week-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0;
+}
+.gam-week-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.gam-week-nav-btn {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    width: 30px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gam-week-nav-btn--disabled { opacity: 0.4; cursor: default; }
+.gam-week-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+}
+.gam-threshold-lbl {
+    font-size: 12px;
+    color: #94a3b8;
+}
+.gam-pdy-table th, .gam-pdy-table td { white-space: nowrap; }
+.gam-check {
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 15px;
 }

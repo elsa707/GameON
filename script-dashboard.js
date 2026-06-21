@@ -9,6 +9,19 @@
         'Compliance & Ethics','Digital Tools Proficiency','Team Leadership','Financial Products'
     ];
 
+    /* Topic → game-index groupings for Games Overview collapsible list */
+    var GAME_TOPICS = [
+        { topic: 'Sales Objections',     indices: [0]             },
+        { topic: 'Emotional Intelligence',indices: [1]            },
+        { topic: 'Customer Service',     indices: [11]            },
+        { topic: 'Compliance & Ethics',  indices: [13]            },
+        { topic: 'Digital Skills',       indices: [14]            },
+        { topic: 'Leadership',           indices: [7, 15]         },
+        { topic: 'Financial Products',   indices: [6, 16]         },
+        { topic: 'Product Knowledge',    indices: [12]            },
+        { topic: 'No topic',             indices: [2,3,4,5,8,9,10] }
+    ];
+
     var PERIODS = ['All Months','January2026','February2026','March2026','April2026','May2026','June2026'];
     var MONTHS_LABELS = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
 
@@ -47,15 +60,49 @@
 
     var DEFAULT_COMPANY_ID = 7;
 
-    /* Inactive player details per company */
+    /* Inactive player details per company — lastPlayed null = never played */
     var INACTIVE_PLAYERS = {
         7: [
-            { firstName:'Danie',   lastName:'Erasmus',    email:'wsparts@bbgezina.co.za',         dealer:'BB Gezina Nissan - Parts'             },
-            { firstName:'Ernest',  lastName:'Keyser',     email:'partsmanager@bbgezina.co.za',     dealer:'BB Gezina Nissan - Parts Manager'     },
-            { firstName:'Gilbert', lastName:'Letsoalo',   email:'usedsales5@bbgezinanissan.co.za', dealer:'BB Gezina Nissan - Used Vehicle Sales' },
-            { firstName:'Henk',    lastName:'Leibenberg', email:'partsales2@bbgezina.co.za',       dealer:'BB Gezina Nissan - Parts'             },
-            { firstName:'Letisha', lastName:'Vos',        email:'wsparts2@bbgezina.co.za',         dealer:'BB Gezina Nissan - Parts'             }
+            { name:'Danie Erasmus',    dept:'Parts',              lastPlayed: null,         daysInactive: null },
+            { name:'Gilbert Letsoalo', dept:'Used Vehicle Sales', lastPlayed: null,         daysInactive: null },
+            { name:'Henk Leibenberg',  dept:'Parts',              lastPlayed: '2026-05-02', daysInactive: 46   }
+        ],
+        6: [
+            { name:'Bongani Nkosi',    dept:'Retail Banking',     lastPlayed: null,         daysInactive: null },
+            { name:'Carla van der Berg',dept:'Operations',        lastPlayed: '2026-04-28', daysInactive: 51   },
+            { name:'Sipho Dlamini',    dept:'Retail Banking',     lastPlayed: '2026-05-10', daysInactive: 39   },
+            { name:'Yolanda Botha',    dept:'Operations',         lastPlayed: null,         daysInactive: null }
+        ],
+        5: [
+            { name:'Andre du Toit',    dept:'Mining Ops',         lastPlayed: null,         daysInactive: null },
+            { name:'Nomsa Khumalo',    dept:'Mining Ops',         lastPlayed: '2026-05-20', daysInactive: 29   }
         ]
+    };
+
+    /* Game coverage data per company — players who played each game vs total active */
+    var GAME_COVERAGE = {
+        7: {
+            coveragePct: 24.3,
+            byGame: [
+                { name:'Handling Sales Objections', players: 9, avgAcc: 71.9 },
+                { name:'Emotional Intelligence',    players: 9, avgAcc: 70.2 },
+                { name:'Step 4 Present',            players: 9, avgAcc: 54.2 },
+                { name:'Step 7 Closing & OTP',      players: 8, avgAcc: 80.3 },
+                { name:'Step 5 Test Drive',         players: 7, avgAcc: 77.1 },
+                { name:'Step 2 Meet and Greet',     players: 7, avgAcc: 92.3 },
+                { name:'Step 8 Finance',            players: 7, avgAcc: 80.6 },
+                { name:'7 Habits',                  players: 5, avgAcc: 68.9 },
+                { name:'Step 1 Introduction',       players: 4, avgAcc: 55.3 },
+                { name:'Step 3 Needs Analysis',     players: 3, avgAcc: 62.7 },
+                { name:'Step 6 Trade-in Appraisal', players: 2, avgAcc: 74.8 },
+                { name:'Customer Service Excellence',players:1, avgAcc: 78.4 },
+                { name:'Product Knowledge',         players: 1, avgAcc: 83.1 },
+                { name:'Compliance & Ethics',       players: 0, avgAcc: 0    },
+                { name:'Digital Tools Proficiency', players: 0, avgAcc: 0    },
+                { name:'Team Leadership',           players: 0, avgAcc: 0    },
+                { name:'Financial Products',        players: 0, avgAcc: 0    }
+            ]
+        }
     };
 
     /* Brand colours per company — drives sidebar + dashboard chrome */
@@ -330,6 +377,7 @@
 
     var _gpFilter          = { search: '', incompleteOnly: false };
     var _gpView            = 'coverage'; /* 'coverage' | 'gameaday' */
+    var _gcView            = 'bygame';   /* 'bygame' | 'byplayer' */
     var _trendsGranularity = 'monthly';  /* 'daily' | 'weekly' | 'monthly' */
     var _gadNcOnly         = false;
     var _gadSearch         = '';
@@ -425,6 +473,7 @@
                     tick: { visible: false },
                     label: { font: { size: 10, color: '#64748b' } }
                 },
+                argumentAxis: { grid: { visible: false } },
                 valueAxis: {
                     max: isPercent ? 100 : undefined,
                     label: { customizeText: isPercent ? function(info) { return info.valueText + '%'; } : undefined }
@@ -449,10 +498,11 @@
 
     /* ── Overview v2 card helpers ───────────────────────────── */
 
-    function ovKpiCard(label, value, trendText, trendUp) {
+    function ovKpiCard(label, value, trendText, trendUp, accentColor) {
+        var accent     = accentColor || '#3b82f6';
         var trendClass = trendUp === false ? 'ov-kpi-trend down' : 'ov-kpi-trend';
         var trendIcon  = trendUp === false ? 'fa-arrow-trend-down' : 'fa-arrow-trend-up';
-        return '<div class="ov-kpi-card">' +
+        return '<div class="ov-kpi-card" style="border-left-color:' + accent + '">' +
             '<div class="ov-kpi-lbl">' + esc(label) + '</div>' +
             '<div class="ov-kpi-val">' + esc(String(value)) + '</div>' +
             (trendText ? '<div class="' + trendClass + '"><i class="fas ' + trendIcon + '"></i> ' + esc(trendText) + ' vs prior period</div>' : '') +
@@ -469,8 +519,26 @@
 
     /* ── Render: period selector ─────────────────────────────── */
 
+    var _MONTH_RANGES = {
+        'January2026':  [new Date(2026,0,1),  new Date(2026,0,31)],
+        'February2026': [new Date(2026,1,1),  new Date(2026,1,28)],
+        'March2026':    [new Date(2026,2,1),  new Date(2026,2,31)],
+        'April2026':    [new Date(2026,3,1),  new Date(2026,3,30)],
+        'May2026':      [new Date(2026,4,1),  new Date(2026,4,31)],
+        'June2026':     [new Date(2026,5,1),  new Date(2026,5,18)]
+    };
+    var _ALL_MONTHS_RANGE = [new Date(2026,0,1), new Date(2026,5,18)];
+
     function renderPeriodTabs() {
-        try { $('#dashPeriodSelect').dxSelectBox('instance').option('value', state.period); } catch(e) {}
+        try {
+            var bgInst = $('#dashPeriodMonths').dxButtonGroup('instance');
+            if (bgInst) bgInst.option('selectedItemKeys', [state.period]);
+        } catch(e) {}
+        try {
+            var inst = $('#dashDateRangeBox').dxDateRangeBox('instance');
+            var r = _MONTH_RANGES[state.period] || _ALL_MONTHS_RANGE;
+            inst.option({ startDate: r[0], endDate: r[1] });
+        } catch(e) {}
     }
 
     /* ── Render: header stats ────────────────────────────────── */
@@ -519,10 +587,10 @@
 
             /* Row 1 — 4 KPI cards (clean white, dev-site style) */
             '<div class="ov-kpi-row">' +
-                ovKpiCard('Participation rate', partRate + '%', '13.6%', true) +
-                ovKpiCard('Active players',     active,        '+' + Math.max(1, Math.round(active * 0.15)) + ' players', true) +
-                ovKpiCard('Sessions',           fmtPlays(d.plays), fmtPlays(Math.round(d.plays * 0.85)) + ' plays', true) +
-                ovKpiCard('Avg. accuracy',      d.avgAcc.toFixed(1) + '%', '9.8%', true) +
+                ovKpiCard('Participation rate', partRate + '%', '13.6%', true, '#1C2333') +
+                ovKpiCard('Active players',     active,        '+' + Math.max(1, Math.round(active * 0.15)) + ' players', true, '#1C2333') +
+                ovKpiCard('Sessions',           fmtPlays(d.plays), fmtPlays(Math.round(d.plays * 0.85)) + ' plays', true, '#1C2333') +
+                ovKpiCard('Avg. accuracy',      d.avgAcc.toFixed(1) + '%', '9.8%', true, '#1C2333') +
             '</div>' +
 
             /* Row 2 — Department Activity chart + Top Games by Plays chart */
@@ -536,97 +604,237 @@
 
             '</div>';
 
-        /* Top Games by Plays: horizontal bars — dark navy */
+        /* Top Games by Plays: horizontal bars */
         makeChart('sumChartTopGames', {
             opts: {
                 dataSource: topGames,
-                series: [{ argumentField: 'name', valueField: 'plays', type: 'bar', color: '#1e293b', cornerRadius: 4 }],
+                series: [{
+                    argumentField: 'name', valueField: 'plays', type: 'bar',
+                    color: '#1C2333',
+                    label: { visible: false }
+                }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
-                valueAxis:    { grid: { color: 'rgba(200,200,200,0.25)', visible: true } },
+                valueAxis:    { grid: { visible: false } },
                 legend:  { visible: false },
                 tooltip: { enabled: true },
                 size:    { height: 300 }
             }
         });
 
-        /* Department Activity: grouped horizontal bars — dark navy */
+        /* Department Activity: bars auto-sized to number of depts */
+        var deptData = getDealerGroups(state.companyId).map(function(dep) {
+            return { name: dep.name, total: dep.total, active: dep.active };
+        });
         makeChart('sumChartDeptActivity', {
             opts: {
-                dataSource: getDealerGroups(state.companyId).map(function(dep) {
-                    return { name: dep.name, total: dep.total, active: dep.active };
-                }),
-                series: [
-                    { argumentField: 'name', valueField: 'total',  type: 'bar', name: 'Sessions', color: '#1e293b', cornerRadius: 4 }
-                ],
+                dataSource: deptData,
+                series: [{
+                    argumentField: 'name', valueField: 'total', type: 'bar',
+                    name: 'Sessions', color: '#1C2333',
+                    barWidth: 40,
+                    label: { visible: false }
+                }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
-                valueAxis:    { grid: { color: 'rgba(200,200,200,0.25)', visible: true } },
-                legend:  { visible: true, horizontalAlignment: 'left', verticalAlignment: 'top', font: { size: 10, color: '#64748b' } },
+                valueAxis:    { grid: { visible: false } },
+                legend:  { visible: false },
                 tooltip: { enabled: true },
-                size:    { height: 300 }
+                size:    { height: Math.max(140, deptData.length * 64) }
             }
         });
 
+    }
+
+    /* ── Shared: Trends panel renderer ─────────────────────── */
+
+    function renderTrendsPanel(elId, gran, setGranFn) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+
+        var profile   = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+        var td        = getTrendDataForGranularity(state.companyId, gran);
+        var totalPlrs = profile.players || 17;
+
+        /* Participation rate = active players / total players * 100 */
+        var partData = td.players.map(function(p) {
+            return Math.round(p / totalPlrs * 100);
+        });
+
+        var showPts = td.labels.length <= 30;
+
+        function granBtn(label, value) {
+            var active = gran === value;
+            return '<button class="plr-gran-btn' + (active ? ' active' : '') + '" onclick="' + setGranFn + '(\'' + value + '\')">' + label + '</button>';
+        }
+
+        /* Use elId (stripped to alphanumeric) as chart ID prefix */
+        var pfx = elId.replace(/[^a-zA-Z0-9]/g, '');
+        var id1 = pfx + 'Comb';
+        var id2 = pfx + 'Plrs';
+        var id3 = pfx + 'Part';
+
+        el.innerHTML =
+            '<div class="plr-gran-row">' +
+                granBtn('Daily', 'daily') + granBtn('Weekly', 'weekly') + granBtn('Monthly', 'monthly') +
+            '</div>' +
+            '<div class="chart-card" style="margin-bottom:14px">' +
+                '<div class="chart-card-hd">Participation and achievement over time</div>' +
+                '<div class="chart-container"><div id="' + id1 + '"></div></div>' +
+            '</div>' +
+            '<div class="plr-charts-row">' +
+                '<div class="chart-card"><div class="chart-card-hd">Sessions</div><div class="chart-container"><div id="' + id2 + '"></div></div></div>' +
+                '<div class="chart-card"><div class="chart-card-hd">Active players</div><div class="chart-container"><div id="' + id3 + '"></div></div></div>' +
+            '</div>';
+
+        var combinedDs = td.labels.map(function(l, i) {
+            return { arg: l, part: partData[i], achievement: td.acc[i] };
+        });
+
+        function smallDs(arr) {
+            return td.labels.map(function(l, i) { return { arg: l, val: arr[i] }; });
+        }
+
+        var axisSettings = {
+            grid: { color: '#f1f5f9', visible: true },
+            tick: { visible: false },
+            label: { font: { size: 11 } }
+        };
+
+        makeChart(id1, {
+            opts: {
+                dataSource: combinedDs,
+                series: [
+                    { argumentField: 'arg', valueField: 'part',        type: 'spline', color: '#1e293b', name: 'Participation',
+                      point: { visible: showPts, size: 5, color: '#1e293b', hoverStyle: { size: 7 } } },
+                    { argumentField: 'arg', valueField: 'achievement',  type: 'spline', color: '#22c55e', name: 'Achievement',
+                      point: { visible: showPts, size: 5, color: '#22c55e', hoverStyle: { size: 7 } } }
+                ],
+                commonAxisSettings: axisSettings,
+                argumentAxis: { grid: { visible: false } },
+                legend: { visible: true, position: 'outside', horizontalAlignment: 'center', verticalAlignment: 'bottom' },
+                tooltip: { enabled: true, shared: true, cornerRadius: 6 },
+                size: { height: 280 }
+            }
+        });
+
+        function smallCfg(ds) {
+            return {
+                opts: {
+                    dataSource: ds,
+                    series: [{ argumentField: 'arg', valueField: 'val', type: 'spline', color: '#1e293b',
+                        point: { visible: showPts, size: 4, color: '#1e293b', hoverStyle: { size: 6 } } }],
+                    commonAxisSettings: axisSettings,
+                    argumentAxis: { grid: { visible: false } },
+                    valueAxis: { min: 0 },
+                    legend:  { visible: false },
+                    tooltip: { enabled: true, cornerRadius: 6 },
+                    size:    { height: 180 }
+                }
+            };
+        }
+
+        makeChart(id2, smallCfg(smallDs(td.plays)));
+        makeChart(id3, smallCfg(smallDs(td.players)));
     }
 
     /* ── Render: Summary > Trends ────────────────────────────── */
 
     function renderSummaryTrends() {
-        var el = document.getElementById('dashSummaryTrends');
-        if (!el) return;
-        var td = getTrendDataForGranularity(state.companyId, _trendsGranularity);
-
-        function granBtn(label, value) {
-            var active = _trendsGranularity === value;
-            var radius = value === 'daily' ? '6px 0 0 6px' : value === 'monthly' ? '0 6px 6px 0' : '0';
-            return '<button onclick="setTrendsGranularity(\'' + value + '\')" style="' +
-                'padding:5px 16px;border:1px solid ' + (active ? 'var(--chrome-bg)' : 'var(--border)') + ';' +
-                'background:' + (active ? 'var(--chrome-bg)' : '#fff') + ';' +
-                'color:' + (active ? '#fff' : '#64748b') + ';' +
-                'font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;border-radius:' + radius + ';' +
-                'margin-left:-1px;position:relative">' + label + '</button>';
-        }
-
-        var playsLabel = { daily: 'Daily Plays', weekly: 'Weekly Plays', monthly: 'Monthly Plays' }[_trendsGranularity];
-        var showPoints = td.labels.length <= 30;
-
-        el.innerHTML =
-            '<div class="summary-page">' +
-            '<div style="display:flex;justify-content:flex-end;margin-bottom:14px">' +
-                '<div style="display:inline-flex">' +
-                    granBtn('Daily', 'daily') + granBtn('Weekly', 'weekly') + granBtn('Monthly', 'monthly') +
-                '</div>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
-                '<div class="panel-card"><div class="panel-card-hd">Player Growth</div><div class="chart-container"><div id="chartSumPlayerGrowth"></div></div></div>' +
-                '<div class="panel-card"><div class="panel-card-hd">Accuracy Trend</div><div class="chart-container"><div id="chartSumAccTrend"></div></div></div>' +
-            '</div>' +
-            '<div class="panel-card" style="margin-top:14px"><div class="panel-card-hd">' + playsLabel + '</div><div class="chart-container"><div id="chartSumMonthlyPlays"></div></div></div>' +
-            '</div>';
-
-        makeChart('chartSumPlayerGrowth', areaChartConfig(td.players, '#1e3a5f', false, undefined, td.labels));
-        makeChart('chartSumAccTrend',     areaChartConfig(td.acc,     '#2563eb', true,  undefined, td.labels));
-        makeChart('chartSumMonthlyPlays', {
-            opts: {
-                dataSource: td.labels.map(function(l, i) { return { arg: l, val: td.plays[i] }; }),
-                series: [{ argumentField: 'arg', valueField: 'val', type: 'bar', color: '#334155', cornerRadius: 3 }],
-                commonAxisSettings: {
-                    grid: { visible: false },
-                    tick: { visible: false },
-                    label: { font: { size: 10, color: '#64748b' } }
-                },
-                valueAxis: { grid: { color: 'rgba(200,200,200,0.2)', visible: true } },
-                legend:  { visible: false },
-                tooltip: { enabled: true },
-                size:    { height: 180 }
-            }
-        });
+        renderTrendsPanel('dashSummaryTrends', _trendsGranularity, 'setTrendsGranularity');
     }
 
     /* ── Render: Summary > Forecast ──────────────────────────── */
+
+    /* ── Forecasts & anomalies helpers ──────────────────────── */
+
+    function buildForecastMetrics(companyId) {
+        var trend   = getMonthlyTrend(companyId);
+        var reg     = COMPANY_REGISTERED[companyId] || (COMPANY_PROFILES[companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID]).players;
+        var lrP     = linearRegression(trend.players);
+        var lrA     = linearRegression(trend.acc);
+        var projP   = Math.max(0, Math.round(lrP.intercept + lrP.slope * trend.players.length));
+        var partPct = Math.min(100, parseFloat((projP / reg * 100).toFixed(1)));
+        var accPct  = parseFloat(Math.min(99, Math.max(20, lrA.intercept + lrA.slope * trend.acc.length)).toFixed(1));
+        return { participation: partPct, accuracy: accPct };
+    }
+
+    function buildDailyAnomalies(companyId) {
+        var m       = getMonthlyTrend(companyId);
+        var profile = COMPANY_PROFILES[companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+        var total   = profile.players;
+        var li      = m.players.length - 1;
+        var pi      = Math.max(0, li - 1);
+        var today   = new Date(2026, 5, 17); /* fixed reference to keep data deterministic */
+
+        var dailyPlayers = [], dailyDates = [];
+        for (var d = 0; d < 30; d++) {
+            var t   = d / 29;
+            var v   = 0.78 + Math.abs(Math.sin(d * 13 + companyId * 7)) * 0.44;
+            var dt  = new Date(today); dt.setDate(dt.getDate() - (29 - d));
+            var iso = dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+            dailyDates.push(iso);
+            dailyPlayers.push(Math.max(0, Math.round((m.players[pi] + (m.players[li] - m.players[pi]) * t) * v)));
+        }
+
+        var avg = dailyPlayers.reduce(function(s, val) { return s + val; }, 0) / dailyPlayers.length;
+        var threshold = avg * 0.9;
+
+        var anomalies = [];
+        dailyDates.forEach(function(date, i) {
+            if (dailyPlayers[i] < threshold) {
+                var missing = Math.max(1, Math.round(avg - dailyPlayers[i]));
+                var pct     = Math.round(missing / total * 1000) / 10;
+                anomalies.push({ date: date, pct: pct });
+            }
+        });
+        return anomalies;
+    }
+
+    function renderForecastsAnomaliesPanel(elId, companyId) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+
+        var forecast  = buildForecastMetrics(companyId);
+        var anomalies = buildDailyAnomalies(companyId);
+
+        var anomalyRowsHtml = anomalies.length === 0
+            ? '<p class="fc-no-anomalies"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</p>'
+            : anomalies.map(function(a) {
+                return '<div class="fc-anomaly-row">' +
+                    '<span class="fc-anomaly-date">' + esc(a.date) + '</span>' +
+                    '<span class="fc-anomaly-pct">' + a.pct.toFixed(1) + '%</span>' +
+                '</div>';
+            }).join('');
+
+        el.innerHTML =
+            '<h3 class="fc-section-title">Forecasts</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Participation forecast</div>' +
+                '<div class="fc-metrics-row">' +
+                    '<div class="fc-metric"><div class="fc-metric-lbl">Participation rate</div><div class="fc-metric-val">' + forecast.participation + '%</div><div class="fc-metric-sub">Projected next period</div></div>' +
+                    '<div class="fc-metric"><div class="fc-metric-lbl">Avg. accuracy</div><div class="fc-metric-val">' + forecast.accuracy + '%</div><div class="fc-metric-sub">Projected next period</div></div>' +
+                '</div>' +
+            '</div>' +
+            '<h3 class="fc-section-title" style="margin-top:28px">Anomalies</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Anomalies detected</div>' +
+                '<div class="fc-card-sub">Periods where participation dropped more than 10% below the period average</div>' +
+                '<div class="fc-anomaly-list">' + anomalyRowsHtml + '</div>' +
+            '</div>';
+    }
+
+    function renderSummaryForecastsAnomalies() {
+        renderForecastsAnomaliesPanel('dashSummaryForecastAnomalies', state.companyId);
+    }
+
+    function renderPlayersForecastsAnomalies() {
+        renderForecastsAnomaliesPanel('dashPlayersForecastAnomalies', state.companyId);
+    }
 
     function renderSummaryForecast() {
         var el = document.getElementById('dashSummaryForecast');
@@ -686,6 +894,7 @@
                     label: { font: { size: 10, color: '#64748b' } }
                 },
                 argumentAxis: {
+                    grid: { visible: false },
                     constantLines: [{ value: MONTHS_LABELS[MONTHS_LABELS.length - 1], color: '#94a3b8', dashStyle: 'dash', width: 1,
                         label: { text: 'Today', position: 'outside', font: { size: 9, color: '#94a3b8' } } }]
                 },
@@ -992,87 +1201,200 @@
         el.innerHTML = '<div class="summary-page">' + anomalySevRow(tagged) + '<div class="anomaly-list">' + bodyHtml + '</div></div>';
     }
 
+    /* ── Render: Departments > Forecasts & anomalies ─────────── */
+
+    function renderDeptForecastsAnomalies() {
+        var el = document.getElementById('dashDeptForecastAnomalies');
+        if (!el) return;
+
+        var depts      = getDeptPlayers(state.companyId);
+        var totalAct   = depts.reduce(function(s,d){return s+d.active;},0);
+        var totalUsr   = depts.reduce(function(s,d){return s+d.total;},0);
+        var avgPart    = totalUsr > 0 ? totalAct / totalUsr * 100 : 0;
+        var threshold  = Math.max(0, avgPart - 15);
+
+        var forecastRows = depts.map(function(d) {
+            var part = d.total > 0 ? d.active / d.total * 100 : 0;
+            /* deterministic growth: 1.5–4% above current participation */
+            var growth = 1.5 + (d.name.charCodeAt(0) % 5) * 0.6;
+            var proj   = Math.min(100, part + growth).toFixed(1);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                    'padding:12px 0;border-bottom:1px solid #f1f5f9;last-child:border-bottom:none">' +
+                '<span style="font-size:14px;color:#374151">' + esc(d.name) + '</span>' +
+                '<span><strong style="font-size:15px;color:#0f172a;margin-right:6px">' + proj + '%</strong>' +
+                    '<span style="font-size:13px;color:#94a3b8">Projected next period</span></span>' +
+            '</div>';
+        }).join('');
+
+        var underperforming = depts.filter(function(d) {
+            return d.total > 0 && (d.active / d.total * 100) < threshold;
+        });
+
+        var anomalyContent;
+        if (underperforming.length === 0) {
+            anomalyContent = '<p style="font-size:14px;color:#1e40af;margin:12px 0 0">No underperforming departments in this period</p>';
+        } else {
+            anomalyContent = '<div style="margin-top:12px">' +
+                underperforming.map(function(d) {
+                    var pct = (d.active / d.total * 100).toFixed(1);
+                    var diff = (avgPart - d.active / d.total * 100).toFixed(1);
+                    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+                        '<span style="font-size:14px;color:#374151">' + esc(d.name) + '</span>' +
+                        '<span style="font-size:13px;color:#ef4444">' + pct + '% <span style="color:#94a3b8">(' + diff + '% below avg)</span></span>' +
+                    '</div>';
+                }).join('') +
+            '</div>';
+        }
+
+        el.innerHTML =
+            '<h3 class="fc-section-title">Forecasts</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Participation rate forecast</div>' +
+                '<div style="margin-top:4px">' + forecastRows + '</div>' +
+            '</div>' +
+            '<h3 class="fc-section-title" style="margin-top:28px">Anomalies</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Underperforming departments</div>' +
+                '<div class="fc-card-sub">Departments with participation rate more than 15% below company average</div>' +
+                anomalyContent +
+            '</div>';
+    }
+
     /* ── Render: shared Trends charts (Players / Games / Dept) ── */
 
     function renderTrendsCharts(containerId, prefix) {
-        var el = document.getElementById(containerId);
-        if (!el) return;
-        var trend = getMonthlyTrend(state.companyId);
-        var ds    = MONTHS_LABELS.map(function(l, i) { return { arg: l, val: trend.players[i] }; });
-        el.innerHTML =
-            '<div class="trends-top-grid">' +
-                '<div class="chart-card"><div class="chart-card-hd">Player Activity</div><div class="chart-container"><div id="'+prefix+'ChartActivity"></div></div></div>' +
-                '<div class="chart-card"><div class="chart-card-hd">Accuracy Trend</div><div class="chart-container"><div id="'+prefix+'ChartAcc"></div></div></div>' +
-            '</div>' +
-            '<div class="chart-card" style="margin-top:14px"><div class="chart-card-hd">Combined Engagement Overview</div><div class="chart-container"><div id="'+prefix+'ChartEngagement"></div></div></div>';
+        var gran  = containerId === 'dashGamesTrends' ? _gamesTrendsGran : _deptTrendsGran;
+        var setFn = containerId === 'dashGamesTrends' ? 'setGamesTrendsGran' : 'setDeptTrendsGran';
+        renderTrendsPanel(containerId, gran, setFn);
+    }
 
-        makeChart(prefix+'ChartActivity', areaChartConfig(trend.players, '#1e3a5f', false));
-        makeChart(prefix+'ChartAcc',      areaChartConfig(trend.acc,     '#2563eb', true));
-        makeChart(prefix+'ChartEngagement', {
-            opts: {
-                dataSource: ds,
-                series: [{ argumentField: 'arg', valueField: 'val', type: 'bar', color: '#334155', cornerRadius: 3 }],
-                commonAxisSettings: {
-                    grid: { visible: false },
-                    tick: { visible: false },
-                    label: { font: { size: 10, color: '#64748b' } }
-                },
-                valueAxis: { grid: { color: 'rgba(200,200,200,0.2)', visible: true } },
-                legend:  { visible: false },
-                tooltip: { enabled: true },
-                size:    { height: 180 }
-            }
-        });
+    /* ── Render: Players > Trends ───────────────────────────── */
+
+    function renderPlayersTrends() {
+        renderTrendsPanel('dashPlayersTrends', _playerTrendsGran, 'setPlayerTrendsGran');
     }
 
     /* ── Render: Games > Overview ────────────────────────────── */
 
+    function fmtGamePlayTime(ptMult) {
+        var totalSec = Math.round(ptMult * 420); /* 7-min base */
+        var h = Math.floor(totalSec / 3600);
+        var m = Math.floor((totalSec % 3600) / 60);
+        var s = totalSec % 60;
+        return h + 'h:' + String(m).padStart(2,'0') + 'm:' + String(s).padStart(2,'0') + 's';
+    }
+
     function renderGamesOverview() {
-        var d = getPeriodData(state.companyId, state.period);
+        var d       = getPeriodData(state.companyId, state.period);
+        var profile = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
         if (!d) return;
-        var rows = BASE_GAMES.map(function(name,i) {
-            var p = d.perf[i]; var col = accColor(p.accuracy);
-            return '<tr><td class="td-game-name">'+esc(name)+'</td><td class="td-plays">'+p.plays+'</td>' +
-                '<td><div class="acc-cell"><div class="acc-bar-track"><div class="acc-bar-fill '+col+'" style="width:'+p.accuracy+'%"></div></div><span class="acc-pct">'+p.accuracy+'%</span></div></td>' +
-                '<td class="td-playtime">'+p.playTime.toFixed(1)+'</td></tr>';
+
+        function gameRow(idx, ri) {
+            var p          = d.perf[idx] || { plays:0, accuracy:0, playTime:1 };
+            var attempted  = Math.min(profile.players, Math.max(1, Math.round(p.plays / 15)));
+            var completion = p.accuracy.toFixed(1);
+            var border     = ri % 2 === 1 ? 'border-left:3px solid #f97316;' : '';
+            return '<tr style="' + border + '">' +
+                '<td class="td-game-name" style="color:#1d4ed8">' + esc(BASE_GAMES[idx]) + '</td>' +
+                '<td style="color:#1d4ed8">' + profile.players + '</td>' +
+                '<td style="color:#1d4ed8">' + attempted + '</td>' +
+                '<td>' + completion + '%</td>' +
+                '<td>' + p.accuracy.toFixed(1) + '%</td>' +
+                '<td style="color:#64748b">' + fmtGamePlayTime(p.playTime) + '</td>' +
+            '</tr>';
+        }
+
+        var topicBlocks = GAME_TOPICS.map(function(tg, ti) {
+            var count = tg.indices.length;
+            var tableRows = tg.indices.map(function(idx, ri) { return gameRow(idx, ri); }).join('');
+            return '<div class="gtopic-row" data-tidx="' + ti + '" onclick="gamesTopicToggle(' + ti + ')">' +
+                    '<i class="fas fa-chevron-right gtopic-chevron" id="gtopicChev' + ti + '"></i>' +
+                    '<span class="gtopic-name">' + esc(tg.topic) + '</span>' +
+                    '<span class="gtopic-count">(' + count + ')</span>' +
+                '</div>' +
+                '<div class="gtopic-body" id="gtopicBody' + ti + '" hidden>' +
+                    '<table class="dash-perf-table">' +
+                    '<thead><tr><th>Game</th><th>Assigned</th><th>Attempted</th><th>Completion %</th><th>Avg. Accuracy</th><th>Avg. Play Time</th></tr></thead>' +
+                    '<tbody>' + tableRows + '</tbody>' +
+                    '</table>' +
+                '</div>';
         }).join('');
-        var accData = BASE_GAMES.map(function(name, i) {
-            return { name: name, accuracy: d.perf[i] ? d.perf[i].accuracy : 0 };
-        }).sort(function(a, b) { return b.accuracy - a.accuracy; }).slice(0, 8);
+
+        /* Top 10 by completion rate for bar chart */
+        var top10 = BASE_GAMES.map(function(name, i) {
+            var p = d.perf[i] || { accuracy:0 };
+            return { name: name, completion: p.accuracy };
+        }).sort(function(a,b){ return b.completion - a.completion; }).slice(0, 10);
 
         document.getElementById('dashGamesOverview').innerHTML =
-            '<div class="ov-kpi-row" style="margin-bottom:16px">' +
-                ovKpiCard('Games available', BASE_GAMES.length,       null) +
-                ovKpiCard('Total plays',     fmtPlays(d.plays),       null) +
-                ovKpiCard('Avg. accuracy',   d.avgAcc.toFixed(1)+'%', '9.8%', true) +
-                ovKpiCard('User answers',    d.userAns,               null) +
-            '</div>' +
-            '<div class="dash-table-card" style="margin-bottom:16px"><div class="dash-table-card-hd">Game Performance</div>' +
-            '<table class="dash-perf-table"><thead><tr><th>Game Name</th><th>Plays</th><th>Accuracy</th><th>Time (min)</th></tr></thead>' +
-            '<tbody>'+rows+'</tbody></table></div>' +
-            '<div class="panel-card"><div class="panel-card-hd">Answer Accuracy by Game</div>' +
-            '<div class="chart-container"><div id="chartGamesAccuracy"></div></div></div>';
+            '<div class="gtopic-list">' + topicBlocks + '</div>' +
+            '<div class="panel-card" style="margin-top:20px">' +
+                '<div class="panel-card-hd">Top 10 games by completion rate</div>' +
+                '<div class="chart-container"><div id="chartGamesCompletion"></div></div>' +
+            '</div>';
 
-        makeChart('chartGamesAccuracy', {
+        window.gamesTopicToggle = function(ti) {
+            var body  = document.getElementById('gtopicBody' + ti);
+            var chev  = document.getElementById('gtopicChev' + ti);
+            if (!body) return;
+            if (body.hasAttribute('hidden')) {
+                body.removeAttribute('hidden');
+                if (chev) chev.style.transform = 'rotate(90deg)';
+            } else {
+                body.setAttribute('hidden', '');
+                if (chev) chev.style.transform = '';
+            }
+        };
+
+        makeChart('chartGamesCompletion', {
             opts: {
-                dataSource: accData,
-                series: [{ argumentField: 'name', valueField: 'accuracy', type: 'bar', color: '#1e3a5f', cornerRadius: 3 }],
+                dataSource: top10,
+                series: [{ argumentField: 'name', valueField: 'completion', type: 'bar', color: '#1e293b', cornerRadius: 0 }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
                 valueAxis: {
                     min: 0, max: 100,
-                    grid: { color: 'rgba(200,200,200,0.25)', visible: true },
+                    grid: { visible: false },
                     label: { customizeText: function(i) { return i.valueText + '%'; } }
                 },
-                legend:  { visible: false },
+                legend:  { visible: true, customizeItems: function(){ return [{ text: 'Completion %', marker: { fill:'#1e293b' } }]; } },
                 tooltip: { enabled: true, customizeTooltip: function(i) { return { text: i.argumentText + ': ' + i.value + '%' }; } },
-                size:    { height: 280 }
+                size:    { height: 320 }
             }
         });
     }
 
     /* ── Render: Players > Overview ──────────────────────────── */
+
+    function getLeague(xp) {
+        if (xp >= 20000) return 'Diamond';
+        if (xp >= 5000)  return 'Gold';
+        if (xp >= 2000)  return 'Silver';
+        return 'Bronze';
+    }
+
+    function getPlayerLastPlay(playerName, sessions) {
+        if (!sessions) return null;
+        var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var seed = (playerName ? playerName.charCodeAt(0) : 65) + (playerName ? playerName.charCodeAt(playerName.length - 1) : 0);
+        var daysAgo = (seed % 16) + 1;
+        var ref = new Date(2026, 5, 18); /* June 18 2026 */
+        ref.setDate(ref.getDate() - daysAgo);
+        var d = ref.getDate();
+        return (d < 10 ? '0' + d : '' + d) + ' ' + MON[ref.getMonth()] + ' ' + ref.getFullYear();
+    }
+
+    function devSpotlightCard(rank, name, dept, xp) {
+        return '<div class="ov-kpi-card" style="border-left-color:#1C2333;position:relative">' +
+            '<div style="position:absolute;top:16px;right:18px;font-size:22px;font-weight:700;color:#1C2333;letter-spacing:-0.5px">#' + rank + '</div>' +
+            '<div style="margin-top:4px">' +
+                '<div class="ov-kpi-val" style="font-size:20px;letter-spacing:0.03em;padding-right:44px">' + esc(name) + '</div>' +
+                '<div style="font-size:12px;color:#94a3b8;margin-top:2px;margin-bottom:10px">' + esc(dept) + '</div>' +
+                '<div class="ov-kpi-trend"><span class="ov-kpi-pill">' + xp.toLocaleString() + ' pts</span></div>' +
+            '</div>' +
+        '</div>';
+    }
 
     function renderPlayersOverview() {
         var players = COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID];
@@ -1083,83 +1405,178 @@
         var allD    = getPeriodData(state.companyId, 'All Months');
         var scale   = allD && allD.plays > 0 ? d.plays / allD.plays : 1;
 
-        var badgeColors = ['#d97706','#6b7280','#7f1d1d'];
-        var badgeBg     = ['#fef3c7','#f1f5f9','#fee2e2'];
-        var top3 = players.slice(0,3);
+        /* Spotlight top 3 */
+        var top3 = players.slice(0, 3);
+        var spotlightHtml = '<div class="player-spotlight-row">' +
+            top3.map(function(p, i) {
+                return devSpotlightCard(i + 1, p.name, p.dept, Math.round(p.points * scale));
+            }).join('') +
+        '</div>';
 
-        var rankLabels = ['1ST PLACE', '2ND PLACE', '3RD PLACE'];
-        var spotlightHtml = '<div class="player-spotlight-row">' + top3.map(function(p,i) {
-            var pts = Math.round(p.points * scale).toLocaleString() + ' pts';
-            return '<div class="ov-kpi-card">' +
-                '<div class="ov-kpi-icon" style="background:' + badgeBg[i] + ';color:' + badgeColors[i] + ';font-size:16px;font-weight:800">' + (i+1) + '</div>' +
-                '<div class="ov-kpi-lbl">' + rankLabels[i] + '</div>' +
-                '<div class="ov-kpi-val" style="font-size:20px;font-weight:500;color:#0f172a;line-height:1.2">' + esc(p.name) + '</div>' +
-                '<div class="ov-kpi-sub">' + esc(p.dept) + '</div>' +
-                '<div class="ov-kpi-sub" style="font-weight:600;color:#1e3a5f;margin-top:6px">' + pts + '</div>' +
+        /* Two charts */
+        var chartsHtml = '<div class="plr-charts-row">' +
+            '<div class="chart-card"><div class="chart-card-hd">Participation by dealer</div><div class="chart-container"><div id="plrDealerChart"></div></div></div>' +
+            '<div class="chart-card"><div class="chart-card-hd">Active players by department</div><div class="chart-container"><div id="plrDeptChart"></div></div></div>' +
+        '</div>';
+
+        var gridHtml =
+            '<div class="dash-table-card" style="margin-top:16px">' +
+                '<div class="plr-search-row">' +
+                    '<div class="plr-search-bar">' +
+                        '<input type="text" class="plr-search-input" id="plrSearchInput" placeholder="Search..." oninput="window.plrSearch()">' +
+                        '<button class="plr-search-btn" onclick="window.plrSearch()"><i class="fas fa-search"></i></button>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="dashPlayersGrid"></div>' +
             '</div>';
-        }).join('') + '</div>';
 
-        var rows = players.map(function(p,i) {
-            var sp  = Math.max(1, Math.round(p.points * scale));
-            var sg  = Math.max(1, Math.round(p.games  * scale));
-            var col = accColor(p.accuracy);
-            return '<tr>' +
-                '<td class="player-rank">'+(i+1)+'</td>' +
-                '<td class="player-name">'+esc(p.name)+'</td>' +
-                '<td class="player-dept">'+esc(p.dept)+'</td>' +
-                '<td class="player-region">'+esc(p.region||'—')+'</td>' +
-                '<td class="td-points">'+sp.toLocaleString()+'</td>' +
-                '<td><div class="acc-cell"><div class="acc-bar-track"><div class="acc-bar-fill '+col+'" style="width:'+p.accuracy+'%"></div></div><span class="acc-pct">'+p.accuracy.toFixed(1)+'%</span></div></td>' +
-                '<td class="td-plays">'+sg+'</td>' +
-            '</tr>';
-        }).join('');
-
-        /* Participation by Dealer */
-        var dealers = COMPANY_DEALERS[state.companyId] || [{ name:(profile.name+' — Main Office'), total:profile.players, active:profile.players, players:profile.players, avgAcc:d.avgAcc, points:0 }];
-        var dealerRows = dealers.map(function(dl) {
-            var tot = dl.total || dl.players || 1;
-            var act = dl.active !== undefined ? dl.active : dl.players;
-            var pct = tot > 0 ? Math.round(act / tot * 100) : 0;
-            var pc  = pct === 0 ? '#e11d48' : '#22c55e';
-            return '<div class="dlr-entry">' +
-                '<div class="dlr-row"><span class="dlr-name">' + esc(dl.name) + '</span><span class="dlr-pct" style="color:' + pc + '">' + pct + '%</span></div>' +
-                '<div class="dlr-bar-row"><div class="dlr-track"><div class="dlr-fill" style="width:' + pct + '%;background:' + pc + '"></div></div><span class="dlr-count">' + act + '/' + tot + '</span></div>' +
-            '</div>';
-        }).join('');
-
-        /* Inactive Players */
-        var inactivePlayers = INACTIVE_PLAYERS[state.companyId] || INACTIVE_PLAYERS[DEFAULT_COMPANY_ID] || [];
-        var inactiveInner = '';
-        if (inactivePlayers.length) {
-            var inactiveRows = inactivePlayers.map(function(p) {
-                return '<tr><td>' + esc(p.firstName) + '</td><td>' + esc(p.lastName) + '</td>' +
-                    '<td style="color:var(--text-secondary)">' + esc(p.email) + '</td>' +
-                    '<td>' + esc(p.dealer) + '</td></tr>';
-            }).join('');
-            inactiveInner = '<div class="dash-table-card-hd" style="color:#d97706"><i class="fas fa-circle-exclamation" style="margin-right:8px"></i>Inactive Players (' + inactivePlayers.length + ')</div>' +
-                '<table class="dash-players-table"><thead><tr><th>Name</th><th>Surname</th><th>Email</th><th>Dealer</th></tr></thead>' +
-                '<tbody>' + inactiveRows + '</tbody></table>';
-        }
+        /* Secondary nav — only injected when Players is a sub-tab (index2.html),
+           not when it is a standalone main tab with its own segmented sub-tabs (index.html) */
+        var needsSecNav = !document.querySelector('[data-panel="players"]');
+        var secNavHtml = needsSecNav
+            ? '<div class="plr-sec-nav">' +
+                  '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
+                  '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
+                  '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
+              '</div>'
+            : '';
+        var secPanelsHtml = needsSecNav
+            ? '<div id="dashPlayersInactive"   class="plr-sec-panel" hidden></div>' +
+              '<div id="dashPlayersGamesPlayed" class="plr-sec-panel" hidden></div>' +
+              '<div id="dashPlayersLeave"       class="plr-sec-panel" hidden></div>'
+            : '';
 
         document.getElementById('dashPlayersPanel').innerHTML =
-            '<div class="ov-kpi-row" style="margin-bottom:16px">' +
-                ovKpiCard('Active players', profile.players,           '+' + Math.max(1,Math.round(profile.players*0.15)) + ' players', true) +
-                ovKpiCard('Avg. accuracy', d.avgAcc.toFixed(1) + '%', '9.8%', true) +
-                ovKpiCard('Dealers',       profile.dealers,           null) +
-                ovKpiCard('Inactive',      totalInact,                null) +
-            '</div>' +
-            spotlightHtml +
-            '<div class="dash-table-card"><div class="dash-table-card-hd">Full Player Rankings</div>' +
-            '<table class="dash-players-table"><thead><tr><th>Rank</th><th>Player</th><th>Dept</th><th>Region</th><th>Points</th><th>Accuracy</th><th>Games</th></tr></thead>' +
-            '<tbody>'+rows+'</tbody></table></div>' +
-            '<div style="display:grid;grid-template-columns:2fr 3fr;gap:16px;margin-top:16px;align-items:stretch">' +
-                '<div class="dash-table-card">' +
-                    '<div class="dlr-hd"><span class="dlr-title"><i class="fas fa-building"></i> Participation by Dealer</span>' +
-                    '<button class="dlr-export" onclick="alert(\'CSV export coming soon.\')"><i class="fas fa-download"></i> Export CSV</button></div>' +
-                    '<div class="dlr-list">' + dealerRows + '</div>' +
-                '</div>' +
-                '<div class="dash-table-card">' + inactiveInner + '</div>' +
-            '</div>';
+            secNavHtml +
+            '<div id="plrOverviewContent">' + spotlightHtml + chartsHtml + gridHtml + '</div>' +
+            secPanelsHtml;
+
+        window.playerSection = function(key) {
+            var overviewEl = document.getElementById('plrOverviewContent');
+            if (overviewEl) overviewEl.hidden = true;
+            ['dashPlayersInactive', 'dashPlayersGamesPlayed', 'dashPlayersLeave'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.hidden = true;
+            });
+            document.querySelectorAll('.plr-sec-tab').forEach(function(b) { b.classList.remove('active'); });
+            var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
+            var target = document.getElementById(idMap[key]);
+            if (target) target.hidden = false;
+            document.querySelectorAll('.plr-sec-tab').forEach(function(b) {
+                if ((b.getAttribute('onclick') || '').indexOf("'" + key + "'") !== -1) b.classList.add('active');
+            });
+        };
+
+        /* Dealer participation chart */
+        var dealers = COMPANY_DEALERS[state.companyId] || [{ name: profile.name + ' — Main Office', total: profile.players, active: profile.players, players: profile.players, avgAcc: d.avgAcc, points: 0 }];
+        var dealerDs = dealers.map(function(dl) {
+            var tot = dl.total || dl.players || 1;
+            var act = dl.active !== undefined ? dl.active : dl.players;
+            var label = dl.name.replace(/^[^-]+ - /, '');
+            return { name: label, activePct: tot > 0 ? Math.round(act / tot * 100) : 0 };
+        }).filter(function(x) { return x.activePct > 0; });
+
+        makeChart('plrDealerChart', {
+            opts: {
+                dataSource: dealerDs,
+                series: [{ argumentField: 'name', valueField: 'activePct', type: 'bar', color: '#1e293b', cornerRadius: 0 }],
+                rotated: false,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 11, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis: {
+                    min: 0, max: 100,
+                    grid: { color: 'rgba(200,200,200,0.25)', visible: true },
+                    label: { customizeText: function(i) { return i.valueText + '%'; } }
+                },
+                legend: { visible: false },
+                tooltip: { enabled: true, customizeTooltip: function(i) { return { text: i.argumentText + ': ' + i.value + '%' }; } },
+                size: { height: 200 }
+            }
+        });
+
+        /* Active players by department chart */
+        var deptMap = {};
+        players.forEach(function(p) { deptMap[p.dept] = (deptMap[p.dept] || 0) + 1; });
+        var deptDs = Object.keys(deptMap).map(function(k) { return { dept: k, count: deptMap[k] }; });
+
+        makeChart('plrDeptChart', {
+            opts: {
+                dataSource: deptDs,
+                series: [{ argumentField: 'dept', valueField: 'count', type: 'bar', color: '#1e293b', cornerRadius: 0 }],
+                rotated: true,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 11, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis: { min: 0, grid: { visible: false } },
+                legend: { visible: false },
+                tooltip: { enabled: true },
+                size: { height: 200 }
+            }
+        });
+
+        /* dxDataGrid */
+        var gridData = players.map(function(p) {
+            var xp       = Math.round(p.points * scale);
+            var sessions = Math.max(1, Math.round(p.games * scale));
+            var scoreSeed = Math.abs(Math.sin((p.name.charCodeAt(0) + p.name.length) * 1.9));
+            var scoreVal  = parseFloat(Math.min(99.9, Math.max(0, p.accuracy * 0.8 + scoreSeed * 28)).toFixed(1));
+            return {
+                name:       p.name,
+                department: p.dept,
+                passRate:   sessions > 0 ? p.accuracy : null,
+                score:      sessions > 0 ? scoreVal    : null,
+                sessions:   sessions,
+                xp:         xp,
+                league:     sessions > 0 ? getLeague(xp) : '',
+                lastPlay:   getPlayerLastPlay(p.name, sessions)
+            };
+        });
+
+        window._plrGridData = gridData;
+
+        $('#dashPlayersGrid').dxDataGrid({
+            dataSource: gridData,
+            showBorders: false,
+            showRowLines: true,
+            showColumnLines: false,
+            rowAlternationEnabled: false,
+            hoverStateEnabled: true,
+            searchPanel: { visible: false, width: 220 },
+            columns: [
+                { dataField: 'name', caption: 'NAME', minWidth: 120,
+                    cellTemplate: function(container, options) {
+                        $('<span>').addClass('plr-name-link').text(options.value).appendTo(container);
+                    } },
+                { dataField: 'department', caption: 'DEPARTMENT', minWidth: 110 },
+                { dataField: 'passRate',   caption: 'PASS RATE',  width: 105, alignment: 'right',
+                    customizeText: function(info) { return info.value === null ? '—' : parseFloat(info.value).toFixed(1) + '%'; } },
+                { dataField: 'score',      caption: 'SCORE',      width: 90,  alignment: 'right',
+                    customizeText: function(info) { return info.value === null ? '—' : parseFloat(info.value).toFixed(1) + '%'; } },
+                { dataField: 'sessions',   caption: 'SESSIONS',   width: 90,  alignment: 'right' },
+                { dataField: 'xp',         caption: 'XP',         width: 85,  alignment: 'right',
+                    customizeText: function(info) { return Number(info.value).toLocaleString(); } },
+                { dataField: 'league', caption: 'LEAGUE', width: 130, alignment: 'center',
+                    cssClass: 'plr-league-col',
+                    cellTemplate: function(container, options) {
+                        if (!options.value) return;
+                        $('<span>').addClass('plr-league-badge plr-league-' + String(options.value).toLowerCase()).text(options.value).appendTo(container);
+                    } },
+                { dataField: 'lastPlay', caption: 'LAST PLAY', width: 130,
+                    customizeText: function(info) { return info.value || '—'; } },
+                { caption: '', width: 44, allowSorting: false, allowFiltering: false,
+                    cellTemplate: function(container) {
+                        $('<span>').addClass('plr-action-dots').html('&#8942;').appendTo(container);
+                    } }
+            ],
+            paging:       { enabled: false },
+            sorting:      { mode: 'single' },
+            headerFilter: { visible: false }
+        });
+
+        window.plrSearch = function() {
+            var q = document.getElementById('plrSearchInput');
+            var inst = $('#dashPlayersGrid').dxDataGrid('instance');
+            if (q && inst) inst.option('searchPanel.text', q.value);
+        };
     }
 
     /* ── Game-a-Day helpers ──────────────────────────────────── */
@@ -1312,78 +1729,276 @@
         gadRenderTable();
     };
 
+    /* ── Render: Players > Inactive ─────────────────────────── */
+
+    function renderInactiveList(players) {
+        var listEl = document.getElementById('inactivePlayerList');
+        if (!listEl) return;
+        if (!players.length) {
+            listEl.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8;font-size:13px">No inactive players for this threshold.</div>';
+            return;
+        }
+        listEl.innerHTML = players.map(function(p, i) {
+            var bg = i % 2 === 1 ? '#f9fafb' : '#fff';
+            return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;align-items:center;padding:14px 16px;background:' + bg + ';border-bottom:1px solid #f1f5f9">' +
+                '<span style="font-size:14px;color:#0f172a">' + esc(p.name) + '</span>' +
+                '<span style="font-size:14px;color:#475569">' + esc(p.dept) + '</span>' +
+                '<span style="font-size:14px;color:#475569">' + (p.lastPlayed || '—') + '</span>' +
+                '<span style="font-size:14px;color:#475569">' + (p.daysInactive !== null ? p.daysInactive : '—') + '</span>' +
+            '</div>';
+        }).join('');
+    }
+
+    function renderPlayersInactive() {
+        var el = document.getElementById('dashPlayersInactive');
+        if (!el) return;
+
+        var allPlayers = INACTIVE_PLAYERS[state.companyId] || INACTIVE_PLAYERS[DEFAULT_COMPANY_ID] || [];
+        var threshold  = 30;
+
+        function filterPlayers(thresh, search) {
+            return allPlayers.filter(function(p) {
+                var meetsThresh = p.lastPlayed === null || p.daysInactive >= thresh;
+                if (!meetsThresh) return false;
+                if (search) {
+                    var q = search.toLowerCase();
+                    return p.name.toLowerCase().indexOf(q) !== -1 || p.dept.toLowerCase().indexOf(q) !== -1;
+                }
+                return true;
+            });
+        }
+
+        var players = filterPlayers(threshold, '');
+
+        el.innerHTML =
+            /* KPI + threshold */
+            '<div style="display:flex;align-items:flex-end;gap:24px;margin-bottom:20px">' +
+                '<div class="ov-kpi-card" style="min-width:200px;flex-shrink:0">' +
+                    '<div class="ov-kpi-label">Inactive players</div>' +
+                    '<div class="ov-kpi-value" id="inactiveCount">' + players.length + '</div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;font-size:14px;color:#475569">' +
+                    '<span>Days inactive (threshold)</span>' +
+                    '<input id="inactiveThresholdInput" type="number" value="' + threshold + '" min="1" max="365" ' +
+                        'oninput="window.inactiveRefreshList()" ' +
+                        'style="width:80px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;color:#0f172a;text-align:center;outline:none">' +
+                '</div>' +
+            '</div>' +
+
+            /* Search + table */
+            '<div class="dash-table-card">' +
+                '<div style="padding:10px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:10px">' +
+                    '<div style="position:relative;max-width:320px">' +
+                        '<input id="inactiveSearch" type="text" placeholder="Search..." oninput="window.inactiveRefreshList()" ' +
+                            'style="padding:8px 36px 8px 12px;width:260px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;outline:none">' +
+                        '<i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none"></i>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 16px;border-bottom:1px solid #e5e7eb">' +
+                    '<span style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Name</span>' +
+                    '<span style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Department</span>' +
+                    '<span style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Last Played</span>' +
+                    '<span style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Days Inactive</span>' +
+                '</div>' +
+                '<div id="inactivePlayerList"></div>' +
+            '</div>';
+
+        renderInactiveList(players);
+        window._inactiveAllPlayers = allPlayers;
+
+        window.inactiveRefreshList = function() {
+            var threshEl = document.getElementById('inactiveThresholdInput');
+            var searchEl = document.getElementById('inactiveSearch');
+            var thresh   = threshEl ? (parseInt(threshEl.value, 10) || 30) : 30;
+            var search   = searchEl ? searchEl.value : '';
+            var pl       = filterPlayers(thresh, search);
+            var countEl  = document.getElementById('inactiveCount');
+            if (countEl) countEl.textContent = pl.length;
+            renderInactiveList(pl);
+        };
+    }
+
     /* ── Render: Players > Games Played ──────────────────────── */
+
+    function getGameCoverageDaily(companyId) {
+        var seed = companyId * 31;
+        var vals = [];
+        var v = 1.2;
+        for (var i = 0; i < 31; i++) {
+            seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+            var delta = ((seed % 200) / 100 - 1.0) * 0.9;
+            v = Math.max(0.1, Math.min(7.0, v + delta));
+            var d = new Date(2026, 4, 18 + i);
+            var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+            vals.push({ label: d.getDate() + ' ' + mon, pct: Math.round(v * 10) / 10 });
+        }
+        return vals;
+    }
 
     function renderPlayersGamesPlayed() {
         var el = document.getElementById('dashPlayersGamesPlayed');
         if (!el) return;
+
+        var profile    = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+        var coverage   = GAME_COVERAGE[state.companyId] || GAME_COVERAGE[DEFAULT_COMPANY_ID];
+        var totalPlrs  = profile.players;
+        var totalGames = BASE_GAMES.length;
+        var gcDaily    = getGameCoverageDaily(state.companyId);
         var allPlayers = PLAYER_COVERAGE[state.companyId] || PLAYER_COVERAGE[DEFAULT_COMPANY_ID] || [];
-        var total      = BASE_GAMES.length;
-        var fullCount  = allPlayers.filter(function(p) { return p.played >= total; }).length;
-        var incomplete = allPlayers.filter(function(p) { return p.played < total; }).length;
-        var avgCov     = allPlayers.length > 0 ? Math.round(allPlayers.reduce(function(s, p) { return s + p.played; }, 0) / (allPlayers.length * total) * 100) : 0;
 
-        var gameChips = BASE_GAMES.map(function(g) {
-            return '<span style="display:inline-block;background:#f1f5f9;border-radius:20px;padding:3px 10px;font-size:11px;color:#475569;margin:2px 4px 2px 0">' + esc(g) + '</span>';
-        }).join('');
-
-        _gpFilter.search = '';
-        _gpFilter.incompleteOnly = false;
-
-        function viewBtn(label, view) {
-            var active = _gpView === view;
-            return '<button onclick="gpSetView(\'' + view + '\')" style="padding:7px 18px;border-radius:6px;border:1px solid ' +
-                (active ? 'var(--chrome-bg)' : 'var(--border)') + ';background:' +
-                (active ? 'var(--chrome-bg)' : '#fff') + ';color:' +
-                (active ? '#fff' : '#1e293b') + ';font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">' + label + '</button>';
+        function subBtn(label, key) {
+            var active = _gcView === key;
+            return '<button class="gc-sub-btn' + (active ? ' active' : '') + '" onclick="window.gcSetView(\'' + key + '\')">' + label + '</button>';
         }
 
-        el.innerHTML =
-            '<div style="padding:0 0 16px">' +
-            '<div style="padding:16px 0 0;display:flex;gap:8px">' +
-                viewBtn('Content Coverage', 'coverage') +
-                viewBtn('Game-a-Day', 'gameaday') +
-            '</div>' +
+        function gcBarColor(pct) {
+            return pct >= 50 ? '#f59e0b' : pct > 0 ? '#ef4444' : '#e2e8f0';
+        }
 
-            /* ── Content Coverage view ── */
-            '<div id="gpCoverageView" style="' + (_gpView === 'coverage' ? '' : 'display:none') + '">' +
-            '<div class="dash-metrics" style="margin-top:14px">' +
-                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">GAMES THIS PERIOD</div><div class="metric-val">' + total + '</div></div><div class="metric-icon" style="background:#ede9fe;color:#7c3aed"><i class="fas fa-gamepad"></i></div></div>' +
-                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">FULL COVERAGE</div><div class="metric-val" style="color:#16a34a">' + fullCount + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">players completed every game</div></div><div class="metric-icon" style="background:#dcfce7;color:#16a34a"><i class="fas fa-check-circle"></i></div></div>' +
-                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">INCOMPLETE</div><div class="metric-val" style="color:#d97706">' + incomplete + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">players missing games</div></div><div class="metric-icon" style="background:#fef3c7;color:#d97706"><i class="fas fa-circle-exclamation"></i></div></div>' +
-                '<div class="metric-card"><div class="metric-card-body"><div class="metric-lbl">AVG COVERAGE</div><div class="metric-val">' + avgCov + '%</div></div><div class="metric-icon" style="background:#dbeafe;color:#2563eb"><i class="fas fa-chart-pie"></i></div></div>' +
-            '</div>' +
-            '<div class="dash-table-card" style="margin-top:14px">' +
-                '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">' +
-                    '<span style="font-size:12px;color:#64748b;font-weight:500">Games loaded:</span>' +
-                    '<span style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:20px;padding:3px 12px;font-size:12px;color:#475569;font-weight:600">' +
-                        '<i class="fas fa-gamepad" style="font-size:11px;color:#7c3aed"></i> ' + total + ' games' +
-                    '</span>' +
-                    '<button onclick="gpToggleGameList(this)" style="background:none;border:none;font-size:11px;color:#2563eb;cursor:pointer;padding:0;font-family:inherit">' +
-                        '<i class="fas fa-chevron-down" style="font-size:9px;margin-right:3px"></i>show games' +
-                    '</button>' +
+        /* ── By game rows ── */
+        function gameRows() {
+            return coverage.byGame.map(function(g) {
+                var pct = totalPlrs > 0 ? Math.round(g.players / totalPlrs * 1000) / 10 : 0;
+                return '<div class="gc-game-card">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+                        '<span class="gc-game-name">' + esc(g.name) + '</span>' +
+                        '<div style="display:flex;align-items:baseline;gap:20px">' +
+                            '<span class="gc-game-acc">Avg. accuracy: ' + (g.avgAcc > 0 ? g.avgAcc.toFixed(1) + '%' : '0.0%') + '</span>' +
+                            '<span class="gc-game-pct">' + pct.toFixed(1) + '%</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="gc-game-bar-wrap"><div class="gc-game-bar" style="width:' + pct + '%;background:' + gcBarColor(pct) + '"></div></div>' +
+                    '<div class="gc-game-sub">' + g.players + ' / ' + totalPlrs + ' players</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        /* ── By player rows ── */
+        function playerRows(players, incOnly, search) {
+            var filtered = players.filter(function(p) {
+                if (incOnly && p.played >= totalGames) return false;
+                if (search) {
+                    var q = search.toLowerCase();
+                    return p.name.toLowerCase().indexOf(q) !== -1 || p.dealer.toLowerCase().indexOf(q) !== -1;
+                }
+                return true;
+            });
+            filtered = filtered.slice().sort(function(a, b) { return b.played - a.played; });
+            if (!filtered.length) {
+                return '<div style="padding:32px;text-align:center;color:#94a3b8;font-size:13px">No players match the current filter.</div>';
+            }
+            return filtered.map(function(p) {
+                var pct     = totalGames > 0 ? Math.round(p.played / totalGames * 100) : 0;
+                var missing = totalGames - p.played;
+                var bar     = gcBarColor(pct);
+                var misCol  = pct >= 50 ? '#f59e0b' : pct > 0 ? '#ef4444' : '#94a3b8';
+                return '<div class="gc-player-row">' +
+                    '<div class="gc-player-name">' + esc(p.name) + '</div>' +
+                    '<div class="gc-player-progress">' +
+                        '<div class="gc-player-count">' + p.played + '/' + totalGames + '</div>' +
+                        '<div class="gc-player-bar-wrap"><div class="gc-player-bar" style="width:' + pct + '%;background:' + bar + '"></div></div>' +
+                        (missing > 0
+                            ? '<div class="gc-player-missing" style="color:' + misCol + '">' + missing + ' missing</div>'
+                            : '<div class="gc-player-missing" style="color:#16a34a">Complete</div>') +
+                    '</div>' +
+                    '<div class="gc-player-pct">' + pct + '%</div>' +
+                    '<div class="gc-player-dept">' + esc(p.dealer) + '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        /* ── By player KPI values ── */
+        var fullCount  = allPlayers.filter(function(p) { return p.played >= totalGames; }).length;
+        var incomplete = allPlayers.filter(function(p) { return p.played < totalGames; }).length;
+        var avgCovPct  = allPlayers.length > 0
+            ? (allPlayers.reduce(function(s, p) { return s + p.played; }, 0) / (allPlayers.length * totalGames) * 100).toFixed(1)
+            : '0.0';
+
+        /* ── Build HTML ── */
+        var subTabs = '<div class="gc-sub-tabs">' + subBtn('By game', 'bygame') + subBtn('By player', 'byplayer') + '</div>';
+
+        var byGameHtml =
+            '<div style="margin:20px 0">' +
+                '<div class="ov-kpi-card" style="display:inline-block;min-width:220px">' +
+                    '<div class="ov-kpi-label">Game coverage</div>' +
+                    '<div class="ov-kpi-value">' + coverage.coveragePct.toFixed(1) + '%</div>' +
                 '</div>' +
-                '<div id="gpGameList" style="display:none;padding:10px 16px;border-bottom:1px solid var(--border);line-height:1.8">' + gameChips + '</div>' +
-                '<div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">' +
-                    '<div style="position:relative;flex:1;max-width:260px"><i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px"></i>' +
-                    '<input id="gpSearch" type="text" placeholder="Search player or dealer..." oninput="gpApplyFilter()" style="width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;outline:none"></div>' +
-                    '<button id="gpIncompleteBtn" onclick="gpToggleIncomplete()" style="padding:6px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;color:#1e293b;background:#fff">Incomplete only</button>' +
-                    '<span style="margin-left:auto;font-size:12px;color:#64748b" id="gpCountLabel">' + allPlayers.length + ' players</span>' +
-                    '<button onclick="alert(\'Download coming soon\')" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:#1e293b"><i class="fas fa-download"></i></button>' +
-                '</div>' +
-                '<div id="gpPlayerList"></div>' +
             '</div>' +
+            '<div class="dash-table-card" style="margin-bottom:20px">' +
+                '<div style="padding:16px 20px 10px;font-size:14px;color:#475569;font-weight:500">Game coverage over time</div>' +
+                '<div id="gcTimeChart" style="height:220px;padding:0 16px 16px"></div>' +
             '</div>' +
+            '<div>' + gameRows() + '</div>';
 
-            /* ── Game-a-Day view ── */
-            '<div id="gpGameaDayView" style="margin-top:14px;' + (_gpView === 'gameaday' ? '' : 'display:none') + '">' +
+        var byPlayerHtml =
+            '<div class="gc-kpi-row">' +
+                '<div class="ov-kpi-card"><div class="ov-kpi-label">Games this period</div><div class="ov-kpi-value">' + totalGames + '</div></div>' +
+                '<div class="ov-kpi-card"><div class="ov-kpi-label">Full coverage</div><div class="ov-kpi-value">' + fullCount + '</div></div>' +
+                '<div class="ov-kpi-card"><div class="ov-kpi-label">Incomplete</div><div class="ov-kpi-value">' + incomplete + '</div></div>' +
+                '<div class="ov-kpi-card"><div class="ov-kpi-label">Avg. coverage</div><div class="ov-kpi-value">' + avgCovPct + '%</div></div>' +
             '</div>' +
+            '<div style="margin:12px 0 10px">' +
+                '<span style="font-size:13px;color:#2563eb;text-decoration:underline;cursor:pointer">Games loaded (' + totalGames + ')</span>' +
+            '</div>' +
+            '<div class="gc-filter-bar">' +
+                '<input id="gcPlayerSearch" type="text" placeholder="Search player or dealer" oninput="window.gcFilterPlayers()" ' +
+                    'style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;outline:none;width:200px">' +
+                '<div id="gcDeptFilter" style="min-width:160px"></div>' +
+                '<label class="gc-filter-check"><input type="checkbox" id="gcIncompleteOnly" onchange="window.gcFilterPlayers()"> Incomplete only</label>' +
+                '<label class="gc-filter-check"><input type="checkbox" id="gcGroupByDept"> Group by department</label>' +
+                '<button style="margin-left:auto;padding:7px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#475569;background:#fff;cursor:pointer;font-family:inherit">' +
+                    '<i class="fas fa-file-export" style="margin-right:5px"></i>Export' +
+                '</button>' +
+            '</div>' +
+            '<div id="gcPlayerList">' + playerRows(allPlayers, false, '') + '</div>';
 
-            '</div>';
+        el.innerHTML = subTabs + (_gcView === 'bygame' ? byGameHtml : byPlayerHtml);
 
-        if (_gpView === 'coverage') gpRenderList(allPlayers, total);
-        if (_gpView === 'gameaday') renderGadView();
+        if (_gcView === 'bygame') {
+            setTimeout(function() {
+                var chartEl = document.getElementById('gcTimeChart');
+                if (!chartEl) return;
+                $(chartEl).dxChart({
+                    dataSource: gcDaily,
+                    series: [{
+                        valueField: 'pct', argumentField: 'label', type: 'spline', color: '#0f172a',
+                        point: { visible: true, size: 5, color: '#0f172a', hoverStyle: { size: 7 } }
+                    }],
+                    legend: { visible: true, position: 'bottom', horizontalAlignment: 'center',
+                        customizeItems: function() { return [{ text: 'Coverage %', marker: { fill: '#0f172a' } }]; }
+                    },
+                    argumentAxis: { label: { font: { size: 11 } }, tick: { visible: false } },
+                    valueAxis: { min: 0, label: { font: { size: 11 } }, grid: { visible: true, color: '#f1f5f9' } },
+                    commonSeriesSettings: { argumentField: 'label' },
+                    tooltip: { enabled: true, cornerRadius: 6,
+                        customizeTooltip: function(info) { return { text: info.argument + ': ' + info.value + '%' }; } },
+                    size: { height: 220 }
+                });
+            }, 0);
+        }
+
+        if (_gcView === 'byplayer') {
+            var depts = ['All departments'].concat(
+                allPlayers.map(function(p) { return p.dealer; })
+                    .filter(function(v, i, a) { return a.indexOf(v) === i; })
+            );
+            $('#gcDeptFilter').dxSelectBox({
+                items: depts, value: 'All departments', width: 160,
+                onValueChanged: function() { window.gcFilterPlayers(); }
+            });
+        }
+
+        window.gcFilterPlayers = function() {
+            var searchEl  = document.getElementById('gcPlayerSearch');
+            var incEl     = document.getElementById('gcIncompleteOnly');
+            var search    = searchEl ? searchEl.value : '';
+            var incOnly   = incEl ? incEl.checked : false;
+            var listEl    = document.getElementById('gcPlayerList');
+            if (listEl) listEl.innerHTML = playerRows(allPlayers, incOnly, search);
+        };
     }
+
+    window.gcSetView = function(view) { _gcView = view; renderPlayersGamesPlayed(); };
 
     function gpRenderList(allPlayers, total) {
         var search  = (_gpFilter.search || '').toLowerCase();
@@ -1466,49 +2081,73 @@
     /* ── Render: Departments > Overview ──────────────────────── */
 
     function renderDepartmentsOverview() {
-        var depts    = getDeptPlayers(state.companyId);
-        var deptData = COMPANY_DEPT_PLAYERS[state.companyId] || COMPANY_DEPT_PLAYERS[DEFAULT_COMPANY_ID];
-        var profile  = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+        var depts       = getDeptPlayers(state.companyId);
+        var profile     = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
         var activeTotal = depts.reduce(function(s,x){return s+x.active;},0);
+        var pieColors   = ['#0ea5e9','#6366f1','#14b8a6','#f97316','#a855f7','#ec4899'];
 
-        var rows = depts.map(function(dep, i) {
-            var dd = deptData[i] || {};
-            var actRate = dep.total > 0 ? (dep.active/dep.total*100).toFixed(1) : '0.0';
-            var ar = parseFloat(actRate);
-            var barCol = ar >= 70 ? '#22c55e' : ar >= 40 ? '#f59e0b' : '#e5e7eb';
+        function buildRow(dep) {
+            var sessions  = Math.round(dep.active * (dep.avgPoints || 1) / 20);
+            var partPct   = dep.total > 0 ? (dep.active / dep.total * 100).toFixed(1) : '0.0';
+            var arVal     = dep.total > 0 ? Math.min(100, sessions / (dep.total * 150) * 100) : 0;
+            var ar        = arVal.toFixed(1);
+            var dotCol    = arVal >= 50 ? '#22c55e' : arVal >= 25 ? '#f59e0b' : '#ef4444';
             return '<tr>' +
-                '<td class="td-game-name">'+esc(dep.name)+'</td>' +
-                '<td>'+dep.total+'</td>' +
-                '<td style="color:var(--text-primary);font-weight:600">'+dep.active+'</td>' +
-                '<td>'+(dd.avgPoints||0).toLocaleString()+'</td>' +
-                '<td><div class="acc-cell"><div class="acc-bar-track" style="width:70px"><div style="height:100%;border-radius:4px;background:'+barCol+';width:'+Math.min(100,ar)+'%"></div></div><span class="acc-pct">'+actRate+'%</span></div></td>' +
+                '<td class="td-game-name">' + esc(dep.name) + '</td>' +
+                '<td>' + dep.total + '</td>' +
+                '<td style="font-weight:600">' + dep.active + '</td>' +
+                '<td>' + partPct + '%</td>' +
+                '<td>' + sessions.toLocaleString() + '</td>' +
+                '<td>' + (dep.avgPoints || 0).toLocaleString() + '</td>' +
+                '<td><div style="display:flex;align-items:center;gap:6px">' +
+                    '<span style="width:8px;height:8px;border-radius:50%;background:'+dotCol+';flex-shrink:0"></span>' +
+                    '<div style="width:60px;height:4px;border-radius:2px;background:#e2e8f0;overflow:hidden">' +
+                        '<div style="height:100%;border-radius:2px;background:'+dotCol+';width:'+Math.min(100,arVal)+'%"></div>' +
+                    '</div>' +
+                    '<span style="font-size:12px;color:#374151">' + ar + '%</span>' +
+                '</div></td>' +
             '</tr>';
-        }).join('');
+        }
 
-        var pieColors = ['#6366f1','#0ea5e9','#14b8a6','#f97316','#a855f7','#ec4899'];
+        var rowData = depts.map(function(dep) { return { dep: dep, html: buildRow(dep) }; });
 
         document.getElementById('dashDeptPanel').innerHTML =
-            '<div class="dept-overview-grid">' +
-                '<div class="dash-table-card"><div class="dash-table-card-hd">Department Breakdown</div>' +
-                '<table class="dash-perf-table"><thead><tr><th>Department</th><th>Total</th><th>Active</th><th>Avg Points</th><th>Activity Rate</th></tr></thead>' +
-                '<tbody>'+rows+'</tbody></table></div>' +
-                '<div class="chart-card"><div class="chart-card-hd">Active Players by Department</div>' +
-                    '<div class="chart-container" style="position:relative">' +
-                        '<div id="chartDeptPie"></div>' +
-                        '<div id="chartDeptPieCenter" style="position:absolute;top:0;left:0;text-align:center;pointer-events:none;display:none">' +
-                            '<div style="font-size:28px;font-weight:700;color:#1e293b;line-height:1">' + activeTotal + '</div>' +
-                            '<div style="font-size:11px;color:#94a3b8;margin-top:2px;letter-spacing:.5px">PLAYERS</div>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
+                '<input type="text" id="deptOvSearchInput" placeholder="Search..." oninput="deptOvSearch(this.value)"' +
+                    ' style="flex:1;max-width:340px;padding:8px 14px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;color:#374151;outline:none">' +
+                '<button style="width:36px;height:36px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#64748b;cursor:pointer">' +
+                    '<i class="fas fa-search" style="font-size:13px"></i></button>' +
+            '</div>' +
+            '<div class="dash-table-card" style="margin-bottom:16px">' +
+                '<table class="dash-perf-table">' +
+                '<thead><tr>' +
+                    '<th>Department</th><th>Total Users</th><th>Active Players</th>' +
+                    '<th>Participation</th><th>Sessions</th><th>Avg. Points</th><th>Activity Rate</th>' +
+                '</tr></thead>' +
+                '<tbody id="deptOvTableBody">' + rowData.map(function(r){return r.html;}).join('') + '</tbody>' +
+                '</table>' +
+            '</div>' +
+            '<div class="chart-card">' +
+                '<div class="chart-card-hd">Active players by department</div>' +
+                '<div class="chart-container"><div id="chartDeptPie"></div></div>' +
             '</div>';
+
+        window.deptOvSearch = function(q) {
+            q = (q || '').toLowerCase();
+            var filtered = rowData.filter(function(r) {
+                return !q || r.dep.name.toLowerCase().indexOf(q) !== -1;
+            });
+            var el = document.getElementById('deptOvTableBody');
+            if (el) el.innerHTML = filtered.map(function(r){return r.html;}).join('');
+        };
 
         makeChart('chartDeptPie', {
             isPie: true,
             opts: {
-                type: 'doughnut',
-                innerRadius: 0.62,
-                dataSource: depts.map(function(d) { return { name: d.name, active: Math.max(0, d.active) }; }),
+                type: 'pie',
+                dataSource: depts.map(function(d) {
+                    return { name: d.name, active: Math.max(0, d.active) };
+                }),
                 palette: pieColors.slice(0, depts.length),
                 series: [{
                     argumentField: 'name',
@@ -1532,27 +2171,7 @@
                         return { text: info.argumentText + '\n' + info.value + ' players (' + pct + '%)' };
                     }
                 },
-                onDrawn: function(e) {
-                    var $container = $(e.element).closest('.chart-container');
-                    var $label     = $('#chartDeptPieCenter');
-                    var $paths     = $(e.element).find('.dxc-series path');
-                    if (!$paths.length) return;
-                    var cRect  = $container[0].getBoundingClientRect();
-                    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                    $paths.each(function() {
-                        var r = this.getBoundingClientRect();
-                        if (r.width > 0) {
-                            minX = Math.min(minX, r.left - cRect.left);
-                            maxX = Math.max(maxX, r.right - cRect.left);
-                            minY = Math.min(minY, r.top - cRect.top);
-                            maxY = Math.max(maxY, r.bottom - cRect.top);
-                        }
-                    });
-                    if (maxX > minX) {
-                        $label.css({ display:'block', left: (minX + maxX) / 2, top: (minY + maxY) / 2, transform: 'translate(-50%,-50%)' });
-                    }
-                },
-                size: { height: 280 }
+                size: { height: 340 }
             }
         });
     }
@@ -1591,17 +2210,586 @@
         makeChart('chartRegionalPlayers', {
             opts: {
                 dataSource: [{ region: 'Unknown', players: profile.players }],
-                series: [{ argumentField: 'region', valueField: 'players', type: 'bar', color: '#e53e3e', cornerRadius: 3 }],
+                series: [{ argumentField: 'region', valueField: 'players', type: 'bar', color: '#e53e3e', cornerRadius: 0 }],
                 rotated: true,
                 commonAxisSettings: { tick: { visible: false }, label: { font: { size: 11, color: '#64748b' } } },
                 argumentAxis: { grid: { visible: false } },
-                valueAxis:    { grid: { color: 'rgba(200,200,200,0.3)', visible: true } },
+                valueAxis:    { grid: { visible: false } },
                 legend:  { visible: false },
                 tooltip: { enabled: true },
                 size:    { height: 130 }
             }
         });
     }
+
+    /* ── Render: Leave & exclusions (shared) ────────────────── */
+
+    var _leaveRecords = [];
+    var _exclRecords  = [];
+
+    function lveLeaveRows(records, search) {
+        var filtered = records.filter(function(r) {
+            if (!search) return true;
+            var q = search.toLowerCase();
+            return r.name.toLowerCase().indexOf(q) !== -1 || r.dept.toLowerCase().indexOf(q) !== -1;
+        });
+        if (!filtered.length) {
+            return '<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">No records found.</div>';
+        }
+        return filtered.map(function(r, i) {
+            var bg = i % 2 === 1 ? '#f9fafb' : '#fff';
+            return '<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1fr 1fr 1.5fr;align-items:center;padding:13px 16px;background:' + bg + ';border-bottom:1px solid #f1f5f9;font-size:13px">' +
+                '<span style="color:#0f172a">' + esc(r.name) + '</span>' +
+                '<span style="color:#475569">' + esc(r.dept) + '</span>' +
+                '<span style="color:#475569">' + esc(r.startDate) + '</span>' +
+                '<span style="color:#475569">' + esc(r.endDate) + '</span>' +
+                '<span style="color:#475569">' + esc(r.reason) + '</span>' +
+            '</div>';
+        }).join('');
+    }
+
+    function lveExclRows(records, search) {
+        var filtered = records.filter(function(r) {
+            if (!search) return true;
+            return r.name.toLowerCase().indexOf(search.toLowerCase()) !== -1;
+        });
+        if (!filtered.length) {
+            return '<div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px">No records found.</div>';
+        }
+        return filtered.map(function(r, i) {
+            var bg = i % 2 === 1 ? '#f9fafb' : '#fff';
+            return '<div style="display:grid;grid-template-columns:2fr 2fr 1fr;align-items:center;padding:13px 16px;background:' + bg + ';border-bottom:1px solid #f1f5f9;font-size:13px">' +
+                '<span style="color:#0f172a">' + esc(r.name) + '</span>' +
+                '<span style="color:#475569">' + esc(r.reason) + '</span>' +
+                '<span style="color:#475569">' + esc(r.since) + '</span>' +
+            '</div>';
+        }).join('');
+    }
+
+    function renderLeavePanel(elId) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+
+        var players    = COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID] || [];
+        var playerNames = players.map(function(p) { return p.name; });
+
+        var sfx = elId.replace(/[^a-zA-Z0-9]/g, ''); /* unique DOM id prefix */
+
+        function tableHdr(cols, grid) {
+            return '<div style="display:grid;grid-template-columns:' + grid + ';padding:10px 16px;border-bottom:1px solid #e5e7eb">' +
+                cols.map(function(c) {
+                    return '<span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px">' + c + '</span>';
+                }).join('') +
+            '</div>';
+        }
+
+        el.innerHTML =
+            /* ── Leave ── */
+            '<h2 class="lve-heading">Leave</h2>' +
+            '<p class="lve-subtext">Players on leave are excluded from report data only for the specified dates.</p>' +
+
+            '<div class="lve-form-card">' +
+                '<div class="lve-form-title">Record leave</div>' +
+                '<div class="lve-form-row">' +
+                    '<div id="' + sfx + 'PlayerSel" style="min-width:200px;flex-shrink:0"></div>' +
+                    '<div class="lve-daterange">' +
+                        '<div class="lve-date-wrap">' +
+                            '<label class="lve-date-lbl">Start date</label>' +
+                            '<input type="date" id="' + sfx + 'StartDate" class="lve-date-input">' +
+                        '</div>' +
+                        '<i class="fas fa-arrow-right" style="color:#94a3b8;font-size:13px;flex-shrink:0"></i>' +
+                        '<div class="lve-date-wrap">' +
+                            '<label class="lve-date-lbl">End date</label>' +
+                            '<input type="date" id="' + sfx + 'EndDate" class="lve-date-input">' +
+                        '</div>' +
+                    '</div>' +
+                    '<input type="text" id="' + sfx + 'Reason" placeholder="Reason" class="lve-text-input">' +
+                '</div>' +
+                '<button onclick="window.lveAdd_' + sfx + '()" class="lve-add-btn"><i class="fas fa-plus" style="margin-right:6px"></i>Add leave</button>' +
+            '</div>' +
+
+            '<div class="lve-search-row">' +
+                '<input id="' + sfx + 'LvSearch" type="text" placeholder="Search..." oninput="window.lveFilterLeave_' + sfx + '()" class="lve-search-input">' +
+                '<button class="lve-search-btn"><i class="fas fa-search"></i></button>' +
+            '</div>' +
+            '<div class="dash-table-card" style="margin-bottom:32px">' +
+                tableHdr(['Name','Department','Start Date','End Date','Reason'], '1.5fr 1.2fr 1fr 1fr 1.5fr') +
+                '<div id="' + sfx + 'LeaveList">' + lveLeaveRows(_leaveRecords, '') + '</div>' +
+            '</div>' +
+
+            /* ── Exclusions ── */
+            '<h2 class="lve-heading">Exclusions</h2>' +
+            '<p class="lve-subtext">Excluded players are <span style="color:#f59e0b">hidden from all report data</span>. Restore them at any time to include them again.</p>' +
+
+            '<div class="lve-search-row">' +
+                '<input id="' + sfx + 'ExSearch" type="text" placeholder="Search..." oninput="window.lveFilterExcl_' + sfx + '()" class="lve-search-input">' +
+                '<button class="lve-search-btn"><i class="fas fa-search"></i></button>' +
+            '</div>' +
+            '<div class="dash-table-card">' +
+                tableHdr(['Name','Reason','Excluded Since'], '2fr 2fr 1fr') +
+                '<div id="' + sfx + 'ExclList">' + lveExclRows(_exclRecords, '') + '</div>' +
+            '</div>';
+
+        /* Init player selectbox */
+        $('#' + sfx + 'PlayerSel').dxSelectBox({ items: playerNames, placeholder: 'Player', width: '100%' });
+
+        /* Add leave handler */
+        window['lveAdd_' + sfx] = function() {
+            var selInst  = $('#' + sfx + 'PlayerSel').dxSelectBox('instance');
+            var player   = selInst ? selInst.option('value') : null;
+            var startEl  = document.getElementById(sfx + 'StartDate');
+            var endEl    = document.getElementById(sfx + 'EndDate');
+            var reasonEl = document.getElementById(sfx + 'Reason');
+            if (!player) { alert('Please select a player.'); return; }
+            var plrObj = players.filter(function(p) { return p.name === player; })[0] || {};
+            _leaveRecords.push({
+                name: player,
+                dept: plrObj.dept || '—',
+                startDate: startEl ? (startEl.value || '—') : '—',
+                endDate:   endEl   ? (endEl.value   || '—') : '—',
+                reason:    reasonEl ? (reasonEl.value || '—') : '—'
+            });
+            document.getElementById(sfx + 'LeaveList').innerHTML = lveLeaveRows(_leaveRecords, '');
+            if (selInst) selInst.reset();
+            if (startEl)  startEl.value  = '';
+            if (endEl)    endEl.value    = '';
+            if (reasonEl) reasonEl.value = '';
+        };
+
+        window['lveFilterLeave_' + sfx] = function() {
+            var search = (document.getElementById(sfx + 'LvSearch') || {}).value || '';
+            document.getElementById(sfx + 'LeaveList').innerHTML = lveLeaveRows(_leaveRecords, search);
+        };
+
+        window['lveFilterExcl_' + sfx] = function() {
+            var search = (document.getElementById(sfx + 'ExSearch') || {}).value || '';
+            document.getElementById(sfx + 'ExclList').innerHTML = lveExclRows(_exclRecords, search);
+        };
+    }
+
+    function renderPlayersLeave() { renderLeavePanel('dashPlayersLeave'); }
+
+    /* ── Gamification ────────────────────────────────────────── */
+
+    var _gamPeriodIdx    = 6;        // 0-6, indexes PERIODS — Leagues/Scoreboard
+    var _gamDeptFilter   = '';
+    var _gamNameFilter   = '';
+    var _gamSearchFilter = '';
+    var _gamStreakGran   = 'weekly'; // Streaks granularity
+    var _gamWeekIdx     = 0;         // Play days: 0 = week Jun 8-14 2026
+
+    function _gamPeriodLabel(idx) {
+        var p = PERIODS[idx] || PERIODS[6];
+        if (p === 'All Months') return 'All Months';
+        return p.replace('2026', ' 2026');
+    }
+
+    function _gamLeagueTier(xp) {
+        if (xp >= 20000) return { label: 'Diamond', cls: 'plr-league-diamond' };
+        if (xp >= 5000)  return { label: 'Gold',    cls: 'plr-league-gold'   };
+        if (xp >= 2000)  return { label: 'Silver',  cls: 'plr-league-silver' };
+        return                   { label: 'Bronze',  cls: 'plr-league-bronze' };
+    }
+
+    function _gamPScale() {
+        if (_gamPeriodIdx === 0) return 1.0;
+        var base = getPeriodData(state.companyId, 'All Months');
+        var pd   = getPeriodData(state.companyId, PERIODS[_gamPeriodIdx]);
+        return (base && pd && base.plays > 0) ? pd.plays / base.plays : 1.0;
+    }
+
+    function _gamDeptList() {
+        var players = COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID];
+        return players.reduce(function(acc, p) {
+            if (acc.indexOf(p.dept) < 0) acc.push(p.dept);
+            return acc;
+        }, []);
+    }
+
+    function _gamInitDeptBox(boxId, onChange) {
+        var depts = _gamDeptList();
+        var items = [{ text: 'Department', value: '' }].concat(depts.map(function(d) { return { text: d, value: d }; }));
+        $('#' + boxId).dxSelectBox({
+            dataSource: items, displayExpr: 'text', valueExpr: 'value',
+            value: _gamDeptFilter || '', placeholder: 'Department', width: 190,
+            onValueChanged: function(e) { _gamDeptFilter = e.value || ''; _gamNameFilter = ''; onChange(); }
+        });
+    }
+
+    function _gamInitPlayerBox(boxId, onChange) {
+        var allPlayers = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]);
+        var filtered = _gamDeptFilter
+            ? allPlayers.filter(function(p) { return p.dept.toLowerCase() === _gamDeptFilter.toLowerCase(); })
+            : allPlayers;
+        var items = [{ text: 'All players', value: '' }].concat(
+            filtered.map(function(p) { return { text: p.name, value: p.name }; })
+        );
+        $('#' + boxId).dxSelectBox({
+            dataSource: items, displayExpr: 'text', valueExpr: 'value',
+            value: _gamNameFilter || '', placeholder: 'Player name', width: 190,
+            onValueChanged: function(e) { _gamNameFilter = e.value || ''; onChange(); }
+        });
+    }
+
+    function _gamPeriodNavHtml() {
+        var canOlder = _gamPeriodIdx > 0;
+        var canNewer = _gamPeriodIdx < PERIODS.length - 1;
+        return '<div class="gam-ctrl-period">' +
+            '<button class="gam-period-btn' + (!canOlder ? ' gam-period-btn--disabled' : '') + '"' + (!canOlder ? ' disabled' : '') + ' onclick="window.gamPeriodOlder()">&lt; Older</button>' +
+            '<span class="gam-period-label">' + _gamPeriodLabel(_gamPeriodIdx) + '</span>' +
+            '<button class="gam-period-btn' + (!canNewer ? ' gam-period-btn--disabled' : '') + '"' + (!canNewer ? ' disabled' : '') + ' onclick="window.gamPeriodNewer()">&gt; Newer</button>' +
+        '</div>';
+    }
+
+    /* Single nested dxDropDownBox + dxTreeView: dept → players */
+    function _gamInitNestedDropdown(boxId, onChange) {
+        var allPlayers = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]);
+        var depts = _gamDeptList();
+        var treeItems = [{ id: '__all', parentId: null, text: 'All players', isRoot: true }];
+        depts.forEach(function(dept, di) {
+            var deptId = 'd' + di;
+            treeItems.push({ id: deptId, parentId: null, text: dept, isDept: true, deptName: dept });
+            allPlayers.filter(function(p) { return p.dept === dept; }).forEach(function(p, pi) {
+                treeItems.push({ id: deptId + '_p' + pi, parentId: deptId, text: p.name,
+                                 isDept: false, deptName: dept, playerName: p.name });
+            });
+        });
+        var currentVal = _gamNameFilter || (_gamDeptFilter || null);
+        $('#' + boxId).dxDropDownBox({
+            value: currentVal, placeholder: 'All players',
+            showClearButton: true, width: 220,
+            onValueChanged: function(e) {
+                if (e.value === null || e.value === '') {
+                    _gamDeptFilter = ''; _gamNameFilter = ''; onChange();
+                }
+            },
+            contentTemplate: function(args) {
+                var $wrap = $('<div>');
+                $wrap.dxTreeView({
+                    items: treeItems, keyExpr: 'id', parentIdExpr: 'parentId', displayExpr: 'text',
+                    selectionMode: 'single', showCheckBoxesMode: 'none',
+                    onItemClick: function(ev) {
+                        var item = ev.itemData;
+                        if (item.isRoot) {
+                            _gamDeptFilter = ''; _gamNameFilter = '';
+                            args.component.option('value', null);
+                        } else if (item.isDept) {
+                            _gamDeptFilter = item.deptName; _gamNameFilter = '';
+                            args.component.option('value', item.deptName);
+                        } else {
+                            _gamDeptFilter = item.deptName; _gamNameFilter = item.playerName;
+                            args.component.option('value', item.playerName);
+                        }
+                        args.component.close();
+                        onChange();
+                    }
+                });
+                return $wrap;
+            }
+        });
+    }
+
+    function _gamControlsRowHtml(deptId, nameId, nameFilterFn, midHtml, searchId, searchFn) {
+        /* nameId / nameFilterFn unused — replaced by single nested dropdown on deptId */
+        return '<div class="gam-controls-row">' +
+            '<div id="' + deptId + '" class="gam-combined-filter"></div>' +
+            (midHtml || '') +
+            '<button class="gam-export-btn" onclick="window.gamExportExcel()"><i class="fas fa-file-export"></i> Export</button>' +
+        '</div>';
+    }
+
+    function _applyGamFilter() {
+        var nd = _gamDeptFilter.toLowerCase();
+        var nn = _gamNameFilter.toLowerCase();
+        var ns = _gamSearchFilter.toLowerCase();
+        document.querySelectorAll('#gamLeaguesTable tbody tr').forEach(function(row) {
+            var name = (row.cells[0] ? row.cells[0].textContent : '').toLowerCase();
+            var dept = (row.cells[1] ? row.cells[1].textContent : '').toLowerCase();
+            var ok = (!nd || dept === nd) && (!nn || name.indexOf(nn) >= 0) &&
+                     (!ns || (name + ' ' + dept).indexOf(ns) >= 0);
+            row.style.display = ok ? '' : 'none';
+        });
+    }
+
+    /* ── Leagues ─────────────────────────────────────────────── */
+
+    function renderGamificationLeagues() {
+        var el = document.getElementById('dashGamLeagues');
+        if (!el) return;
+        var players = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]).slice();
+        var pScale  = _gamPScale();
+
+        var rows = players.map(function(p) {
+            return { name: p.name, dept: p.dept, xp: Math.round(p.points * 5 * pScale) };
+        }).sort(function(a, b) { return b.xp - a.xp; });
+
+        var html = _gamControlsRowHtml('gamDeptFilterBox', 'gamPlayerNameInput', 'gamNameFilter',
+                       _gamPeriodNavHtml(), null, null);
+
+        html += '<table class="gam-table" id="gamLeaguesTable"><thead><tr>' +
+                '<th>PLAYER</th><th>DEPARTMENT</th><th>LEAGUE</th><th style="text-align:right">SEASON XP</th>' +
+                '</tr></thead><tbody>';
+        rows.forEach(function(r) {
+            var t = _gamLeagueTier(r.xp);
+            html += '<tr><td>' + r.name + '</td><td>' + r.dept + '</td>' +
+                    '<td><span class="plr-league-badge ' + t.cls + '">' + t.label + '</span></td>' +
+                    '<td class="gam-xp">' + r.xp.toLocaleString() + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+        _gamInitNestedDropdown('gamDeptFilterBox', function() { _applyGamFilter(); });
+        _applyGamFilter();
+    }
+
+    /* ── Scoreboard ──────────────────────────────────────────── */
+
+    function renderGamificationScoreboard() {
+        var el = document.getElementById('dashGamScoreboard');
+        if (!el) return;
+        var players = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]).slice();
+        var pScale  = _gamPScale();
+
+        var rows = players.map(function(p) {
+            return { name: p.name, dept: p.dept,
+                     points:   Math.round(p.points * pScale),
+                     accuracy: p.accuracy,
+                     games:    Math.max(0, Math.round(p.games * pScale)) };
+        }).sort(function(a, b) { return b.points - a.points; });
+
+        if (_gamDeptFilter) rows = rows.filter(function(r) { return r.dept.toLowerCase() === _gamDeptFilter.toLowerCase(); });
+        if (_gamNameFilter) rows = rows.filter(function(r) { return r.name.toLowerCase().indexOf(_gamNameFilter.toLowerCase()) >= 0; });
+
+        var gridData = rows.map(function(r, i) {
+            return { rank: i + 1, name: r.name, dept: r.dept, points: r.points, accuracy: r.accuracy, games: r.games };
+        });
+
+        el.innerHTML = _gamControlsRowHtml('gamScoreDeptBox', 'gamScorePlayerInput', 'gamScoreNameFilter',
+                           _gamPeriodNavHtml(), null, null) + '<div id="gamScoreGrid"></div>';
+
+        _gamInitNestedDropdown('gamScoreDeptBox', function() { renderGamificationScoreboard(); });
+
+        window.gamScoreNameFilter = function() {
+            var inp = document.getElementById('gamScorePlayerInput');
+            _gamNameFilter = inp ? inp.value : '';
+            renderGamificationScoreboard();
+        };
+
+        $('#gamScoreGrid').dxDataGrid({
+            dataSource: gridData, showBorders: false, showRowLines: true,
+            showColumnLines: false, rowAlternationEnabled: false, hoverStateEnabled: true,
+            columns: [
+                { dataField: 'rank',     caption: 'RANK',         width: 75,  alignment: 'left',
+                  cellTemplate: function(c, o) { $('<span>').css('color','#94a3b8').text(o.value).appendTo(c); } },
+                { dataField: 'name',     caption: 'PLAYER',       minWidth: 90,
+                  cellTemplate: function(c, o) { $('<span>').addClass('plr-name-link').text(o.value).appendTo(c); } },
+                { dataField: 'dept',     caption: 'DEPARTMENT',   minWidth: 110 },
+                { dataField: 'points',   caption: 'POINTS',       width: 90,  alignment: 'right' },
+                { dataField: 'accuracy', caption: 'ACCURACY',     width: 100, alignment: 'right',
+                  customizeText: function(i) { return parseFloat(i.value).toFixed(1); } },
+                { dataField: 'games',    caption: 'GAMES PLAYED', width: 120, alignment: 'right' }
+            ],
+            paging: { enabled: false }, sorting: { mode: 'single' }, headerFilter: { visible: false },
+            searchPanel: { visible: false }
+        });
+    }
+
+    /* ── Streaks ─────────────────────────────────────────────── */
+
+    function _gamStreakRow(p) {
+        var seed = p.name.charCodeAt(0) + p.points;
+        var cur  = Math.max(0, Math.floor(Math.abs(Math.sin(seed * 3)) * 5));
+        var lng  = cur + Math.max(0, Math.floor(Math.abs(Math.sin(seed * 7)) * 4));
+        var days = _gamStreakGran === 'weekly'
+            ? Math.min(7, Math.max(0, Math.round(p.games / 150)))
+            : Math.min(30, Math.max(0, Math.round(p.games / 35)));
+        var gms  = _gamStreakGran === 'weekly'
+            ? Math.max(0, Math.round(p.games / 60))
+            : Math.max(0, Math.round(p.games / 12));
+        return { name: p.name, dept: p.dept, current: cur, longest: lng, activeDays: days, games: gms };
+    }
+
+    function renderGamificationStreaks() {
+        var el = document.getElementById('dashGamStreaks');
+        if (!el) return;
+        var players = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]).slice();
+        var data = players.map(_gamStreakRow);
+
+        if (_gamDeptFilter) data = data.filter(function(r) { return r.dept.toLowerCase() === _gamDeptFilter.toLowerCase(); });
+        if (_gamNameFilter) data = data.filter(function(r) { return r.name.toLowerCase().indexOf(_gamNameFilter.toLowerCase()) >= 0; });
+
+        var activeStreaks = data.filter(function(r) { return r.current > 0; }).length;
+        var avgCur = data.length ? (data.reduce(function(s,r){ return s + r.current; }, 0) / data.length) : 0;
+        var avgLng = data.length ? (data.reduce(function(s,r){ return s + r.longest; }, 0) / data.length) : 0;
+
+        var deptMap = {};
+        data.forEach(function(r) {
+            if (!deptMap[r.dept]) deptMap[r.dept] = { cur: 0, lng: 0, n: 0 };
+            deptMap[r.dept].cur += r.current; deptMap[r.dept].lng += r.longest; deptMap[r.dept].n++;
+        });
+
+        var periodLbl = _gamStreakGran === 'weekly' ? 'Period: 2026-06-08 to 2026-06-14' : 'Period: 2026-06-01 to 2026-06-30';
+
+        var streakMidHtml =
+            '<div class="gam-ctrl-toggle">' +
+                '<button class="gam-toggle-btn' + (_gamStreakGran === 'weekly'  ? ' active' : '') + '" onclick="window.gamStreakGran(\'weekly\')">Weekly</button>' +
+                '<button class="gam-toggle-btn' + (_gamStreakGran === 'monthly' ? ' active' : '') + '" onclick="window.gamStreakGran(\'monthly\')">Monthly</button>' +
+            '</div>' +
+            '<span class="gam-streak-period-lbl">' + periodLbl + '</span>';
+        var html = _gamControlsRowHtml('gamStreakDeptBox', 'gamStreakPlayerInput', 'gamStreakNameFilter',
+                       streakMidHtml, null, null);
+
+        html += '<p class="gam-streak-desc">A period counts toward the streak when a player is active on at least the required number of days within it.</p>';
+
+        html += '<div class="gam-streak-kpi-row">' +
+            '<div class="gam-streak-kpi-card"><div class="gam-streak-kpi-lbl">Active streaks</div><div class="gam-streak-kpi-val">' + activeStreaks + '</div></div>' +
+            '<div class="gam-streak-kpi-card"><div class="gam-streak-kpi-lbl">Avg. current streak</div><div class="gam-streak-kpi-val">' + avgCur.toFixed(2) + '</div></div>' +
+            '<div class="gam-streak-kpi-card"><div class="gam-streak-kpi-lbl">Avg. longest streak</div><div class="gam-streak-kpi-val">' + avgLng.toFixed(2) + '</div></div>' +
+        '</div>';
+
+        html += '<div class="gam-dept-avg-card"><div class="gam-dept-avg-title">Department averages</div>';
+        Object.keys(deptMap).forEach(function(dept) {
+            var dm = deptMap[dept];
+            html += '<div class="gam-dept-avg-row"><span>' + dept + '</span>' +
+                    '<span class="gam-dept-avg-right">Current ' + (dm.cur / dm.n).toFixed(2) + ' | longest ' + (dm.lng / dm.n).toFixed(2) + '</span></div>';
+        });
+        html += '</div><div id="gamStreaksGrid"></div>';
+        el.innerHTML = html;
+
+        _gamInitNestedDropdown('gamStreakDeptBox', function() { renderGamificationStreaks(); });
+
+        window.gamStreakNameFilter = function() {
+            var inp = document.getElementById('gamStreakPlayerInput');
+            _gamNameFilter = inp ? inp.value : '';
+            renderGamificationStreaks();
+        };
+
+        $('#gamStreaksGrid').dxDataGrid({
+            dataSource: data, showBorders: false, showRowLines: true,
+            showColumnLines: false, rowAlternationEnabled: false, hoverStateEnabled: true,
+            columns: [
+                { dataField: 'name',       caption: 'PLAYER',          minWidth: 120 },
+                { dataField: 'dept',       caption: 'DEPARTMENT',      minWidth: 110 },
+                { dataField: 'current',    caption: 'CURRENT STREAK',  width: 130, alignment: 'right' },
+                { dataField: 'longest',    caption: 'LONGEST STREAK',  width: 130, alignment: 'right' },
+                { dataField: 'activeDays', caption: 'ACTIVE DAYS',     width: 110, alignment: 'right' },
+                { dataField: 'games',      caption: 'GAMES COMPLETED', width: 135, alignment: 'right' }
+            ],
+            paging: { enabled: false }, sorting: { mode: 'single' }, headerFilter: { visible: false },
+            searchPanel: { visible: false }
+        });
+    }
+
+    /* ── Play days ───────────────────────────────────────────── */
+
+    var _PDY_THRESHOLD = 5;
+
+    function _gamWeekRangeLabel() {
+        var start = new Date(2026, 5, 8);
+        start.setDate(start.getDate() + _gamWeekIdx * 7);
+        var end = new Date(start); end.setDate(end.getDate() + 5);
+        function fmt(d) {
+            var m = d.getMonth() + 1, dd = d.getDate();
+            return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (dd < 10 ? '0' + dd : dd);
+        }
+        return 'Week: ' + fmt(start) + ' to ' + fmt(end);
+    }
+
+    function _gamPlayDaysRow(playerName, points) {
+        var seed = playerName.charCodeAt(0) + playerName.length * 7 + points + (_gamWeekIdx + 5) * 31;
+        var days = [], count = 0;
+        for (var d = 0; d < 6; d++) {
+            var played = Math.abs(Math.sin(seed * 11 + d * 17)) > 0.40;
+            days.push(played);
+            if (played) count++;
+        }
+        return { days: days, count: count, met: count >= _PDY_THRESHOLD };
+    }
+
+    function renderGamificationPlayDays() {
+        var el = document.getElementById('dashGamPlayDays');
+        if (!el) return;
+        var players = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]).slice();
+
+        players.sort(function(a, b) {
+            return _gamPlayDaysRow(b.name, b.points).count - _gamPlayDaysRow(a.name, a.points).count;
+        });
+
+        var canNewer = _gamWeekIdx < 0;
+
+        var pdyMidHtml =
+            '<div class="gam-ctrl-weeknav">' +
+                '<button class="gam-week-nav-btn" onclick="window.gamWeekOlder()">&lt;</button>' +
+                '<span class="gam-week-label">' + _gamWeekRangeLabel() + '</span>' +
+                '<button class="gam-week-nav-btn' + (!canNewer ? ' gam-week-nav-btn--disabled' : '') + '"' + (!canNewer ? ' disabled' : '') + ' onclick="window.gamWeekNewer()">&gt;</button>' +
+            '</div>' +
+            '<span class="gam-threshold-lbl">Threshold: ' + _PDY_THRESHOLD + ' days per week</span>';
+        var html = _gamControlsRowHtml('gamPdyDeptBox', 'gamPdyPlayerInput', 'gamPdyNameFilter',
+                       pdyMidHtml, null, null);
+
+        var DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        html += '<table class="gam-table gam-pdy-table" id="gamPdyTable"><thead><tr>' +
+            '<th>PLAYER</th><th>DEPARTMENT</th><th style="text-align:right">DAYS PLAYED</th>' +
+            '<th style="text-align:center">MET THRESH...</th>';
+        DAY_LABELS.forEach(function(d) { html += '<th style="text-align:center">' + d + '</th>'; });
+        html += '</tr></thead><tbody>';
+
+        players.forEach(function(p) {
+            var pdr = _gamPlayDaysRow(p.name, p.points);
+            html += '<tr><td><span class="plr-name-link">' + p.name + '</span></td><td>' + p.dept + '</td>' +
+                    '<td style="text-align:right">' + pdr.count + '</td>' +
+                    '<td style="text-align:center">' + (pdr.met ? '<span class="gam-check">&#10003;</span>' : '') + '</td>';
+            pdr.days.forEach(function(played) {
+                html += '<td style="text-align:center">' + (played ? '<span class="gam-check">&#10003;</span>' : '') + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+
+        _gamInitNestedDropdown('gamPdyDeptBox', function() { renderGamificationPlayDays(); });
+
+        window.gamPdyApplyFilter = function() {
+            var nd = _gamDeptFilter.toLowerCase(), nn = _gamNameFilter.toLowerCase(), ns = _gamSearchFilter.toLowerCase();
+            document.querySelectorAll('#gamPdyTable tbody tr').forEach(function(row) {
+                var name = (row.cells[0] ? row.cells[0].textContent : '').toLowerCase();
+                var dept = (row.cells[1] ? row.cells[1].textContent : '').toLowerCase();
+                row.style.display = (!nd || dept === nd) && (!nn || name.indexOf(nn) >= 0) && (!ns || (name + ' ' + dept).indexOf(ns) >= 0) ? '' : 'none';
+            });
+        };
+        window.gamPdyNameFilter = function() {
+            var inp = document.getElementById('gamPdyPlayerInput');
+            _gamNameFilter = inp ? inp.value : '';
+            window.gamPdyApplyFilter();
+        };
+        window.gamPdySearch = function() {
+            var inp = document.getElementById('gamPdySearchInput');
+            _gamSearchFilter = inp ? inp.value : '';
+            window.gamPdyApplyFilter();
+        };
+    }
+
+    /* ── Gamification nav handlers ───────────────────────────── */
+
+    window.gamPeriodOlder = function() {
+        if (_gamPeriodIdx > 0) { _gamPeriodIdx--; renderGamificationLeagues(); renderGamificationScoreboard(); }
+    };
+    window.gamPeriodNewer = function() {
+        if (_gamPeriodIdx < PERIODS.length - 1) { _gamPeriodIdx++; renderGamificationLeagues(); renderGamificationScoreboard(); }
+    };
+    window.gamStreakGran = function(gran) { _gamStreakGran = gran; renderGamificationStreaks(); };
+    window.gamWeekOlder  = function() { _gamWeekIdx--; renderGamificationPlayDays(); };
+    window.gamWeekNewer  = function() { if (_gamWeekIdx < 0) { _gamWeekIdx++; renderGamificationPlayDays(); } };
+    window.gamNameFilter = function() {
+        var el = document.getElementById('gamPlayerNameInput');
+        _gamNameFilter = el ? el.value : '';
+        _applyGamFilter();
+    };
+    window.gamSearchFilter = function() {
+        var el = document.getElementById('gamSearchInput');
+        _gamSearchFilter = el ? el.value : '';
+        _applyGamFilter();
+    };
+    window.gamExportExcel = function() { DevExpress.ui.notify('Excel export coming soon.', 'info', 2000); };
 
     /* ── Full refresh ────────────────────────────────────────── */
 
@@ -1612,17 +2800,25 @@
         renderSummaryTrends();
         renderSummaryForecast();
         renderSummaryAnomalies();
+        renderSummaryForecastsAnomalies();
         renderGamesOverview();
         renderGamesAnomalies();
         renderTrendsCharts('dashGamesTrends', 'gms');
         renderPlayersOverview();
+        renderPlayersInactive();
         renderPlayersGamesPlayed();
         renderPlayersAnomalies();
-        renderTrendsCharts('dashPlayersTrends', 'plr');
+        renderPlayersTrends();
+        renderPlayersForecastsAnomalies();
+        renderPlayersLeave();
         renderDepartmentsOverview();
-        renderDeptAnomalies();
+        renderDeptForecastsAnomalies();
         renderTrendsCharts('dashDeptTrends', 'dpt');
         renderRegionalOverview();
+        renderGamificationLeagues();
+        renderGamificationScoreboard();
+        renderGamificationStreaks();
+        renderGamificationPlayDays();
     }
 
     /* ── Tab/period handlers ─────────────────────────────────── */
@@ -1636,10 +2832,11 @@
     /* ── Left nav + sub-tab helpers ─────────────────────────── */
 
     var MAIN_TABS = [
-        { key: 'summary',     label: 'Summary' },
-        { key: 'players',     label: 'Players' },
-        { key: 'games',       label: 'Games' },
-        { key: 'departments', label: 'Departments' }
+        { key: 'summary',      label: 'Summary' },
+        { key: 'players',      label: 'Players' },
+        { key: 'games',        label: 'Games' },
+        { key: 'departments',  label: 'Departments' },
+        { key: 'gamification', label: 'Gamification' }
     ];
 
     function getSubTabItems(mainTab) {
@@ -1651,15 +2848,32 @@
         if (mainTab === 'players') {
             return [
                 { text: 'Overview',              key: 'overview' },
-                { text: 'Games Played',          key: 'gamesplayed' },
                 { text: 'Trends',                key: 'trends' },
-                { text: 'Forecasts & anomalies', key: 'forecastsanomalies' }
+                { text: 'Forecasts & anomalies', key: 'forecastsanomalies' },
+                { text: 'Inactive',              key: 'inactive' },
+                { text: 'Game coverage',         key: 'gamecoverage' },
+                { text: 'Leave & exclusions',    key: 'leave' }
+            ];
+        }
+        if (mainTab === 'gamification') {
+            return [
+                { text: 'Leagues',    key: 'leagues'    },
+                { text: 'Scoreboard', key: 'scoreboard' },
+                { text: 'Streaks',    key: 'streaks'    },
+                { text: 'Play days',  key: 'playdays'   }
             ];
         }
         return base;
     }
 
-    var _dashSubTabsInst = null;
+    var _dashSubTabsInst  = null;
+    var _playerTrendsGran = 'daily';
+    var _gamesTrendsGran  = 'daily';
+    var _deptTrendsGran   = 'daily';
+
+    window.setPlayerTrendsGran = function(g) { _playerTrendsGran = g; renderPlayersTrends(); };
+    window.setGamesTrendsGran  = function(g) { _gamesTrendsGran  = g; renderTrendsCharts('dashGamesTrends', 'gms'); };
+    window.setDeptTrendsGran   = function(g) { _deptTrendsGran   = g; renderTrendsCharts('dashDeptTrends',  'dpt'); };
 
     function dashRenderLeftNav() {
         var el = document.getElementById('dashLeftNav');
@@ -1672,40 +2886,66 @@
 
     window.dashMainTab = function(tab) {
         state.mainTab = tab;
-        state.subTab  = 'overview';
+        var subItems  = getSubTabItems(tab);
+        var firstSub  = subItems.length ? subItems[0].key : 'overview';
+        state.subTab  = firstSub;
         dashRenderLeftNav();
+        /* sync sidebar sub-items */
+        document.querySelectorAll('[data-tab]').forEach(function(el) {
+            el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+        });
         if (_dashSubTabsInst) {
-            _dashSubTabsInst.option({ dataSource: getSubTabItems(tab), selectedIndex: 0 });
+            _dashSubTabsInst.option({
+                dataSource: subItems,
+                selectedIndex: 0,
+                selectedItemKeys: subItems.length ? [subItems[0].key] : []
+            });
         }
         document.querySelectorAll('.dash-panel').forEach(function(el) {
             el.classList.toggle('active', el.dataset.panel === tab);
         });
         document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function(el) {
-            el.classList.toggle('active', el.dataset.sub === 'overview');
+            el.classList.toggle('active', el.dataset.sub === firstSub);
         });
     };
 
-    window.dashSubTab = function(sub) {
+    window.toggleReportsNav = function() {
+        var g = document.getElementById('reportsNavGroup');
+        if (g) g.classList.toggle('open');
+    };
+
+    /* Switch only the panel visibility — called from onItemClick where DX manages its own selection */
+    function _applySubPanel(sub) {
         state.subTab = sub;
+        document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
+            el.classList.toggle('active', el.dataset.sub === sub);
+        });
+    }
+
+    /* Programmatic switch (e.g. from dashMainTab) — also updates the widget's selectedIndex */
+    window.dashSubTab = function(sub) {
+        _applySubPanel(sub);
         if (_dashSubTabsInst) {
             var items = getSubTabItems(state.mainTab);
             var idx = 0;
             items.forEach(function(item, i) { if (item.key === sub) idx = i; });
             _dashSubTabsInst.option('selectedIndex', idx);
         }
-        if (sub === 'forecastsanomalies') {
-            document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
-                el.classList.toggle('active', el.dataset.sub === 'forecast' || el.dataset.sub === 'anomalies');
-            });
-        } else {
-            document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
-                el.classList.toggle('active', el.dataset.sub === sub);
-            });
-        }
     };
 
     window.dashReport    = function() { alert('Report export coming soon.'); };
     window.dashPdfReport = function() { alert('PDF export coming soon.'); };
+
+    window.dashTogglePeriodMode = function() {
+        var bar = document.getElementById('dashPeriodBar');
+        if (!bar) return;
+        var isCustom = bar.classList.toggle('custom-mode');
+        var btn = document.getElementById('dashPeriodToggle');
+        if (btn) {
+            btn.title = isCustom ? 'Back to month view' : 'Switch to custom date range';
+            btn.querySelector('i').className = isCustom ? 'fas fa-th-list' : 'fas fa-calendar-alt';
+        }
+    };
 
     /* ── Scope integration ───────────────────────────────────── */
 
@@ -1727,39 +2967,73 @@
         } catch(e) {}
         applyCompanyTheme(state.companyId);
 
-        /* Period dropdown */
-        $('#dashPeriodSelect').dxSelectBox({
-            items: PERIODS,
-            value: state.period,
-            displayExpr: fmtPeriod,
-            width: 170,
-            height: 34,
+        /* Date range box */
+        $('#dashDateRangeBox').dxDateRangeBox({
+            startDate:      _ALL_MONTHS_RANGE[0],
+            endDate:        _ALL_MONTHS_RANGE[1],
+            displayFormat:  'M/d/yyyy',
+            startDateLabel: 'From',
+            endDateLabel:   'To',
+            labelMode:      'floating',
+            stylingMode:    'outlined',
+            min:            new Date(2026,0,1),
+            max:            new Date(2026,5,30),
+            width:          320,
+            onValueChanged: function(e) {
+                var s = e.value[0], d = e.value[1];
+                if (!s || !d) return;
+                var matched = 'All Months';
+                Object.keys(_MONTH_RANGES).forEach(function(k) {
+                    var r = _MONTH_RANGES[k];
+                    if (s.getFullYear() === r[0].getFullYear() && s.getMonth() === r[0].getMonth() &&
+                        d.getFullYear() === r[1].getFullYear() && d.getMonth() === r[1].getMonth()) matched = k;
+                });
+                if (matched !== state.period) {
+                    state.period = matched; _dataCache = {};
+                    document.querySelectorAll('.dash-month-btn').forEach(function(btn) {
+                        btn.classList.toggle('active', btn.dataset.period === matched);
+                    });
+                    refreshAll();
+                }
+            }
+        });
+
+        /* Month button group (dxButtonGroup — single connected control) */
+        var _MONTH_PILLS = [
+            { key: 'January2026',  text: 'Jan 2026' }, { key: 'February2026', text: 'Feb 2026' },
+            { key: 'March2026',    text: 'Mar 2026' }, { key: 'April2026',    text: 'Apr 2026' },
+            { key: 'May2026',      text: 'May 2026' }, { key: 'June2026',     text: 'Jun 2026' }
+        ];
+        $('#dashPeriodMonths').dxButtonGroup({
+            items: _MONTH_PILLS,
+            keyExpr: 'key',
+            selectedItemKeys: [state.period],
+            selectionMode: 'single',
             stylingMode: 'outlined',
-            dropDownOptions: { wrapperAttr: { class: 'period-dropdown' } },
-            onValueChanged: function(e) { dashPeriod(e.value); }
+            onItemClick: function(e) { dashPeriod(e.itemData.key); }
         });
 
         /* Left vertical nav */
         dashRenderLeftNav();
 
-        /* Sub-tab bar (dxTabs, underline style) */
+        /* Sub-tab bar */
+        var _initSubItems = getSubTabItems(state.mainTab);
+        var _firstSubKey  = _initSubItems.length ? _initSubItems[0].key : null;
         _dashSubTabsInst = $('#dashSubTabs').dxTabs({
-            dataSource: getSubTabItems(state.mainTab),
+            dataSource: _initSubItems,
             keyExpr: 'key',
             displayExpr: 'text',
-            selectedIndex: 0,
             scrollingEnabled: false,
             onItemClick: function(e) {
-                if (e.itemData) dashSubTab(e.itemData.key);
+                if (e.itemData) _applySubPanel(e.itemData.key);
             }
         }).dxTabs('instance');
+        /* Force first-tab selection after widget has finished rendering */
+        if (_firstSubKey) {
+            _dashSubTabsInst.option('selectedItemKeys', [_firstSubKey]);
+        }
 
         /* Header buttons */
-        $('#dashReportBtn').dxButton({
-            text: 'Report',
-            stylingMode: 'outlined',
-            onClick: function() { dashReport(); }
-        });
         $('#dashPdfBtn').dxButton({
             text: 'Export',
             icon: 'exportxlsx',
