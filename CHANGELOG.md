@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-21] — KPI cards: trend arrow inside pill, primary-colour tint
+
+### Changed
+- Trend arrow icon now sits inside the pill badge alongside the value and "vs prior period" text.
+- Pill retains `#d8dde8` background / `#1C2333` text (lighter primary tint); not green.
+- Down-trend pill remains red (`#fee2e2` / `#dc2626`).
+- Bumped to `script-dashboard.js?v=71`, `styles-dashboard.css?v=41`.
+
 ## [2026-06-21] — KPI cards: green arrow trend indicator
 
 ### Changed

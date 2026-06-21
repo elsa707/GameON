@@ -1830,15 +1830,15 @@
 
 .ov-kpi-trend {
     font-size: 12px;
-    font-weight: 500;
-    color: #22c55e;
+    font-weight: 400;
+    color: #64748b;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
-.ov-kpi-trend i { display: inline-block; font-size: 13px; }
+.ov-kpi-trend i { display: inline-block; font-size: 11px; }
 
 .ov-kpi-pill {
     display: inline-block;
@@ -1855,7 +1855,7 @@
     color: #dc2626;
 }
 
-.ov-kpi-trend.down { color: #dc2626; }
+.ov-kpi-trend.down { color: #64748b; }
 
 /* Middle row: Department Activity chart | Top Games chart */
 .ov-mid-row {

@@ -505,7 +505,7 @@
         return '<div class="ov-kpi-card" style="border-left-color:' + accent + '">' +
             '<div class="ov-kpi-lbl">' + esc(label) + '</div>' +
             '<div class="ov-kpi-val">' + esc(String(value)) + '</div>' +
-            (trendText ? '<div class="' + trendClass + '"><i class="fas ' + trendIcon + '"></i> ' + esc(trendText) + ' vs prior period</div>' : '') +
+            (trendText ? '<div class="' + trendClass + '"><span class="ov-kpi-pill"><i class="fas ' + trendIcon + '"></i> ' + esc(trendText) + ' vs prior period</span></div>' : '') +
         '</div>';
     }
 
