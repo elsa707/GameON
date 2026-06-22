@@ -100,29 +100,34 @@
 #dashDateRangeBox .dx-texteditor-input { font-size: 13px; font-family: inherit; }
 #dashDateRangeBox .dx-label { font-family: inherit; }
 
-/* Month quick-select pills */
-.dash-period-months {
+/* Quick-select period pills */
+.dash-period-pills {
     display: flex;
     align-items: center;
     gap: 6px;
 }
-.dash-month-btn {
-    padding: 5px 14px;
+.dash-period-pill {
+    height: 32px;
+    padding: 0 12px;
     border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border-radius: 16px;
     background: #fff;
-    color: #475569;
-    font-size: 13px;
+    color: #64748b;
+    font-size: 12px;
     font-family: inherit;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.dash-month-btn:hover { border-color: #94a3b8; color: #334155; }
-.dash-month-btn.active {
-    border-color: #1e293b;
-    color: #1e293b;
-    font-weight: 600;
+.dash-period-pill:hover { background: #f1f5f9; color: #1C2333; border-color: #cbd5e1; }
+.dash-period-pill.active { background: #1C2333; color: #fff; border-color: #1C2333; }
+
+/* Thin vertical divider between pills and controls */
+.dash-period-divider {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
+    flex-shrink: 0;
 }
 
 /* ===== Two-column content grid ===== */

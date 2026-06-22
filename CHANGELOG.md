@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Period filter: quick-select pills (This month / Last month / Last 3 months / Last 6 months)
+
+### Added
+- Four quick-select pill buttons in the period bar: **This month** (Jun 2026), **Last month** (May 2026), **Last 3 months** (Apr–Jun), **Last 6 months** (Jan–Jun). Only ranges fully covered by the available data are shown — "Last 12 months" is excluded since data starts Jan 2026.
+- Clicking a pill marks it active (dark fill), updates the date range picker, and triggers a data refresh; the month dropdown updates to the matching month or "All Months" for multi-month ranges.
+- Manually editing the date range picker or choosing a month from the dropdown automatically clears any active pill. Programmatic updates (pill click, `renderPeriodTabs`) use `e.event` guard to avoid re-entrant clearing.
+- Thin vertical divider separates pills from the dropdown/date-range controls.
+- Bumped to `script-dashboard.js?v=110`, `styles-dashboard.css?v=55`.
+
 ## [2026-06-22] — Period filter: month dropdown + date range always visible
 
 ### Changed

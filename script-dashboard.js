@@ -529,6 +529,17 @@
     };
     var _ALL_MONTHS_RANGE = [new Date(2026,0,1), new Date(2026,5,18)];
 
+    var _PILL_RANGES = {
+        'thismonth':   [new Date(2026,5,1),  new Date(2026,5,18)],  /* Jun 2026          */
+        'lastmonth':   [new Date(2026,4,1),  new Date(2026,4,31)],  /* May 2026          */
+        'last3months': [new Date(2026,3,1),  new Date(2026,5,18)],  /* Apr – Jun 2026    */
+        'last6months': [new Date(2026,0,1),  new Date(2026,5,18)]   /* Jan – Jun 2026    */
+    };
+
+    function _clearPillActive() {
+        document.querySelectorAll('.dash-period-pill').forEach(function(b) { b.classList.remove('active'); });
+    }
+
     function renderPeriodTabs() {
         try {
             var sel = $('#dashPeriodMonths').dxSelectBox('instance');
@@ -3061,8 +3072,10 @@
             max:            new Date(2026,5,30),
             width:          320,
             onValueChanged: function(e) {
+                if (!e.event) return; /* skip programmatic updates from pill/dropdown */
                 var s = e.value[0], d = e.value[1];
                 if (!s || !d) return;
+                _clearPillActive();
                 var matched = 'All Months';
                 Object.keys(_MONTH_RANGES).forEach(function(k) {
                     var r = _MONTH_RANGES[k];
@@ -3099,9 +3112,36 @@
             stylingMode:   'outlined',
             searchEnabled: false,
             onValueChanged: function(e) {
+                if (!e.event) return; /* skip programmatic updates */
+                _clearPillActive();
                 if (e.value && e.value !== state.period) dashPeriod(e.value);
             }
         });
+
+        /* Quick-select pills */
+        window.dashPeriodPill = function(pillKey) {
+            var range = _PILL_RANGES[pillKey];
+            if (!range) return;
+            document.querySelectorAll('.dash-period-pill').forEach(function(b) {
+                b.classList.toggle('active', b.dataset.pill === pillKey);
+            });
+            try {
+                $('#dashDateRangeBox').dxDateRangeBox('instance').option({ startDate: range[0], endDate: range[1] });
+            } catch(eInst) {}
+            var matched = 'All Months';
+            Object.keys(_MONTH_RANGES).forEach(function(k) {
+                var r = _MONTH_RANGES[k];
+                if (range[0].getFullYear() === r[0].getFullYear() && range[0].getMonth() === r[0].getMonth() &&
+                    range[1].getFullYear() === r[1].getFullYear() && range[1].getMonth() === r[1].getMonth()) matched = k;
+            });
+            state.period = matched;
+            _dataCache = {};
+            try {
+                var sel = $('#dashPeriodMonths').dxSelectBox('instance');
+                if (sel) sel.option('value', matched);
+            } catch(eSel) {}
+            refreshAll();
+        };
 
         /* Left vertical nav */
         dashRenderLeftNav();

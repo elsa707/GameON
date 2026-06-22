@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameOn - Analytics Dashboard (v2 nav)</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="styles-dashboard.css?v=54">
+    <link rel="stylesheet" href="styles-dashboard.css?v=55">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.6/css/dx.light.css">
@@ -84,6 +84,13 @@
 
         <!-- Period filter -->
         <div class="dash-period" id="dashPeriodBar">
+            <div class="dash-period-pills">
+                <button class="dash-period-pill" data-pill="thismonth"   onclick="dashPeriodPill('thismonth')">This month</button>
+                <button class="dash-period-pill" data-pill="lastmonth"   onclick="dashPeriodPill('lastmonth')">Last month</button>
+                <button class="dash-period-pill" data-pill="last3months" onclick="dashPeriodPill('last3months')">Last 3 months</button>
+                <button class="dash-period-pill" data-pill="last6months" onclick="dashPeriodPill('last6months')">Last 6 months</button>
+            </div>
+            <div class="dash-period-divider"></div>
             <div id="dashPeriodMonths"></div>
             <div id="dashDateRangeBox"></div>
         </div>
@@ -151,7 +158,7 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 </script>
 <script src="script-sidebar-scope.js"></script>
-<script src="script-dashboard.js?v=109"></script>
+<script src="script-dashboard.js?v=110"></script>
 <script src="script-dashboard2.js?v=5"></script>
 </body>
 </html>
