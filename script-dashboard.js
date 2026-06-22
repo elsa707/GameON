@@ -2149,36 +2149,29 @@
         };
 
         makeChart('chartDeptPie', {
-            isPie: true,
             opts: {
-                type: 'pie',
                 dataSource: depts.map(function(d) {
                     return { name: d.name, active: Math.max(0, d.active) };
                 }),
-                palette: pieColors.slice(0, depts.length),
                 series: [{
-                    argumentField: 'name',
-                    valueField: 'active',
-                    label: { visible: false },
-                    border: { visible: true, color: '#fff', width: 2 },
-                    hoverStyle: { border: { visible: true, color: '#fff', width: 2 } }
+                    argumentField: 'name', valueField: 'active', type: 'bar',
+                    color: '#1C2333', cornerRadius: 0,
+                    label: { visible: false }
                 }],
-                legend: {
-                    visible: true,
-                    horizontalAlignment: 'right',
-                    verticalAlignment: 'center',
-                    font: { size: 11, color: '#64748b' },
-                    markerSize: 10,
-                    itemsAlignment: 'left'
+                rotated: true,
+                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 11, color: '#64748b' } } },
+                argumentAxis: { grid: { visible: false } },
+                valueAxis: { min: 0, grid: { visible: false },
+                    label: { customizeText: function(i) { return i.valueText + ' players'; } }
                 },
-                tooltip: { enabled: true, cornerRadius: 6, border: { visible: false }, color: '#1e293b',
-                    font: { color: '#fff', size: 12 },
+                legend: { visible: false },
+                tooltip: { enabled: true,
                     customizeTooltip: function(info) {
                         var pct = activeTotal > 0 ? (info.value / activeTotal * 100).toFixed(0) : 0;
-                        return { text: info.argumentText + '\n' + info.value + ' players (' + pct + '%)' };
+                        return { text: info.argumentText + ': ' + info.value + ' players (' + pct + '%)' };
                     }
                 },
-                size: { height: 340 }
+                size: { height: Math.max(160, depts.length * 56) }
             }
         });
     }

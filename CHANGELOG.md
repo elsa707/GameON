@@ -17,7 +17,14 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
-## [2026-06-22] — Departments pie chart: primary-colour tint palette
+## [2026-06-22] — Departments chart: pie replaced with horizontal bar chart
+
+### Changed
+- Replaced `chartDeptPie` pie chart with a horizontal bar chart — clearer comparison between departments, consistent with the Department Activity chart style, and avoids illegible tiny slices.
+- Uses `#1C2333` fill, tooltip shows player count and percentage, height scales with number of departments.
+- Bumped to `script-dashboard.js?v=82`.
+
+## [2026-06-22] — Departments pie chart: primary-colour tint palette (removed)
 
 ### Changed
 - `chartDeptPie` palette changed from unrelated bright colours to a stepped tint progression derived from `#1C2333`: dark navy → medium blue → light blue → progressively lighter tints for additional slices.
