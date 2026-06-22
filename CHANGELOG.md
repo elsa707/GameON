@@ -5,7 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
-## [2026-06-22] — Players secondary nav: Overview tab added
+## [2026-06-22] — Players secondary nav: breadcrumb back link
+
+### Changed
+- Replaced the "Overview" tab in the players secondary nav with a hidden `← Players` breadcrumb link that appears only when inside a sub-section (Inactive / Game coverage / Leave & exclusions). Clicking it returns to the players overview.
+- Bumped to `script-dashboard.js?v=73`, `styles-dashboard.css?v=42`.
+
+## [2026-06-22] — Players secondary nav: Overview tab added (reverted)
 
 ### Changed
 - Added "Overview" as the first tab in the `.plr-sec-nav` (Inactive / Game coverage / Leave & exclusions) secondary navigation so users can return to the main players screen.

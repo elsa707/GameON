@@ -1435,10 +1435,14 @@
         var needsSecNav = !document.querySelector('[data-panel="players"]');
         var secNavHtml = needsSecNav
             ? '<div class="plr-sec-nav">' +
-                  '<button class="plr-sec-tab active" onclick="window.playerSection(\'overview\')">Overview</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
+              '</div>' +
+              '<div class="plr-breadcrumb" id="plrBreadcrumb" hidden>' +
+                  '<a class="plr-back-link" onclick="window.playerSection(\'overview\')">' +
+                      '<i class="fas fa-chevron-left"></i> Players' +
+                  '</a>' +
               '</div>'
             : '';
         var secPanelsHtml = needsSecNav
@@ -1453,16 +1457,19 @@
             secPanelsHtml;
 
         window.playerSection = function(key) {
-            var overviewEl = document.getElementById('plrOverviewContent');
+            var overviewEl  = document.getElementById('plrOverviewContent');
+            var breadcrumb  = document.getElementById('plrBreadcrumb');
             ['dashPlayersInactive', 'dashPlayersGamesPlayed', 'dashPlayersLeave'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.hidden = true;
             });
             document.querySelectorAll('.plr-sec-tab').forEach(function(b) { b.classList.remove('active'); });
             if (key === 'overview') {
-                if (overviewEl) overviewEl.hidden = false;
+                if (overviewEl)  overviewEl.hidden  = false;
+                if (breadcrumb)  breadcrumb.hidden  = true;
             } else {
-                if (overviewEl) overviewEl.hidden = true;
+                if (overviewEl)  overviewEl.hidden  = true;
+                if (breadcrumb)  breadcrumb.hidden  = false;
                 var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
                 var target = document.getElementById(idMap[key]);
                 if (target) target.hidden = false;

@@ -981,6 +981,20 @@
 .plr-sec-tab:hover:not(.active) { color: #374151; }
 .plr-sec-tab.active { color: #1C2333; font-weight: 600; border-bottom-color: #1C2333; }
 
+.plr-breadcrumb { margin-bottom: 16px; }
+.plr-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    text-decoration: none;
+}
+.plr-back-link:hover { color: #1C2333; }
+.plr-back-link i { font-size: 11px; }
+
 /* ===== Player spotlight (top 3 badges) ===== */
 .player-spotlight-row {
     display: grid;
