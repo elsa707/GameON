@@ -46,10 +46,11 @@
                         <i class="fas fa-chevron-right nav-arrow"></i>
                     </a>
                     <div class="nav-sub">
-                        <a href="javascript:void(0)" class="nav-sub-item active" data-tab="overview"           onclick="dashMainTab('overview')">Overview</a>
-                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="trends"             onclick="dashMainTab('trends')">Trends</a>
-                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="forecastsanomalies" onclick="dashMainTab('forecastsanomalies')">Forecasts &amp; anomalies</a>
-                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="gamification"       onclick="dashMainTab('gamification')">Gamification</a>
+                        <a href="javascript:void(0)" class="nav-sub-item active" data-tab="summary"       onclick="dashMainTab('summary')">Summary</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="players"       onclick="dashMainTab('players')">Players</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="games"         onclick="dashMainTab('games')">Games</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="departments"   onclick="dashMainTab('departments')">Departments</a>
+                        <a href="javascript:void(0)" class="nav-sub-item"        data-tab="gamification"  onclick="dashMainTab('gamification')">Gamification</a>
                     </div>
                 </div>
             </div>
@@ -99,31 +100,35 @@
 
                 <div class="dash-body">
 
-            <!-- OVERVIEW panel: sub-tabs = Summary / Players / Games / Departments -->
-            <div class="dash-panel active" data-panel="overview">
-                <div class="dash-sub-panel active" data-sub="summary"     id="dashSummaryOverview"></div>
-                <div class="dash-sub-panel"        data-sub="players"     id="dashPlayersPanel"></div>
-                <div class="dash-sub-panel"        data-sub="games"       id="dashGamesOverview"></div>
-                <div class="dash-sub-panel"        data-sub="departments" id="dashDeptPanel"></div>
+            <!-- SUMMARY panel: sub-tabs = Overview / Trends / Forecasts & anomalies -->
+            <div class="dash-panel active" data-panel="summary">
+                <div class="dash-sub-panel active" data-sub="overview"           id="dashSummaryOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"             id="dashSummaryTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashSummaryForecastAnomalies"></div>
             </div>
 
-            <!-- TRENDS panel: sub-tabs = Summary / Players / Games / Departments -->
-            <div class="dash-panel" data-panel="trends">
-                <div class="dash-sub-panel active" data-sub="summary"     id="dashSummaryTrends"></div>
-                <div class="dash-sub-panel"        data-sub="players"     id="dashPlayersTrends"></div>
-                <div class="dash-sub-panel"        data-sub="games"       id="dashGamesTrends"></div>
-                <div class="dash-sub-panel"        data-sub="departments" id="dashDeptTrends"></div>
+            <!-- PLAYERS panel: sub-tabs = Overview / Trends / Forecasts & anomalies -->
+            <div class="dash-panel" data-panel="players">
+                <div class="dash-sub-panel active" data-sub="overview"           id="dashPlayersPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"             id="dashPlayersTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashPlayersForecastAnomalies"></div>
             </div>
 
-            <!-- FORECASTS & ANOMALIES panel: sub-tabs = Summary / Players / Games / Departments -->
-            <div class="dash-panel" data-panel="forecastsanomalies">
-                <div class="dash-sub-panel active" data-sub="summary"     id="dashSummaryForecastAnomalies"></div>
-                <div class="dash-sub-panel"        data-sub="players"     id="dashPlayersForecastAnomalies"></div>
-                <div class="dash-sub-panel"        data-sub="games"       id="dashGamesAnomalies"></div>
-                <div class="dash-sub-panel"        data-sub="departments" id="dashDeptForecastAnomalies"></div>
+            <!-- GAMES panel: sub-tabs = Overview / Trends / Forecasts & anomalies -->
+            <div class="dash-panel" data-panel="games">
+                <div class="dash-sub-panel active" data-sub="overview"           id="dashGamesOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"             id="dashGamesTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashGamesAnomalies"></div>
             </div>
 
-            <!-- GAMIFICATION panel (unchanged structure) -->
+            <!-- DEPARTMENTS panel: sub-tabs = Overview / Trends / Forecasts & anomalies -->
+            <div class="dash-panel" data-panel="departments">
+                <div class="dash-sub-panel active" data-sub="overview"           id="dashDeptPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"             id="dashDeptTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashDeptForecastAnomalies"></div>
+            </div>
+
+            <!-- GAMIFICATION panel (unchanged) -->
             <div class="dash-panel" data-panel="gamification">
                 <div class="dash-sub-panel active" data-sub="leagues"    id="dashGamLeagues"></div>
                 <div class="dash-sub-panel"        data-sub="scoreboard" id="dashGamScoreboard"></div>
@@ -131,7 +136,7 @@
                 <div class="dash-sub-panel"        data-sub="playdays"   id="dashGamPlayDays"></div>
             </div>
 
-            <!-- Hidden stubs so render functions don't error on missing IDs -->
+            <!-- Hidden stubs so render functions that look for index.html-only IDs don't error -->
             <div style="display:none" aria-hidden="true">
                 <div id="dashRegionalOverview"></div>
                 <div id="dashRegionalTrends"></div>
@@ -149,7 +154,7 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 </script>
 <script src="script-sidebar-scope.js"></script>
-<script src="script-dashboard.js?v=107"></script>
-<script src="script-dashboard2.js?v=4"></script>
+<script src="script-dashboard.js?v=108"></script>
+<script src="script-dashboard2.js?v=5"></script>
 </body>
 </html>

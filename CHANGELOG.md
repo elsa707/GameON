@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — index2.html: nav restructure — Summary/Players/Games/Departments in side nav, Overview/Trends/Forecasts & anomalies as sub-tabs
+
+### Changed
+- Side nav (under Reports) changed from Overview/Trends/Forecasts & anomalies/Gamification to **Summary/Players/Games/Departments/Gamification** — matches the panel-first structure of index.html.
+- Sub-tab bar changed from Summary/Players/Games/Departments to **Overview/Trends/Forecasts & anomalies** (combined). Gamification keeps its own Leagues/Scoreboard/Streaks/Play days sub-tabs.
+- `script-dashboard2.js` rewritten: `CONTENT_SUBS` updated; `onItemClick` overridden on the dxTabs widget to call `_dashApplySubPanel` + `refreshForecastsAnomalies` when the "Forecasts & anomalies" sub-tab is clicked.
+- `script-dashboard.js`: exposed `window._dashApplySubPanel` (bridge for sub-tab click handler in script-dashboard2.js); added `dashGamesAnomalies` to `window.refreshForecastsAnomalies` so the Games panel's combined sub-tab is also populated on click.
+- Bumped to `script-dashboard.js?v=108`, `script-dashboard2.js?v=5`.
+
 ## [2026-06-22] — Fix: Forecasts & anomalies still blank on index2.html (on-demand render)
 
 ### Fixed

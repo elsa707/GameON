@@ -2,16 +2,17 @@
  * Nav-structure shim for index2.html.
  * Runs AFTER script-dashboard.js (jQuery deferred queue order).
  * Patches dashMainTab and re-seeds the sub-tab bar.
- * Does NOT touch script-dashboard.js or index.html.
+ * Side nav: Summary / Players / Games / Departments / Gamification
+ * Sub-tabs:  Overview / Trends / Forecasts & anomalies (combined)
  */
 (function ($) {
     'use strict';
 
+    /* Sub-tabs shown for all content tabs (Summary/Players/Games/Departments) */
     var CONTENT_SUBS = [
-        { text: 'Summary',     key: 'summary'     },
-        { text: 'Players',     key: 'players'     },
-        { text: 'Games',       key: 'games'       },
-        { text: 'Departments', key: 'departments' }
+        { text: 'Overview',              key: 'overview'           },
+        { text: 'Trends',                key: 'trends'             },
+        { text: 'Forecasts & anomalies', key: 'forecastsanomalies' }
     ];
 
     var GAM_SUBS = [
@@ -21,36 +22,45 @@
         { text: 'Play days',  key: 'playdays'   }
     ];
 
-    /* Trends: Summary/Players/Games all show the same chart — no sub-tabs needed. */
     function subsFor(tab) {
         if (tab === 'gamification') return GAM_SUBS;
-        if (tab === 'trends')       return [];
         return CONTENT_SUBS;
     }
 
     $(function () {
-        /* Re-seed the dxTabs instance created by script-dashboard.js */
         var tabsInst = $('#dashSubTabs').dxTabs('instance');
+
+        /* Re-seed the dxTabs and override onItemClick to handle the combined
+           "Forecasts & anomalies" sub-tab which needs an on-demand render. */
         if (tabsInst) {
-            tabsInst.option({ dataSource: CONTENT_SUBS });
-            /* Defer selection so DX finishes rendering before the key is applied */
-            setTimeout(function () {
-                tabsInst.option('selectedItemKeys', [CONTENT_SUBS[0].key]);
-            }, 0);
+            tabsInst.option({
+                dataSource: CONTENT_SUBS,
+                onItemClick: function (e) {
+                    if (!e.itemData) return;
+                    var key = e.itemData.key;
+                    if (typeof window._dashApplySubPanel === 'function') {
+                        window._dashApplySubPanel(key);
+                    }
+                    if (key === 'forecastsanomalies' && typeof window.refreshForecastsAnomalies === 'function') {
+                        window.refreshForecastsAnomalies();
+                    }
+                }
+            });
+            tabsInst.option('selectedItemKeys', [CONTENT_SUBS[0].key]);
         }
 
         /* Patch dashMainTab for the new panel keys */
         window.dashMainTab = function (tab) {
             var subs     = subsFor(tab);
             var hasSubs  = subs.length > 0;
-            var firstSub = hasSubs ? subs[0].key : 'summary';
+            var firstSub = hasSubs ? subs[0].key : 'overview';
 
             /* sidebar active highlight */
             document.querySelectorAll('[data-tab]').forEach(function (el) {
                 el.classList.toggle('active', el.getAttribute('data-tab') === tab);
             });
 
-            /* show/hide sub-tab bar */
+            /* show/hide sub-tab bar and reseed tabs */
             var $bar = $('.dash-subtabs-bar');
             if (hasSubs) {
                 $bar.show();
@@ -71,11 +81,6 @@
             document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function (el) {
                 el.classList.toggle('active', el.dataset.sub === firstSub);
             });
-
-            /* Render on-demand for the Forecasts & anomalies panel */
-            if (tab === 'forecastsanomalies' && typeof window.refreshForecastsAnomalies === 'function') {
-                window.refreshForecastsAnomalies();
-            }
         };
     });
 

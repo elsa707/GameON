@@ -2892,9 +2892,12 @@
     }
 
     /* Exposed so script-dashboard2.js can re-render on tab click */
+    window._dashApplySubPanel = function(key) { _applySubPanel(key); };
+
     window.refreshForecastsAnomalies = function() {
         renderForecastsAnomaliesPanel('dashSummaryForecastAnomalies', state.companyId);
         renderForecastsAnomaliesPanel('dashPlayersForecastAnomalies', state.companyId);
+        renderForecastsAnomaliesPanel('dashGamesAnomalies', state.companyId);
         renderDeptForecastsAnomalies();
     };
 
