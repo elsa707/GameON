@@ -1337,12 +1337,18 @@
             var body  = document.getElementById('gtopicBody' + ti);
             var chev  = document.getElementById('gtopicChev' + ti);
             if (!body) return;
-            if (body.hasAttribute('hidden')) {
+            var isOpen = !body.hasAttribute('hidden');
+            // close all
+            GAME_TOPICS.forEach(function(_, i) {
+                var b = document.getElementById('gtopicBody' + i);
+                var c = document.getElementById('gtopicChev' + i);
+                if (b) b.setAttribute('hidden', '');
+                if (c) c.style.transform = '';
+            });
+            // open clicked one unless it was already open
+            if (!isOpen) {
                 body.removeAttribute('hidden');
                 if (chev) chev.style.transform = 'rotate(90deg)';
-            } else {
-                body.setAttribute('hidden', '');
-                if (chev) chev.style.transform = '';
             }
         };
 

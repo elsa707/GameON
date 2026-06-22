@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Games overview: topic accordion closes previous on open
+
+### Changed
+- Topic rows (Sales Objections, Emotional Intelligence, etc.) now behave as an accordion: clicking a row closes any currently-open row before opening the clicked one. Clicking the open row again collapses it.
+- Bumped to `script-dashboard.js?v=100`.
+
 ## [2026-06-22] — Game coverage card: label/value grouped at top; chart right-margin fix
 
 ### Changed
