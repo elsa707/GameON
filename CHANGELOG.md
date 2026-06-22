@@ -17,6 +17,12 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
+## [2026-06-22] — Department Activity chart: fixed height to match Top Games
+
+### Fixed
+- Department Activity chart used a variable height (`deptData.length × 64px`) which left white space inside the card when the adjacent Top Games chart was taller. Changed to a fixed `300px` to match.
+- Bumped to `script-dashboard.js?v=78`.
+
 ## [2026-06-22] — Gamification filters: cascading dept + player dropdowns
 
 ### Changed

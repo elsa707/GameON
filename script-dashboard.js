@@ -642,7 +642,7 @@
                 valueAxis:    { grid: { visible: false } },
                 legend:  { visible: false },
                 tooltip: { enabled: true },
-                size:    { height: Math.max(140, deptData.length * 64) }
+                size:    { height: 300 }
             }
         });
 
