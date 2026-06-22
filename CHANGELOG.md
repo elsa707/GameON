@@ -17,6 +17,12 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
+## [2026-06-22] — Departments pie chart: primary-colour tint palette
+
+### Changed
+- `chartDeptPie` palette changed from unrelated bright colours to a stepped tint progression derived from `#1C2333`: dark navy → medium blue → light blue → progressively lighter tints for additional slices.
+- Bumped to `script-dashboard.js?v=81`.
+
 ## [2026-06-22] — index2 tab bar: fix active tab not shown on load
 
 ### Fixed

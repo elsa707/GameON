@@ -2091,7 +2091,7 @@
         var depts       = getDeptPlayers(state.companyId);
         var profile     = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
         var activeTotal = depts.reduce(function(s,x){return s+x.active;},0);
-        var pieColors   = ['#0ea5e9','#6366f1','#14b8a6','#f97316','#a855f7','#ec4899'];
+        var pieColors   = ['#1C2333','#4a6a96','#7fa3c4','#b3cde3','#dce9f3','#eef4f9'];
 
         function buildRow(dep) {
             var sessions  = Math.round(dep.active * (dep.avgPoints || 1) / 20);
