@@ -17,7 +17,14 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
-## [2026-06-22] — Gamification dropdown: fix flat rendering of dept/player tree
+## [2026-06-22] — Gamification filters: cascading dept + player dropdowns
+
+### Changed
+- Replaced the single nested `dxDropDownBox`+`dxTreeView` with two cascading `dxSelectBox` controls (Department → Player name) across all four gamification panels (Leagues, Scoreboard, Streaks, Play days).
+- Selecting a department filters the player list; clearing department resets to all players.
+- Bumped to `script-dashboard.js?v=77`.
+
+## [2026-06-22] — Gamification dropdown: fix flat rendering of dept/player tree (removed)
 
 ### Fixed
 - `dxTreeView` inside the gamification nested dropdown was missing `dataStructure: 'plain'`, causing DevExtreme to ignore parent–child relationships and render all departments and players at the same flat level. Added the option so departments collapse/expand correctly with players nested underneath.

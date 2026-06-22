@@ -2455,58 +2455,27 @@
         '</div>';
     }
 
-    /* Single nested dxDropDownBox + dxTreeView: dept → players */
-    function _gamInitNestedDropdown(boxId, onChange) {
-        var allPlayers = (COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID]);
-        var depts = _gamDeptList();
-        var treeItems = [{ id: '__all', parentId: null, text: 'All players', isRoot: true }];
-        depts.forEach(function(dept, di) {
-            var deptId = 'd' + di;
-            treeItems.push({ id: deptId, parentId: null, text: dept, isDept: true, deptName: dept });
-            allPlayers.filter(function(p) { return p.dept === dept; }).forEach(function(p, pi) {
-                treeItems.push({ id: deptId + '_p' + pi, parentId: deptId, text: p.name,
-                                 isDept: false, deptName: dept, playerName: p.name });
-            });
-        });
-        var currentVal = _gamNameFilter || (_gamDeptFilter || null);
-        $('#' + boxId).dxDropDownBox({
-            value: currentVal, placeholder: 'All players',
-            showClearButton: true, width: 220,
-            onValueChanged: function(e) {
-                if (e.value === null || e.value === '') {
-                    _gamDeptFilter = ''; _gamNameFilter = ''; onChange();
-                }
-            },
-            contentTemplate: function(args) {
-                var $wrap = $('<div>');
-                $wrap.dxTreeView({
-                    items: treeItems, dataStructure: 'plain', keyExpr: 'id', parentIdExpr: 'parentId', displayExpr: 'text',
-                    selectionMode: 'single', showCheckBoxesMode: 'none',
-                    onItemClick: function(ev) {
-                        var item = ev.itemData;
-                        if (item.isRoot) {
-                            _gamDeptFilter = ''; _gamNameFilter = '';
-                            args.component.option('value', null);
-                        } else if (item.isDept) {
-                            _gamDeptFilter = item.deptName; _gamNameFilter = '';
-                            args.component.option('value', item.deptName);
-                        } else {
-                            _gamDeptFilter = item.deptName; _gamNameFilter = item.playerName;
-                            args.component.option('value', item.playerName);
-                        }
-                        args.component.close();
-                        onChange();
-                    }
-                });
-                return $wrap;
-            }
-        });
+    /* Cascading dept → player selectboxes */
+    function _gamInitCascadingDropdowns(deptBoxId, playerBoxId, onChange) {
+        function refreshPlayerBox() {
+            var allPlayers = COMPANY_PLAYERS[state.companyId] || COMPANY_PLAYERS[DEFAULT_COMPANY_ID];
+            var filtered = _gamDeptFilter
+                ? allPlayers.filter(function(p) { return p.dept.toLowerCase() === _gamDeptFilter.toLowerCase(); })
+                : allPlayers;
+            var items = [{ text: 'All players', value: '' }].concat(
+                filtered.map(function(p) { return { text: p.name, value: p.name }; })
+            );
+            var inst = $('#' + playerBoxId).dxSelectBox('instance');
+            if (inst) { inst.option('dataSource', items); inst.option('value', ''); }
+        }
+        _gamInitDeptBox(deptBoxId, function() { refreshPlayerBox(); onChange(); });
+        _gamInitPlayerBox(playerBoxId, onChange);
     }
 
     function _gamControlsRowHtml(deptId, nameId, nameFilterFn, midHtml, searchId, searchFn) {
-        /* nameId / nameFilterFn unused — replaced by single nested dropdown on deptId */
         return '<div class="gam-controls-row">' +
-            '<div id="' + deptId + '" class="gam-combined-filter"></div>' +
+            '<div id="' + deptId + '" class="gam-dept-filter-box"></div>' +
+            '<div id="' + nameId + '" class="gam-player-filter-box"></div>' +
             (midHtml || '') +
             '<button class="gam-export-btn" onclick="window.gamExportExcel()"><i class="fas fa-file-export"></i> Export</button>' +
         '</div>';
@@ -2551,7 +2520,7 @@
         });
         html += '</tbody></table>';
         el.innerHTML = html;
-        _gamInitNestedDropdown('gamDeptFilterBox', function() { _applyGamFilter(); });
+        _gamInitCascadingDropdowns('gamDeptFilterBox', 'gamPlayerNameInput', function() { _applyGamFilter(); });
         _applyGamFilter();
     }
 
@@ -2580,7 +2549,7 @@
         el.innerHTML = _gamControlsRowHtml('gamScoreDeptBox', 'gamScorePlayerInput', 'gamScoreNameFilter',
                            _gamPeriodNavHtml(), null, null) + '<div id="gamScoreGrid"></div>';
 
-        _gamInitNestedDropdown('gamScoreDeptBox', function() { renderGamificationScoreboard(); });
+        _gamInitCascadingDropdowns('gamScoreDeptBox', 'gamScorePlayerInput', function() { renderGamificationScoreboard(); });
 
         window.gamScoreNameFilter = function() {
             var inp = document.getElementById('gamScorePlayerInput');
@@ -2669,7 +2638,7 @@
         html += '</div><div id="gamStreaksGrid"></div>';
         el.innerHTML = html;
 
-        _gamInitNestedDropdown('gamStreakDeptBox', function() { renderGamificationStreaks(); });
+        _gamInitCascadingDropdowns('gamStreakDeptBox', 'gamStreakPlayerInput', function() { renderGamificationStreaks(); });
 
         window.gamStreakNameFilter = function() {
             var inp = document.getElementById('gamStreakPlayerInput');
@@ -2760,7 +2729,7 @@
         html += '</tbody></table>';
         el.innerHTML = html;
 
-        _gamInitNestedDropdown('gamPdyDeptBox', function() { renderGamificationPlayDays(); });
+        _gamInitCascadingDropdowns('gamPdyDeptBox', 'gamPdyPlayerInput', function() { renderGamificationPlayDays(); });
 
         window.gamPdyApplyFilter = function() {
             var nd = _gamDeptFilter.toLowerCase(), nn = _gamNameFilter.toLowerCase(), ns = _gamSearchFilter.toLowerCase();
