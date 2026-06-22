@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Fix: Forecasts & anomalies still blank on index2.html (on-demand render)
+
+### Fixed
+- Root cause identified: `renderForecastsAnomaliesPanel` is a private function inside the IIFE and was never accessible to `script-dashboard2.js`. The pre-render in `refreshAll()` populated the DOM but the sub-panel active-class logic could strip it before the user clicked the tab. Fix: expose `window.refreshForecastsAnomalies` from `script-dashboard.js` and call it inside the patched `dashMainTab` in `script-dashboard2.js` whenever the `forecastsanomalies` tab is activated — guaranteeing fresh content regardless of prior active-class state.
+- Bumped to `script-dashboard.js?v=107`, `script-dashboard2.js?v=4`.
+
 ## [2026-06-22] — Fix: Forecasts & anomalies blank on index2.html
 
 ### Fixed

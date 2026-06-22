@@ -71,6 +71,11 @@
             document.querySelectorAll('.dash-panel.active .dash-sub-panel').forEach(function (el) {
                 el.classList.toggle('active', el.dataset.sub === firstSub);
             });
+
+            /* Render on-demand for the Forecasts & anomalies panel */
+            if (tab === 'forecastsanomalies' && typeof window.refreshForecastsAnomalies === 'function') {
+                window.refreshForecastsAnomalies();
+            }
         };
     });
 
