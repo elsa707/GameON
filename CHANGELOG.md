@@ -17,6 +17,13 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
+## [2026-06-22] — Players tab: outline style when sub-section is active
+
+### Changed
+- When navigating into Inactive / Game coverage / Leave & exclusions, the Players tab switches to an outline/ghost style (transparent fill, `#1C2333` inset border) to signal the user is in a sub-context and that clicking Players resets to overview.
+- Class `plr-in-subsection` is added to `.dash-subtabs-bar` by `playerSection` and cleaned up on reset or when switching to another main tab.
+- Bumped to `script-dashboard.js?v=80`, `styles-dashboard.css?v=44`.
+
 ## [2026-06-22] — Players navigation: remove breadcrumb; re-click Players to reset
 
 ### Changed

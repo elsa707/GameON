@@ -265,6 +265,14 @@
     border-right-color: #1C2333 !important;
 }
 
+/* Outline style — selected tab when a players sub-section is active */
+.dash-subtabs-bar.plr-in-subsection .dx-tab.dx-tab-selected {
+    background: transparent !important;
+    color: #1C2333 !important;
+    box-shadow: inset 0 0 0 2px #1C2333 !important;
+    border-right-color: #d1d5db !important;
+}
+
 /* Kill all DX focus/active overlays */
 .dash-subtabs-bar .dx-inkripple,
 .dash-subtabs-bar .dx-tabs-nav-button,

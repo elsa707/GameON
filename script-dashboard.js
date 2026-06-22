@@ -1453,6 +1453,7 @@
 
         window.playerSection = function(key) {
             var overviewEl = document.getElementById('plrOverviewContent');
+            var subBar = document.querySelector('.dash-subtabs-bar');
             ['dashPlayersInactive', 'dashPlayersGamesPlayed', 'dashPlayersLeave'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.hidden = true;
@@ -1460,8 +1461,10 @@
             document.querySelectorAll('.plr-sec-tab').forEach(function(b) { b.classList.remove('active'); });
             if (key === 'overview') {
                 if (overviewEl) overviewEl.hidden = false;
+                if (subBar) subBar.classList.remove('plr-in-subsection');
             } else {
                 if (overviewEl) overviewEl.hidden = true;
+                if (subBar) subBar.classList.add('plr-in-subsection');
                 var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
                 var target = document.getElementById(idMap[key]);
                 if (target) target.hidden = false;
@@ -2893,9 +2896,13 @@
         document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
             el.classList.toggle('active', el.dataset.sub === sub);
         });
-        /* Re-clicking Players (or switching back to it) resets the secondary nav to overview */
         if (sub === 'players' && typeof window.playerSection === 'function') {
+            /* Re-clicking Players resets the secondary nav to overview */
             window.playerSection('overview');
+        } else if (sub !== 'players') {
+            /* Switching to a different main tab clears the outline state */
+            var subBar = document.querySelector('.dash-subtabs-bar');
+            if (subBar) subBar.classList.remove('plr-in-subsection');
         }
     }
 
