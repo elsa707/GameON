@@ -1434,15 +1434,15 @@
            not when it is a standalone main tab with its own segmented sub-tabs (index.html) */
         var needsSecNav = !document.querySelector('[data-panel="players"]');
         var secNavHtml = needsSecNav
-            ? '<div class="plr-sec-nav">' +
-                  '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
-                  '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
-                  '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
-              '</div>' +
-              '<div class="plr-breadcrumb" id="plrBreadcrumb" hidden>' +
+            ? '<div class="plr-breadcrumb" id="plrBreadcrumb" hidden>' +
                   '<a class="plr-back-link" onclick="window.playerSection(\'overview\')">' +
                       '<i class="fas fa-chevron-left"></i> Players' +
                   '</a>' +
+              '</div>' +
+              '<div class="plr-sec-nav">' +
+                  '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
+                  '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
+                  '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
               '</div>'
             : '';
         var secPanelsHtml = needsSecNav
