@@ -17,6 +17,13 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
+## [2026-06-22] — index2 tab bar: fix active tab not shown on load
+
+### Fixed
+- `script-dashboard2.js` used `selectedIndex: 0` to set the initial active tab but the `dxTabs` widget uses `keyExpr`, which ignores `selectedIndex` for visual selection. Changed to `selectedItemKeys` throughout.
+- Initial seed deferred via `setTimeout(0)` so DX finishes rendering before the selection key is applied — fixes the tab appearing unselected until first click.
+- Bumped to `script-dashboard2.js?v=3`.
+
 ## [2026-06-22] — Players tab: outline style when sub-section is active
 
 ### Changed

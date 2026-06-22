@@ -32,10 +32,11 @@
         /* Re-seed the dxTabs instance created by script-dashboard.js */
         var tabsInst = $('#dashSubTabs').dxTabs('instance');
         if (tabsInst) {
-            tabsInst.option({
-                dataSource:    CONTENT_SUBS,
-                selectedIndex: 0
-            });
+            tabsInst.option({ dataSource: CONTENT_SUBS });
+            /* Defer selection so DX finishes rendering before the key is applied */
+            setTimeout(function () {
+                tabsInst.option('selectedItemKeys', [CONTENT_SUBS[0].key]);
+            }, 0);
         }
 
         /* Patch dashMainTab for the new panel keys */
@@ -54,7 +55,8 @@
             if (hasSubs) {
                 $bar.show();
                 if (tabsInst) {
-                    tabsInst.option({ dataSource: subs, selectedIndex: 0 });
+                    tabsInst.option({ dataSource: subs });
+                    tabsInst.option('selectedItemKeys', [subs[0].key]);
                 }
             } else {
                 $bar.hide();
