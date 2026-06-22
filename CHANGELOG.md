@@ -5,6 +5,140 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Game coverage card: label/value grouped at top; chart right-margin fix
+
+### Changed
+- Game Coverage KPI card: label and percentage value now group together at the top (matching other KPI cards), with sub-lines anchored at the bottom via `justify-content:space-between`.
+- Game coverage chart: added `margin: { right: 24 }` and `endOnTick: false` to prevent the last x-axis label from being clipped at the right edge.
+- Bumped to `script-dashboard.js?v=99`.
+
+## [2026-06-22] — Games topic rows: KPI card style; Game coverage card sub-lines; chart fix
+
+### Changed
+- Games overview topic rows (Sales Objections, Emotional Intelligence, etc.) now render as KPI-style cards: white background, 1px border, `border-left: 3px solid #1C2333`, `border-radius: 10px`, gap-based list instead of bottom-border rows.
+- Game Coverage KPI card now shows two sub-lines: "N of Y players complete" and "avg N / Y games per player".
+- Game coverage over time chart container increased to 240px (was 200px) and DX `size.height` matched — fixes x-axis label clipping at the bottom.
+- Bumped to `script-dashboard.js?v=98`, `styles-dashboard.css?v=51`.
+
+## [2026-06-22] — Departments search bar unified; Game coverage 20/80 layout
+
+### Changed
+- Departments overview search bar now uses the shared `.plr-search-bar` component (input + button fused into one pill) instead of two separately-bordered elements.
+- Game coverage By game: KPI card and chart now sit side by side at 20/80 split instead of stacking vertically.
+- Bumped to `script-dashboard.js?v=97`.
+
+## [2026-06-22] — Players table: Department column flexes, Name fixed
+
+### Changed
+- Name column changed to fixed `width: 220` so it stays compact next to the avatar.
+- Department column changed to `minWidth: 160` (no fixed width) so it absorbs extra space and can accommodate longer dealer/department names.
+- Bumped to `script-dashboard.js?v=96`.
+
+## [2026-06-22] — Players table: equal metric column widths
+
+### Changed
+- Removed `columnAutoWidth` and set all metric columns (Pass rate → Last play) to uniform `width: 90px` so spacing between values is equal. Name column has `minWidth` only and stretches to fill, creating natural visual separation from Department. Department fixed at 170px.
+- Bumped to `script-dashboard.js?v=95`.
+
+## [2026-06-22] — Players table: column auto-width & chart gap
+
+### Changed
+- Enabled `columnAutoWidth: true` on the players grid and switched all numeric columns from fixed `width` to `minWidth` — DX now sizes each column to its content so the gap between values is driven by uniform cell padding rather than dead trailing space.
+- Added `margin-top: 20px` to `.plr-search-row` to create breathing room between the participation charts and the search bar.
+- Bumped to `script-dashboard.js?v=94`, `styles-dashboard.css?v=50`.
+
+## [2026-06-22] — Players table: search bar moved to left
+
+### Changed
+- Search bar aligned to the left (`justify-content: flex-start`) so it sits above the Name/Department columns it filters. Removed redundant internal padding now that bar is outside the card.
+- Bumped to `styles-dashboard.css?v=49`.
+
+## [2026-06-22] — Players table: left-align numeric columns
+
+### Changed
+- Pass rate, Score, Sessions, XP columns changed from `alignment: 'right'` to `'left'` so data values align under their headers.
+- Bumped to `script-dashboard.js?v=93`.
+
+## [2026-06-22] — Players table: taller header row
+
+### Changed
+- Players grid header row padding increased to 14 px top/bottom (adds ~12 px total height vs DX default).
+- Bumped to `styles-dashboard.css?v=48`.
+
+## [2026-06-22] — Players table: search bar moved outside card
+
+### Fixed
+- Search bar moved above the `dash-table-card` so the card starts cleanly at the grid headers — previously the card had a blank white top section to the left of the search input.
+- Bumped to `script-dashboard.js?v=92`.
+
+## [2026-06-22] — Games loaded tooltip: left-aligned list
+
+### Fixed
+- Game names in the "Games loaded" hover tooltip were center-aligned (DX default). Now left-aligned with muted numbered prefix column.
+- Bumped to `script-dashboard.js?v=91`.
+
+## [2026-06-22] — Trends granularity tabs: left-aligned
+
+### Changed
+- Daily / Weekly / Monthly toggle tabs now align to the left (`justify-content: flex-start`) instead of the right.
+- Bumped to `styles-dashboard.css?v=47`.
+
+## [2026-06-22] — Game coverage: "Games loaded" hover tooltip
+
+### Added
+- Hovering over the "Games loaded: N" badge in Game coverage → By player now shows a `dxTooltip` listing all loaded game names (numbered, scrollable at max-height 320 px).
+- Bumped to `script-dashboard.js?v=90`.
+
+## [2026-06-22] — Game coverage: "Games loaded" badge
+
+### Changed
+- "Games loaded (N)" label in Game coverage → By player changed from a blue underlined link to a neutral pill badge (`#d8dde8` background, `#1C2333` text) consistent with the rest of the UI.
+- Bumped to `script-dashboard.js?v=89`.
+
+## [2026-06-22] — KPI card consistency: Streaks tab
+
+### Changed
+- Active streaks / Avg. current streak / Avg. longest streak cards on the Gamification → Streaks tab now use `ov-kpi-card` with `border-left-color: #1C2333` and `ov-kpi-lbl`/`ov-kpi-val` — replacing the custom `gam-streak-kpi-*` classes.
+- Bumped to `script-dashboard.js?v=88`.
+
+## [2026-06-22] — KPI card consistency: Game coverage by-player row
+
+### Changed
+- "Games this period", "Full coverage", "Incomplete", and "Avg. coverage" cards in the Game coverage By player view now use `ov-kpi-lbl`/`ov-kpi-val` class names and `border-left-color: #1C2333` — matching the main KPI card style.
+- Bumped to `script-dashboard.js?v=87`.
+
+## [2026-06-22] — KPI card consistency: Game coverage & Inactive players
+
+### Changed
+- "Game coverage" and "Inactive players" standalone cards now use the same class names (`ov-kpi-lbl`, `ov-kpi-val`) and `border-left-color: #1C2333` accent as the main KPI cards — they were previously using `ov-kpi-label`/`ov-kpi-value` (unstyled aliases) with no left border.
+- Bumped to `script-dashboard.js?v=86`.
+
+## [2026-06-22] — Game coverage bars: primary colour
+
+### Changed
+- Removed RAG (red/amber) colour logic from game coverage progress bars. All filled bars now use `#1C2333` (primary navy); empty bars remain `#e2e8f0`. The bar length itself communicates quantity — status colouring was misleading without a green tier firing.
+- Bumped to `script-dashboard.js?v=85`.
+
+## [2026-06-22] — Game coverage cards: 2-column grid layout
+
+### Changed
+- Game coverage "By game" cards now render in a 50/50 two-column CSS grid (`gc-game-grid`) instead of a single full-width stack.
+- `.gc-game-card` no longer carries `margin-bottom` (gap handled by grid).
+- `.gc-game-name` gains `white-space: normal; word-break: break-word` so long game titles wrap gracefully within the narrower column.
+- Bumped to `script-dashboard.js?v=84`, `styles-dashboard.css?v=46`.
+
+## [2026-06-22] — Players table UI polish
+
+### Changed
+- Column captions changed from ALL-CAPS to sentence case (Name, Department, Pass rate, Score, Sessions, XP, League, Last play).
+- Name column now shows a circular initials avatar (`#d8dde8` background, `#1C2333` text) before the player name.
+- Name link colour changed from blue (`#1d4ed8`) to primary dark (`#1C2333`).
+- League badges changed from outline pills to soft filled pills: Diamond (`#e6f7f5`/teal), Gold (`#fef3c7`/amber), Silver (`#f1f5f9`/slate), Bronze (`#fef0e0`/tan).
+- DX grid header row: white background (`#fafbfc`), `#374151` label colour, `font-weight: 600`, no text-transform.
+- Row divider lightened to `#f1f5f9`; row hover uses `#f8fafc`; row padding tightened to 9 px top/bottom.
+- Action dots (⋮) muted to `#cbd5e1` at rest, `#475569` on hover.
+- Bumped to `script-dashboard.js?v=83`, `styles-dashboard.css?v=45`.
+
 ## [2026-06-22] — Players breadcrumb inline with sub-tabs
 
 ### Changed

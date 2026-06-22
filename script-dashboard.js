@@ -1420,13 +1420,13 @@
         '</div>';
 
         var gridHtml =
-            '<div class="dash-table-card" style="margin-top:16px">' +
-                '<div class="plr-search-row">' +
-                    '<div class="plr-search-bar">' +
-                        '<input type="text" class="plr-search-input" id="plrSearchInput" placeholder="Search..." oninput="window.plrSearch()">' +
-                        '<button class="plr-search-btn" onclick="window.plrSearch()"><i class="fas fa-search"></i></button>' +
-                    '</div>' +
+            '<div class="plr-search-row">' +
+                '<div class="plr-search-bar">' +
+                    '<input type="text" class="plr-search-input" id="plrSearchInput" placeholder="Search..." oninput="window.plrSearch()">' +
+                    '<button class="plr-search-btn" onclick="window.plrSearch()"><i class="fas fa-search"></i></button>' +
                 '</div>' +
+            '</div>' +
+            '<div class="dash-table-card" style="margin-top:8px">' +
                 '<div id="dashPlayersGrid"></div>' +
             '</div>';
 
@@ -1549,25 +1549,30 @@
             hoverStateEnabled: true,
             searchPanel: { visible: false, width: 220 },
             columns: [
-                { dataField: 'name', caption: 'NAME', minWidth: 120,
+                { dataField: 'name', caption: 'Name', width: 220,
                     cellTemplate: function(container, options) {
-                        $('<span>').addClass('plr-name-link').text(options.value).appendTo(container);
+                        var parts    = String(options.value).trim().split(/\s+/);
+                        var initials = parts.map(function(w) { return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
+                        var $cell = $('<span>').addClass('plr-name-cell');
+                        $('<span>').addClass('plr-avatar').text(initials).appendTo($cell);
+                        $('<span>').addClass('plr-name-link').text(options.value).appendTo($cell);
+                        $cell.appendTo(container);
                     } },
-                { dataField: 'department', caption: 'DEPARTMENT', minWidth: 110 },
-                { dataField: 'passRate',   caption: 'PASS RATE',  width: 105, alignment: 'right',
+                { dataField: 'department', caption: 'Department', minWidth: 160 },
+                { dataField: 'passRate',   caption: 'Pass rate',  width: 90, alignment: 'left',
                     customizeText: function(info) { return info.value === null ? '—' : parseFloat(info.value).toFixed(1) + '%'; } },
-                { dataField: 'score',      caption: 'SCORE',      width: 90,  alignment: 'right',
+                { dataField: 'score',      caption: 'Score',      width: 90, alignment: 'left',
                     customizeText: function(info) { return info.value === null ? '—' : parseFloat(info.value).toFixed(1) + '%'; } },
-                { dataField: 'sessions',   caption: 'SESSIONS',   width: 90,  alignment: 'right' },
-                { dataField: 'xp',         caption: 'XP',         width: 85,  alignment: 'right',
+                { dataField: 'sessions',   caption: 'Sessions',   width: 90, alignment: 'left' },
+                { dataField: 'xp',         caption: 'XP',         width: 90, alignment: 'left',
                     customizeText: function(info) { return Number(info.value).toLocaleString(); } },
-                { dataField: 'league', caption: 'LEAGUE', width: 130, alignment: 'center',
+                { dataField: 'league', caption: 'League', width: 100, alignment: 'center',
                     cssClass: 'plr-league-col',
                     cellTemplate: function(container, options) {
                         if (!options.value) return;
                         $('<span>').addClass('plr-league-badge plr-league-' + String(options.value).toLowerCase()).text(options.value).appendTo(container);
                     } },
-                { dataField: 'lastPlay', caption: 'LAST PLAY', width: 130,
+                { dataField: 'lastPlay', caption: 'Last play', width: 110,
                     customizeText: function(info) { return info.value || '—'; } },
                 { caption: '', width: 44, allowSorting: false, allowFiltering: false,
                     cellTemplate: function(container) {
@@ -1690,9 +1695,9 @@
             '<div class="dash-table-card">' +
                 /* Filter bar */
                 '<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-                    '<div style="position:relative;flex:1;min-width:160px;max-width:240px">' +
-                        '<i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px"></i>' +
-                        '<input id="gadSearchInput" type="text" placeholder="Search player or dealer..." oninput="gadSearch(this.value)" value="' + esc(_gadSearch) + '" style="width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;outline:none;box-sizing:border-box;font-family:inherit">' +
+                    '<div class="plr-search-bar" style="flex:1;min-width:160px;max-width:240px">' +
+                        '<input id="gadSearchInput" type="text" class="plr-search-input" placeholder="Search player or dealer..." oninput="gadSearch(this.value)" value="' + esc(_gadSearch) + '">' +
+                        '<button class="plr-search-btn" onclick="gadSearch(document.getElementById(\'gadSearchInput\').value)"><i class="fas fa-search"></i></button>' +
                     '</div>' +
                     '<select onchange="gadSetDept(this.value)" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:#1e293b;background:#fff;cursor:pointer;font-family:inherit">' + deptOptions + '</select>' +
                     '<button id="gadNcBtn" onclick="gadToggleNc()" style="padding:6px 14px;border:1px solid ' + (ncActive ? 'var(--chrome-bg)' : 'var(--border)') + ';border-radius:6px;font-size:12px;cursor:pointer;color:' + (ncActive ? '#fff' : '#1e293b') + ';background:' + (ncActive ? 'var(--chrome-bg)' : '#fff') + ';font-family:inherit">Non-compliant only</button>' +
@@ -1780,9 +1785,9 @@
         el.innerHTML =
             /* KPI + threshold */
             '<div style="display:flex;align-items:flex-end;gap:24px;margin-bottom:20px">' +
-                '<div class="ov-kpi-card" style="min-width:200px;flex-shrink:0">' +
-                    '<div class="ov-kpi-label">Inactive players</div>' +
-                    '<div class="ov-kpi-value" id="inactiveCount">' + players.length + '</div>' +
+                '<div class="ov-kpi-card" style="border-left-color:#1C2333;min-width:200px;flex-shrink:0">' +
+                    '<div class="ov-kpi-lbl">Inactive players</div>' +
+                    '<div class="ov-kpi-val" id="inactiveCount">' + players.length + '</div>' +
                 '</div>' +
                 '<div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;font-size:14px;color:#475569">' +
                     '<span>Days inactive (threshold)</span>' +
@@ -1794,11 +1799,10 @@
 
             /* Search + table */
             '<div class="dash-table-card">' +
-                '<div style="padding:10px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:10px">' +
-                    '<div style="position:relative;max-width:320px">' +
-                        '<input id="inactiveSearch" type="text" placeholder="Search..." oninput="window.inactiveRefreshList()" ' +
-                            'style="padding:8px 36px 8px 12px;width:260px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;outline:none">' +
-                        '<i class="fas fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none"></i>' +
+                '<div style="padding:10px 16px;border-bottom:1px solid #e5e7eb">' +
+                    '<div class="plr-search-bar">' +
+                        '<input id="inactiveSearch" type="text" class="plr-search-input" placeholder="Search..." oninput="window.inactiveRefreshList()">' +
+                        '<button class="plr-search-btn"><i class="fas fa-search"></i></button>' +
                     '</div>' +
                 '</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 16px;border-bottom:1px solid #e5e7eb">' +
@@ -1859,7 +1863,7 @@
         }
 
         function gcBarColor(pct) {
-            return pct >= 50 ? '#f59e0b' : pct > 0 ? '#ef4444' : '#e2e8f0';
+            return pct > 0 ? '#1C2333' : '#e2e8f0';
         }
 
         /* ── By game rows ── */
@@ -1920,32 +1924,45 @@
         var avgCovPct  = allPlayers.length > 0
             ? (allPlayers.reduce(function(s, p) { return s + p.played; }, 0) / (allPlayers.length * totalGames) * 100).toFixed(1)
             : '0.0';
+        var avgGames   = allPlayers.length > 0
+            ? (allPlayers.reduce(function(s, p) { return s + p.played; }, 0) / allPlayers.length).toFixed(1)
+            : '0.0';
 
         /* ── Build HTML ── */
         var subTabs = '<div class="gc-sub-tabs">' + subBtn('By game', 'bygame') + subBtn('By player', 'byplayer') + '</div>';
 
         var byGameHtml =
-            '<div style="margin:20px 0">' +
-                '<div class="ov-kpi-card" style="display:inline-block;min-width:220px">' +
-                    '<div class="ov-kpi-label">Game coverage</div>' +
-                    '<div class="ov-kpi-value">' + coverage.coveragePct.toFixed(1) + '%</div>' +
+            '<div style="display:flex;gap:16px;align-items:stretch;margin:20px 0">' +
+                '<div style="flex:0 0 20%">' +
+                    '<div class="ov-kpi-card" style="border-left-color:#1C2333;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between">' +
+                        '<div>' +
+                            '<div class="ov-kpi-lbl">Game coverage</div>' +
+                            '<div class="ov-kpi-val">' + coverage.coveragePct.toFixed(1) + '%</div>' +
+                        '</div>' +
+                        '<div style="font-size:12px;color:#64748b;line-height:1.9">' +
+                            '<div>' + fullCount + ' of ' + totalPlrs + ' players complete</div>' +
+                            '<div>avg ' + avgGames + ' / ' + totalGames + ' games per player</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="flex:1">' +
+                    '<div class="dash-table-card" style="height:100%;box-sizing:border-box">' +
+                        '<div style="padding:16px 20px 10px;font-size:14px;color:#475569;font-weight:500">Game coverage over time</div>' +
+                        '<div id="gcTimeChart" style="height:240px;padding:0 16px 0"></div>' +
+                    '</div>' +
                 '</div>' +
             '</div>' +
-            '<div class="dash-table-card" style="margin-bottom:20px">' +
-                '<div style="padding:16px 20px 10px;font-size:14px;color:#475569;font-weight:500">Game coverage over time</div>' +
-                '<div id="gcTimeChart" style="height:220px;padding:0 16px 16px"></div>' +
-            '</div>' +
-            '<div>' + gameRows() + '</div>';
+            '<div class="gc-game-grid">' + gameRows() + '</div>';
 
         var byPlayerHtml =
             '<div class="gc-kpi-row">' +
-                '<div class="ov-kpi-card"><div class="ov-kpi-label">Games this period</div><div class="ov-kpi-value">' + totalGames + '</div></div>' +
-                '<div class="ov-kpi-card"><div class="ov-kpi-label">Full coverage</div><div class="ov-kpi-value">' + fullCount + '</div></div>' +
-                '<div class="ov-kpi-card"><div class="ov-kpi-label">Incomplete</div><div class="ov-kpi-value">' + incomplete + '</div></div>' +
-                '<div class="ov-kpi-card"><div class="ov-kpi-label">Avg. coverage</div><div class="ov-kpi-value">' + avgCovPct + '%</div></div>' +
+                '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Games this period</div><div class="ov-kpi-val">' + totalGames + '</div></div>' +
+                '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Full coverage</div><div class="ov-kpi-val">' + fullCount + '</div></div>' +
+                '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Incomplete</div><div class="ov-kpi-val">' + incomplete + '</div></div>' +
+                '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Avg. coverage</div><div class="ov-kpi-val">' + avgCovPct + '%</div></div>' +
             '</div>' +
             '<div style="margin:12px 0 10px">' +
-                '<span style="font-size:13px;color:#2563eb;text-decoration:underline;cursor:pointer">Games loaded (' + totalGames + ')</span>' +
+                '<span id="gcGamesLoadedBadge" style="display:inline-block;background:#d8dde8;color:#1C2333;font-size:12px;font-weight:600;padding:3px 12px;border-radius:20px;letter-spacing:0.2px;cursor:default">Games loaded: ' + totalGames + '</span>' +
             '</div>' +
             '<div class="gc-filter-bar">' +
                 '<input id="gcPlayerSearch" type="text" placeholder="Search player or dealer" oninput="window.gcFilterPlayers()" ' +
@@ -1974,12 +1991,13 @@
                     legend: { visible: true, position: 'bottom', horizontalAlignment: 'center',
                         customizeItems: function() { return [{ text: 'Coverage %', marker: { fill: '#0f172a' } }]; }
                     },
-                    argumentAxis: { label: { font: { size: 11 } }, tick: { visible: false } },
+                    argumentAxis: { label: { font: { size: 11 } }, tick: { visible: false }, endOnTick: false },
                     valueAxis: { min: 0, label: { font: { size: 11 } }, grid: { visible: true, color: '#f1f5f9' } },
                     commonSeriesSettings: { argumentField: 'label' },
                     tooltip: { enabled: true, cornerRadius: 6,
                         customizeTooltip: function(info) { return { text: info.argument + ': ' + info.value + '%' }; } },
-                    size: { height: 220 }
+                    margin: { right: 24 },
+                    size: { height: 240 }
                 });
             }, 0);
         }
@@ -1992,6 +2010,22 @@
             $('#gcDeptFilter').dxSelectBox({
                 items: depts, value: 'All departments', width: 160,
                 onValueChanged: function() { window.gcFilterPlayers(); }
+            });
+
+            var gameListHtml = BASE_GAMES.map(function(name, i) {
+                return '<div style="padding:3px 0;font-size:12px;color:#1e293b;text-align:left">' +
+                    '<span style="color:#94a3b8;min-width:20px;display:inline-block;font-size:11px">' + (i + 1) + '.</span>' +
+                    name +
+                '</div>';
+            }).join('');
+            $('<div>').appendTo('body').dxTooltip({
+                target: '#gcGamesLoadedBadge',
+                showEvent: 'mouseenter',
+                hideEvent: 'mouseleave',
+                position: 'bottom',
+                contentTemplate: function(content) {
+                    content.html('<div style="padding:6px 4px;max-height:300px;overflow-y:auto;min-width:200px;text-align:left">' + gameListHtml + '</div>');
+                }
             });
         }
 
@@ -2119,11 +2153,11 @@
         var rowData = depts.map(function(dep) { return { dep: dep, html: buildRow(dep) }; });
 
         document.getElementById('dashDeptPanel').innerHTML =
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">' +
-                '<input type="text" id="deptOvSearchInput" placeholder="Search..." oninput="deptOvSearch(this.value)"' +
-                    ' style="flex:1;max-width:340px;padding:8px 14px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;color:#374151;outline:none">' +
-                '<button style="width:36px;height:36px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#64748b;cursor:pointer">' +
-                    '<i class="fas fa-search" style="font-size:13px"></i></button>' +
+            '<div class="plr-search-row" style="margin-top:0;margin-bottom:14px">' +
+                '<div class="plr-search-bar">' +
+                    '<input type="text" class="plr-search-input" id="deptOvSearchInput" placeholder="Search..." oninput="deptOvSearch(this.value)">' +
+                    '<button class="plr-search-btn"><i class="fas fa-search"></i></button>' +
+                '</div>' +
             '</div>' +
             '<div class="dash-table-card" style="margin-bottom:16px">' +
                 '<table class="dash-perf-table">' +
@@ -2609,10 +2643,10 @@
 
         html += '<p class="gam-streak-desc">A period counts toward the streak when a player is active on at least the required number of days within it.</p>';
 
-        html += '<div class="gam-streak-kpi-row">' +
-            '<div class="gam-streak-kpi-card"><div class="gam-streak-kpi-lbl">Active streaks</div><div class="gam-streak-kpi-val">' + activeStreaks + '</div></div>' +
-            '<div class="gam-streak-kpi-card"><div class="gam-streak-kpi-lbl">Avg. current streak</div><div class="gam-streak-kpi-val">' + avgCur.toFixed(2) + '</div></div>' +
-            '<div class="gam-streak-kpi-card"><div class="gam-streak-kpi-lbl">Avg. longest streak</div><div class="gam-streak-kpi-val">' + avgLng.toFixed(2) + '</div></div>' +
+        html += '<div class="gc-kpi-row" style="grid-template-columns:repeat(3,1fr)">' +
+            '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Active streaks</div><div class="ov-kpi-val">' + activeStreaks + '</div></div>' +
+            '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Avg. current streak</div><div class="ov-kpi-val">' + avgCur.toFixed(2) + '</div></div>' +
+            '<div class="ov-kpi-card" style="border-left-color:#1C2333"><div class="ov-kpi-lbl">Avg. longest streak</div><div class="ov-kpi-val">' + avgLng.toFixed(2) + '</div></div>' +
         '</div>';
 
         html += '<div class="gam-dept-avg-card"><div class="gam-dept-avg-title">Department averages</div>';
