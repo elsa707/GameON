@@ -1328,16 +1328,18 @@
 
         /* Build flat rows */
         var allGameRows = BASE_GAMES.map(function(name, i) {
-            var p       = d.perf[i] || { plays: 0, accuracy: 0, playTime: 1 };
-            var minPlay = parseFloat((p.playTime * 7).toFixed(1));
+            var p        = d.perf[i] || { plays: 0, accuracy: 0, playTime: 1 };
+            var attempted = Math.min(profile.players, Math.max(p.plays > 0 ? 1 : 0, Math.round(p.plays / 15)));
             return {
-                name:     name,
-                topic:    idxToTopic[i] || 'No topic',
-                plays:    p.plays,
-                accuracy: parseFloat(p.accuracy.toFixed(1)),
-                playTime: minPlay
+                name:       name,
+                topic:      idxToTopic[i] || 'No topic',
+                assigned:   profile.players,
+                attempted:  attempted,
+                completion: parseFloat(p.accuracy.toFixed(1)),
+                accuracy:   parseFloat(p.accuracy.toFixed(1)),
+                playTime:   fmtGamePlayTime(p.playTime)
             };
-        }).sort(function(a, b) { return b.plays - a.plays; });
+        });
 
         var topics = ['All topics'].concat(GAME_TOPICS.map(function(tg) { return tg.topic; }));
 
@@ -1388,21 +1390,20 @@
             paging: { pageSize: 20 },
             pager: { showPageSizeSelector: false, showInfo: true },
             columns: [
-                { dataField: 'name',     caption: 'Game Name',        minWidth: 220 },
-                { dataField: 'plays',    caption: 'Plays',             width: 90,  alignment: 'left' },
-                { dataField: 'accuracy', caption: 'Answer Accuracy',   width: 260, alignment: 'left',
+                { dataField: 'name',       caption: 'Game Name',      minWidth: 200 },
+                { dataField: 'assigned',   caption: 'Assigned',       width: 110, alignment: 'left' },
+                { dataField: 'attempted',  caption: 'Attempted',      width: 110, alignment: 'left' },
+                { dataField: 'completion', caption: 'Completion %',   width: 130, alignment: 'left',
                   cellTemplate: function(container, options) {
-                      var pct = options.value || 0;
-                      $('<div>').css({ display: 'flex', alignItems: 'center', gap: '10px' })
-                          .append(
-                              $('<div>').css({ flex: '1', background: '#e5e7eb', borderRadius: '3px', height: '6px', minWidth: '120px', overflow: 'hidden' })
-                                  .append($('<div>').css({ width: pct + '%', height: '100%', background: '#dc2626', borderRadius: '3px' }))
-                          )
-                          .append($('<span>').css({ fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' }).text(pct.toFixed(1) + '%'))
-                          .appendTo(container);
+                      $('<span>').text(options.value + '%').appendTo(container);
                   }
                 },
-                { dataField: 'playTime', caption: 'Play Time (min)',   width: 140, alignment: 'left',
+                { dataField: 'accuracy',   caption: 'Avg. Accuracy',  width: 130, alignment: 'left',
+                  cellTemplate: function(container, options) {
+                      $('<span>').text(options.value + '%').appendTo(container);
+                  }
+                },
+                { dataField: 'playTime',   caption: 'Avg. Play Time', width: 140, alignment: 'left',
                   cellTemplate: function(container, options) {
                       $('<span>').css({ color: '#64748b' }).text(options.value).appendTo(container);
                   }

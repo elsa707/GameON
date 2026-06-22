@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Games Overview: columns updated to Assigned/Attempted/Completion/Accuracy/Play Time
+
+### Changed
+- Games Overview grid columns changed to: Game Name, Assigned, Attempted, Completion %, Avg. Accuracy, Avg. Play Time (h:m:s format).
+- Bumped to `script-dashboard.js?v=104`.
+
 ## [2026-06-22] — Games Overview: match client Game Performance table columns
 
 ### Changed
