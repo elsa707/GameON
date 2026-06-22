@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — index2.html Players tab: add Inactive / Game coverage / Leave & exclusions sub-tabs
+
+### Added
+- Players sub-tab bar in index2.html now includes Inactive, Game coverage, and Leave & exclusions tabs (matching the full Players tab set in index.html). The matching sub-panels (`dashPlayersInactive`, `dashPlayersGamesPlayed`, `dashPlayersLeave`) are already rendered by `refreshAll()` so no JS changes to script-dashboard.js were needed.
+- `script-dashboard2.js` v=6: added `PLAYERS_SUBS` array; `subsFor('players')` returns it instead of `CONTENT_SUBS`.
+
 ## [2026-06-22] — Period filter: quick-select pills (This month / Last month / Last 3 months / Last 6 months)
 
 ### Added

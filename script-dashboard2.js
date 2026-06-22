@@ -8,11 +8,21 @@
 (function ($) {
     'use strict';
 
-    /* Sub-tabs shown for all content tabs (Summary/Players/Games/Departments) */
+    /* Sub-tabs shown for Summary / Games / Departments */
     var CONTENT_SUBS = [
         { text: 'Overview',              key: 'overview'           },
         { text: 'Trends',                key: 'trends'             },
         { text: 'Forecasts & anomalies', key: 'forecastsanomalies' }
+    ];
+
+    /* Sub-tabs for Players — extends CONTENT_SUBS with three extra tabs */
+    var PLAYERS_SUBS = [
+        { text: 'Overview',              key: 'overview'           },
+        { text: 'Trends',                key: 'trends'             },
+        { text: 'Forecasts & anomalies', key: 'forecastsanomalies' },
+        { text: 'Inactive',              key: 'inactive'           },
+        { text: 'Game coverage',         key: 'gamecoverage'       },
+        { text: 'Leave & exclusions',    key: 'leave'              }
     ];
 
     var GAM_SUBS = [
@@ -24,6 +34,7 @@
 
     function subsFor(tab) {
         if (tab === 'gamification') return GAM_SUBS;
+        if (tab === 'players')      return PLAYERS_SUBS;
         return CONTENT_SUBS;
     }
 
