@@ -795,22 +795,10 @@
         return anomalies;
     }
 
-    function renderForecastsAnomaliesPanel(elId, companyId) {
+    function renderForecastsPanel(elId, companyId) {
         var el = document.getElementById(elId);
         if (!el) return;
-
-        var forecast  = buildForecastMetrics(companyId);
-        var anomalies = buildDailyAnomalies(companyId);
-
-        var anomalyRowsHtml = anomalies.length === 0
-            ? '<p class="fc-no-anomalies"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</p>'
-            : anomalies.map(function(a) {
-                return '<div class="fc-anomaly-row">' +
-                    '<span class="fc-anomaly-date">' + esc(a.date) + '</span>' +
-                    '<span class="fc-anomaly-pct">' + a.pct.toFixed(1) + '%</span>' +
-                '</div>';
-            }).join('');
-
+        var forecast = buildForecastMetrics(companyId);
         el.innerHTML =
             '<h3 class="fc-section-title">Forecasts</h3>' +
             '<div class="fc-card">' +
@@ -819,8 +807,23 @@
                     '<div class="fc-metric"><div class="fc-metric-lbl">Participation rate</div><div class="fc-metric-val">' + forecast.participation + '%</div><div class="fc-metric-sub">Projected next period</div></div>' +
                     '<div class="fc-metric"><div class="fc-metric-lbl">Avg. accuracy</div><div class="fc-metric-val">' + forecast.accuracy + '%</div><div class="fc-metric-sub">Projected next period</div></div>' +
                 '</div>' +
-            '</div>' +
-            '<h3 class="fc-section-title" style="margin-top:28px">Anomalies</h3>' +
+            '</div>';
+    }
+
+    function renderSimpleAnomaliesPanel(elId, companyId) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        var anomalies = buildDailyAnomalies(companyId);
+        var anomalyRowsHtml = anomalies.length === 0
+            ? '<p class="fc-no-anomalies"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</p>'
+            : anomalies.map(function(a) {
+                return '<div class="fc-anomaly-row">' +
+                    '<span class="fc-anomaly-date">' + esc(a.date) + '</span>' +
+                    '<span class="fc-anomaly-pct">' + a.pct.toFixed(1) + '%</span>' +
+                '</div>';
+            }).join('');
+        el.innerHTML =
+            '<h3 class="fc-section-title">Anomalies</h3>' +
             '<div class="fc-card">' +
                 '<div class="fc-card-title">Anomalies detected</div>' +
                 '<div class="fc-card-sub">Periods where participation dropped more than 10% below the period average</div>' +
@@ -828,12 +831,16 @@
             '</div>';
     }
 
-    function renderSummaryForecastsAnomalies() {
-        renderForecastsAnomaliesPanel('dashSummaryForecastAnomalies', state.companyId);
+    function renderSummaryForecasts() {
+        renderForecastsPanel('dashSummaryForecasts', state.companyId);
     }
 
-    function renderPlayersForecastsAnomalies() {
-        renderForecastsAnomaliesPanel('dashPlayersForecastAnomalies', state.companyId);
+    function renderSummaryForecastAnomaliesTab() {
+        renderSimpleAnomaliesPanel('dashSummaryAnomalies', state.companyId);
+    }
+
+    function renderPlayersForecasts() {
+        renderForecastsPanel('dashPlayersForecasts', state.companyId);
     }
 
     function renderSummaryForecast() {
@@ -1257,6 +1264,29 @@
                 '<div class="fc-card-title">Underperforming departments</div>' +
                 '<div class="fc-card-sub">Departments with participation rate more than 15% below company average</div>' +
                 anomalyContent +
+            '</div>';
+    }
+
+    function renderDeptForecasts() {
+        var el = document.getElementById('dashDeptForecasts');
+        if (!el) return;
+        var depts = getDeptPlayers(state.companyId);
+        var forecastRows = depts.map(function(d) {
+            var part   = d.total > 0 ? d.active / d.total * 100 : 0;
+            var growth = 1.5 + (d.name.charCodeAt(0) % 5) * 0.6;
+            var proj   = Math.min(100, part + growth).toFixed(1);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                    'padding:12px 0;border-bottom:1px solid #f1f5f9">' +
+                '<span style="font-size:14px;color:#374151">' + esc(d.name) + '</span>' +
+                '<span><strong style="font-size:15px;color:#0f172a;margin-right:6px">' + proj + '%</strong>' +
+                    '<span style="font-size:13px;color:#94a3b8">Projected next period</span></span>' +
+            '</div>';
+        }).join('');
+        el.innerHTML =
+            '<h3 class="fc-section-title">Forecasts</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Participation rate forecast</div>' +
+                '<div style="margin-top:4px">' + forecastRows + '</div>' +
             '</div>';
     }
 
@@ -2807,21 +2837,21 @@
         renderHeaderStats();
         renderSummaryOverview();
         renderSummaryTrends();
-        renderSummaryForecast();
-        renderSummaryAnomalies();
-        renderSummaryForecastsAnomalies();
+        renderSummaryForecasts();
+        renderSummaryForecastAnomaliesTab();
         renderGamesOverview();
         renderGamesAnomalies();
         renderTrendsCharts('dashGamesTrends', 'gms');
         renderPlayersOverview();
         renderPlayersInactive();
         renderPlayersGamesPlayed();
+        renderPlayersForecasts();
         renderPlayersAnomalies();
         renderPlayersTrends();
-        renderPlayersForecastsAnomalies();
         renderPlayersLeave();
         renderDepartmentsOverview();
-        renderDeptForecastsAnomalies();
+        renderDeptForecasts();
+        renderDeptAnomalies();
         renderTrendsCharts('dashDeptTrends', 'dpt');
         renderRegionalOverview();
         renderGamificationLeagues();
@@ -2850,18 +2880,20 @@
 
     function getSubTabItems(mainTab) {
         var base = [
-            { text: 'Overview',              key: 'overview' },
-            { text: 'Trends',                key: 'trends' },
-            { text: 'Forecasts & anomalies', key: 'forecastsanomalies' }
+            { text: 'Overview',   key: 'overview' },
+            { text: 'Trends',     key: 'trends' },
+            { text: 'Forecasts',  key: 'forecasts' },
+            { text: 'Anomalies',  key: 'anomalies' }
         ];
         if (mainTab === 'players') {
             return [
-                { text: 'Overview',              key: 'overview' },
-                { text: 'Trends',                key: 'trends' },
-                { text: 'Forecasts & anomalies', key: 'forecastsanomalies' },
-                { text: 'Inactive',              key: 'inactive' },
-                { text: 'Game coverage',         key: 'gamecoverage' },
-                { text: 'Leave & exclusions',    key: 'leave' }
+                { text: 'Overview',           key: 'overview' },
+                { text: 'Trends',             key: 'trends' },
+                { text: 'Forecasts',          key: 'forecasts' },
+                { text: 'Anomalies',          key: 'anomalies' },
+                { text: 'Inactive',           key: 'inactive' },
+                { text: 'Game coverage',      key: 'gamecoverage' },
+                { text: 'Leave & exclusions', key: 'leave' }
             ];
         }
         if (mainTab === 'gamification') {

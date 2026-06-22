@@ -100,36 +100,39 @@
 
             <!-- SUMMARY panel -->
             <div class="dash-panel active" data-panel="summary">
-                <div class="dash-sub-panel active" data-sub="overview"           id="dashSummaryOverview"></div>
-                <div class="dash-sub-panel"        data-sub="trends"             id="dashSummaryTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashSummaryForecastAnomalies"></div>
+                <div class="dash-sub-panel active" data-sub="overview"   id="dashSummaryOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"     id="dashSummaryTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecasts"  id="dashSummaryForecasts"></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"  id="dashSummaryAnomalies"></div>
                 <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- PLAYERS panel -->
             <div class="dash-panel" data-panel="players">
-                <div class="dash-sub-panel active" data-sub="overview"           id="dashPlayersPanel"></div>
-                <div class="dash-sub-panel"        data-sub="trends"             id="dashPlayersTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashPlayersForecastAnomalies"></div>
-                <div class="dash-sub-panel"        data-sub="inactive"           id="dashPlayersInactive"></div>
-                <div class="dash-sub-panel"        data-sub="gamecoverage"       id="dashPlayersGamesPlayed"></div>
-                <div class="dash-sub-panel"        data-sub="leave"             id="dashPlayersLeave"></div>
+                <div class="dash-sub-panel active" data-sub="overview"      id="dashPlayersPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"        id="dashPlayersTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecasts"     id="dashPlayersForecasts"></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"     id="dashPlayersAnomalies"></div>
+                <div class="dash-sub-panel"        data-sub="inactive"      id="dashPlayersInactive"></div>
+                <div class="dash-sub-panel"        data-sub="gamecoverage"  id="dashPlayersGamesPlayed"></div>
+                <div class="dash-sub-panel"        data-sub="leave"         id="dashPlayersLeave"></div>
             </div>
 
             <!-- GAMES panel -->
             <div class="dash-panel" data-panel="games">
-                <div class="dash-sub-panel active" data-sub="overview"  id="dashGamesOverview"></div>
-                <div class="dash-sub-panel"        data-sub="trends"    id="dashGamesTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecast"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
-                <div class="dash-sub-panel"        data-sub="anomalies" id="dashGamesAnomalies"></div>
+                <div class="dash-sub-panel active" data-sub="overview"   id="dashGamesOverview"></div>
+                <div class="dash-sub-panel"        data-sub="trends"     id="dashGamesTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecasts"><div class="dash-sub-placeholder"><i class="fas fa-chart-bar"></i><h4>Forecast</h4><p>Coming soon.</p></div></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"  id="dashGamesAnomalies"></div>
                 <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
             <!-- DEPARTMENTS panel -->
             <div class="dash-panel" data-panel="departments">
-                <div class="dash-sub-panel active" data-sub="overview"          id="dashDeptPanel"></div>
-                <div class="dash-sub-panel"        data-sub="trends"            id="dashDeptTrends"></div>
-                <div class="dash-sub-panel"        data-sub="forecastsanomalies" id="dashDeptForecastAnomalies"></div>
+                <div class="dash-sub-panel active" data-sub="overview"   id="dashDeptPanel"></div>
+                <div class="dash-sub-panel"        data-sub="trends"     id="dashDeptTrends"></div>
+                <div class="dash-sub-panel"        data-sub="forecasts"  id="dashDeptForecasts"></div>
+                <div class="dash-sub-panel"        data-sub="anomalies"  id="dashDeptAnomalies"></div>
                 <div class="dash-sub-panel"        data-sub="leave"><div class="dash-sub-placeholder"><i class="fas fa-user-clock"></i><h4>Leave &amp; Exclusions</h4><p>Coming soon.</p></div></div>
             </div>
 
@@ -191,6 +194,6 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 </script>
 <script src="script-sidebar-scope.js"></script>
-<script src="script-dashboard.js?v=100"></script>
+<script src="script-dashboard.js?v=101"></script>
 </body>
 </html>

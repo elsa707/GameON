@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Split "Forecasts & anomalies" into two separate sub-tabs
+
+### Changed
+- "Forecasts & anomalies" sub-tab split into "Forecasts" and "Anomalies" as individual tabs across all main tab panels (Summary, Players, Games, Departments).
+- Each tab now shows only its relevant content instead of a combined scrolling view.
+- New render functions: `renderForecastsPanel`, `renderSimpleAnomaliesPanel`, `renderSummaryForecasts`, `renderPlayersForecasts`, `renderDeptForecasts`.
+- Bumped to `script-dashboard.js?v=101`.
+
 ## [2026-06-22] — Games overview: topic accordion closes previous on open
 
 ### Changed
