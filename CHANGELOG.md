@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Shared grid styling; Games Overview search-only toolbar
+
+### Changed
+- Consolidated all dxDataGrid header/row CSS into a single `.dash-grid` class. Every dashboard grid (`#dashPlayersGrid`, `#gmsGrid`, `#gamScoreGrid`, `#gamStreaksGrid`) now shares: `#fafbfc` header background, `#374151` text, 12px semi-bold headers with no text-transform, 14px header padding, 9px row padding, `#f1f5f9` row dividers, `#f8fafc` hover background.
+- Games Overview toolbar: removed topic filter dropdown, keeping only the search bar.
+- Version bumps: `script-dashboard.js?v=105`, `styles-dashboard.css?v=53` (forces browser cache refresh, fixing Forecasts/Anomalies split for users still seeing old cached files).
+
 ## [2026-06-22] — Games Overview: columns updated to Assigned/Attempted/Completion/Accuracy/Play Time
 
 ### Changed

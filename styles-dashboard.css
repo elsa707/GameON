@@ -2345,25 +2345,29 @@
 .gms-status-active { background: #dcfce7; color: #16a34a; }
 .gms-status-none   { background: #f1f5f9; color: #94a3b8; }
 
-#gmsGrid .dx-datagrid-headers {
+/* ===== Shared dashboard grid styling (all dxDataGrids) ===== */
+.dash-grid .dx-datagrid-headers {
     background: #fafbfc !important;
     border-bottom: 1px solid #e5e7eb !important;
 }
-#gmsGrid .dx-datagrid-headers .dx-datagrid-text-content {
+.dash-grid .dx-datagrid-headers .dx-datagrid-text-content {
     color: #374151 !important;
     font-weight: 600 !important;
     font-size: 12px !important;
     text-transform: none !important;
 }
-#gmsGrid .dx-header-row > td { padding-top: 12px !important; padding-bottom: 12px !important; }
-#gmsGrid .dx-datagrid-rowsview .dx-row > td {
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-    border-bottom-color: #f1f5f9 !important;
-    font-size: 13px;
-    color: #374151;
+.dash-grid .dx-header-row > td {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
 }
-#gmsGrid .dx-datagrid-rowsview .dx-state-hover > td { background: #f8fafc !important; }
+.dash-grid .dx-datagrid-rowsview .dx-row > td {
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+    border-bottom-color: #f1f5f9 !important;
+    color: #374151;
+    font-size: 13px;
+}
+.dash-grid .dx-datagrid-rowsview .dx-state-hover > td { background: #f8fafc !important; }
 
 /* ===== Leave & exclusions panel ===== */
 .lve-heading {
@@ -2984,31 +2988,7 @@
 .plr-league-silver  { background: #f1f5f9; color: #475569; }
 .plr-league-bronze  { background: #fef0e0; color: #b45309; }
 
-/* ===== Players grid — DX header and row overrides ===== */
-#dashPlayersGrid .dx-datagrid-headers {
-    background: #fafbfc !important;
-    border-bottom: 1px solid #e5e7eb !important;
-}
-#dashPlayersGrid .dx-datagrid-headers .dx-datagrid-text-content {
-    color: #374151 !important;
-    font-weight: 600 !important;
-    font-size: 12px !important;
-    text-transform: none !important;
-}
-#dashPlayersGrid .dx-header-row > td {
-    padding-top: 14px !important;
-    padding-bottom: 14px !important;
-}
-#dashPlayersGrid .dx-datagrid-rowsview .dx-row > td {
-    padding-top: 9px !important;
-    padding-bottom: 9px !important;
-    border-bottom-color: #f1f5f9 !important;
-    color: #374151;
-    font-size: 13px;
-}
-#dashPlayersGrid .dx-datagrid-rowsview .dx-state-hover > td {
-    background: #f8fafc !important;
-}
+/* Players grid — inherits .dash-grid shared styles above */
 
 /* ── Shared gamification toolbar updates ─────────────────── */
 .gam-player-name-input {

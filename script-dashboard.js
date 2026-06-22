@@ -1341,27 +1341,20 @@
             };
         });
 
-        var topics = ['All topics'].concat(GAME_TOPICS.map(function(tg) { return tg.topic; }));
-
         el.innerHTML =
-            '<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">' +
+            '<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">' +
                 '<div class="plr-search-bar" style="flex:0 0 260px">' +
                     '<input class="plr-search-input" id="gmsOvSearch" placeholder="Search..." oninput="gmsOvFilter()">' +
                     '<button class="plr-search-btn" onclick="gmsOvFilter()"><i class="fas fa-search"></i></button>' +
                 '</div>' +
-                '<div id="gmsTopicFilter" style="min-width:180px"></div>' +
             '</div>' +
-            '<div id="gmsGrid"></div>';
-
-        var _filterTopic = 'All topics';
+            '<div id="gmsGrid" class="dash-grid"></div>';
 
         function filteredRows() {
             var q = (document.getElementById('gmsOvSearch').value || '').toLowerCase();
-            return allGameRows.filter(function(r) {
-                var topicOk = _filterTopic === 'All topics' || r.topic === _filterTopic;
-                var nameOk  = !q || r.name.toLowerCase().indexOf(q) >= 0 || r.topic.toLowerCase().indexOf(q) >= 0;
-                return topicOk && nameOk;
-            });
+            return q ? allGameRows.filter(function(r) {
+                return r.name.toLowerCase().indexOf(q) >= 0 || r.topic.toLowerCase().indexOf(q) >= 0;
+            }) : allGameRows;
         }
 
         function rebuildGrid() {
@@ -1370,14 +1363,6 @@
         }
 
         window.gmsOvFilter = rebuildGrid;
-
-        $('#gmsTopicFilter').dxSelectBox({
-            items: topics,
-            value: 'All topics',
-            width: '100%',
-            stylingMode: 'outlined',
-            onValueChanged: function(e) { _filterTopic = e.value; rebuildGrid(); }
-        });
 
         $('#gmsGrid').dxDataGrid({
             dataSource: allGameRows,
@@ -1474,7 +1459,7 @@
                 '</div>' +
             '</div>' +
             '<div class="dash-table-card" style="margin-top:8px">' +
-                '<div id="dashPlayersGrid"></div>' +
+                '<div id="dashPlayersGrid" class="dash-grid"></div>' +
             '</div>';
 
         /* Secondary nav — only injected when Players is a sub-tab (index2.html),
@@ -2614,7 +2599,7 @@
         });
 
         el.innerHTML = _gamControlsRowHtml('gamScoreDeptBox', 'gamScorePlayerInput', 'gamScoreNameFilter',
-                           _gamPeriodNavHtml(), null, null) + '<div id="gamScoreGrid"></div>';
+                           _gamPeriodNavHtml(), null, null) + '<div id="gamScoreGrid" class="dash-grid"></div>';
 
         _gamInitCascadingDropdowns('gamScoreDeptBox', 'gamScorePlayerInput', function() { renderGamificationScoreboard(); });
 
@@ -2702,7 +2687,7 @@
             html += '<div class="gam-dept-avg-row"><span>' + dept + '</span>' +
                     '<span class="gam-dept-avg-right">Current ' + (dm.cur / dm.n).toFixed(2) + ' | longest ' + (dm.lng / dm.n).toFixed(2) + '</span></div>';
         });
-        html += '</div><div id="gamStreaksGrid"></div>';
+        html += '</div><div id="gamStreaksGrid" class="dash-grid"></div>';
         el.innerHTML = html;
 
         _gamInitCascadingDropdowns('gamStreakDeptBox', 'gamStreakPlayerInput', function() { renderGamificationStreaks(); });
