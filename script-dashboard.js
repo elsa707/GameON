@@ -1435,6 +1435,7 @@
         var needsSecNav = !document.querySelector('[data-panel="players"]');
         var secNavHtml = needsSecNav
             ? '<div class="plr-sec-nav">' +
+                  '<button class="plr-sec-tab active" onclick="window.playerSection(\'overview\')">Overview</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
@@ -1453,15 +1454,19 @@
 
         window.playerSection = function(key) {
             var overviewEl = document.getElementById('plrOverviewContent');
-            if (overviewEl) overviewEl.hidden = true;
             ['dashPlayersInactive', 'dashPlayersGamesPlayed', 'dashPlayersLeave'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.hidden = true;
             });
             document.querySelectorAll('.plr-sec-tab').forEach(function(b) { b.classList.remove('active'); });
-            var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
-            var target = document.getElementById(idMap[key]);
-            if (target) target.hidden = false;
+            if (key === 'overview') {
+                if (overviewEl) overviewEl.hidden = false;
+            } else {
+                if (overviewEl) overviewEl.hidden = true;
+                var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
+                var target = document.getElementById(idMap[key]);
+                if (target) target.hidden = false;
+            }
             document.querySelectorAll('.plr-sec-tab').forEach(function(b) {
                 if ((b.getAttribute('onclick') || '').indexOf("'" + key + "'") !== -1) b.classList.add('active');
             });

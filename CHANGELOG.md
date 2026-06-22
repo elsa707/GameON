@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Players secondary nav: Overview tab added
+
+### Changed
+- Added "Overview" as the first tab in the `.plr-sec-nav` (Inactive / Game coverage / Leave & exclusions) secondary navigation so users can return to the main players screen.
+- `playerSection('overview')` shows `plrOverviewContent` and hides all section panels; Overview tab is active by default on load.
+- Bumped to `script-dashboard.js?v=72`.
+
 ## [2026-06-21] — KPI cards: trend arrow inside pill, primary-colour tint
 
 ### Changed
