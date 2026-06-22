@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Games Overview: match client Game Performance table columns
+
+### Changed
+- Games Overview grid columns updated to match the client's Game Performance table: Game Name, Plays, Answer Accuracy (red progress bar + %), Play Time (min).
+- Rows sorted by plays descending (highest first).
+- Removed Assigned/Attempted/Completion/Status columns; removed status filter dropdown.
+- Bumped to `script-dashboard.js?v=103`.
+
 ## [2026-06-22] — Games Overview: flat dxDataGrid with search and topic/status filters
 
 ### Changed

@@ -1328,19 +1328,16 @@
 
         /* Build flat rows */
         var allGameRows = BASE_GAMES.map(function(name, i) {
-            var p        = d.perf[i] || { plays: 0, accuracy: 0, playTime: 1 };
-            var attempted = Math.min(profile.players, Math.max(p.plays > 0 ? 1 : 0, Math.round(p.plays / 15)));
+            var p       = d.perf[i] || { plays: 0, accuracy: 0, playTime: 1 };
+            var minPlay = parseFloat((p.playTime * 7).toFixed(1));
             return {
-                name:       name,
-                topic:      idxToTopic[i] || 'No topic',
-                assigned:   profile.players,
-                attempted:  attempted,
-                completion: parseFloat(p.accuracy.toFixed(1)),
-                accuracy:   parseFloat(p.accuracy.toFixed(1)),
-                playTime:   fmtGamePlayTime(p.playTime),
-                status:     p.plays > 0 ? 'Active' : 'No plays'
+                name:     name,
+                topic:    idxToTopic[i] || 'No topic',
+                plays:    p.plays,
+                accuracy: parseFloat(p.accuracy.toFixed(1)),
+                playTime: minPlay
             };
-        });
+        }).sort(function(a, b) { return b.plays - a.plays; });
 
         var topics = ['All topics'].concat(GAME_TOPICS.map(function(tg) { return tg.topic; }));
 
@@ -1351,20 +1348,17 @@
                     '<button class="plr-search-btn" onclick="gmsOvFilter()"><i class="fas fa-search"></i></button>' +
                 '</div>' +
                 '<div id="gmsTopicFilter" style="min-width:180px"></div>' +
-                '<div id="gmsStatusFilter" style="min-width:150px"></div>' +
             '</div>' +
             '<div id="gmsGrid"></div>';
 
-        var _filterTopic  = 'All topics';
-        var _filterStatus = 'All statuses';
+        var _filterTopic = 'All topics';
 
         function filteredRows() {
             var q = (document.getElementById('gmsOvSearch').value || '').toLowerCase();
             return allGameRows.filter(function(r) {
-                var topicOk  = _filterTopic  === 'All topics'   || r.topic  === _filterTopic;
-                var statusOk = _filterStatus === 'All statuses' || r.status === _filterStatus;
-                var nameOk   = !q || r.name.toLowerCase().indexOf(q) >= 0 || r.topic.toLowerCase().indexOf(q) >= 0;
-                return topicOk && statusOk && nameOk;
+                var topicOk = _filterTopic === 'All topics' || r.topic === _filterTopic;
+                var nameOk  = !q || r.name.toLowerCase().indexOf(q) >= 0 || r.topic.toLowerCase().indexOf(q) >= 0;
+                return topicOk && nameOk;
             });
         }
 
@@ -1383,14 +1377,6 @@
             onValueChanged: function(e) { _filterTopic = e.value; rebuildGrid(); }
         });
 
-        $('#gmsStatusFilter').dxSelectBox({
-            items: ['All statuses', 'Active', 'No plays'],
-            value: 'All statuses',
-            width: '100%',
-            stylingMode: 'outlined',
-            onValueChanged: function(e) { _filterStatus = e.value; rebuildGrid(); }
-        });
-
         $('#gmsGrid').dxDataGrid({
             dataSource: allGameRows,
             columnAutoWidth: false,
@@ -1402,37 +1388,23 @@
             paging: { pageSize: 20 },
             pager: { showPageSizeSelector: false, showInfo: true },
             columns: [
-                { dataField: 'name',       caption: 'Name',         minWidth: 200,
+                { dataField: 'name',     caption: 'Game Name',        minWidth: 220 },
+                { dataField: 'plays',    caption: 'Plays',             width: 90,  alignment: 'left' },
+                { dataField: 'accuracy', caption: 'Answer Accuracy',   width: 260, alignment: 'left',
                   cellTemplate: function(container, options) {
-                      $('<span>').css({ fontWeight: 600, color: '#0f172a', fontSize: '13px' }).text(options.value).appendTo(container);
+                      var pct = options.value || 0;
+                      $('<div>').css({ display: 'flex', alignItems: 'center', gap: '10px' })
+                          .append(
+                              $('<div>').css({ flex: '1', background: '#e5e7eb', borderRadius: '3px', height: '6px', minWidth: '120px', overflow: 'hidden' })
+                                  .append($('<div>').css({ width: pct + '%', height: '100%', background: '#dc2626', borderRadius: '3px' }))
+                          )
+                          .append($('<span>').css({ fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' }).text(pct.toFixed(1) + '%'))
+                          .appendTo(container);
                   }
                 },
-                { dataField: 'topic',      caption: 'Topic',        width: 180,
-                  cellTemplate: function(container, options) {
-                      $('<span class="gms-topic-pill">').text(options.value).appendTo(container);
-                  }
-                },
-                { dataField: 'assigned',   caption: 'Assigned',     width: 100, alignment: 'left' },
-                { dataField: 'attempted',  caption: 'Attempted',    width: 110, alignment: 'left' },
-                { dataField: 'completion', caption: 'Completion %', width: 130, alignment: 'left',
-                  cellTemplate: function(container, options) {
-                      $('<span>').text(options.value + '%').appendTo(container);
-                  }
-                },
-                { dataField: 'accuracy',   caption: 'Avg. Accuracy',width: 130, alignment: 'left',
-                  cellTemplate: function(container, options) {
-                      $('<span>').text(options.value + '%').appendTo(container);
-                  }
-                },
-                { dataField: 'playTime',   caption: 'Avg. Play Time',width: 130, alignment: 'left',
+                { dataField: 'playTime', caption: 'Play Time (min)',   width: 140, alignment: 'left',
                   cellTemplate: function(container, options) {
                       $('<span>').css({ color: '#64748b' }).text(options.value).appendTo(container);
-                  }
-                },
-                { dataField: 'status',     caption: 'Status',       width: 100, alignment: 'center',
-                  cellTemplate: function(container, options) {
-                      var isActive = options.value === 'Active';
-                      $('<span>').addClass('gms-status-pill ' + (isActive ? 'gms-status-active' : 'gms-status-none')).text(options.value).appendTo(container);
                   }
                 }
             ]
