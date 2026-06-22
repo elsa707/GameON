@@ -17,6 +17,14 @@ Project contact: elsadr@agilebridge.co.za
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
 - Bumped to `script-dashboard.js?v=75`.
 
+## [2026-06-22] — Players navigation: remove breadcrumb; re-click Players to reset
+
+### Changed
+- Removed the `← Players` breadcrumb link entirely from the players secondary nav.
+- Re-clicking the "Players" tab in the main tab bar (index2.html) now resets the secondary nav back to the players overview, following the standard SaaS convention of clicking an active top-level item to reset the view.
+- Wired via `_applySubPanel`: any time the `players` sub-panel is activated, `playerSection('overview')` is called.
+- Bumped to `script-dashboard.js?v=79`.
+
 ## [2026-06-22] — Department Activity chart: fixed height to match Top Games
 
 ### Fixed

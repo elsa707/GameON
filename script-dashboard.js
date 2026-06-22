@@ -1435,10 +1435,6 @@
         var needsSecNav = !document.querySelector('[data-panel="players"]');
         var secNavHtml = needsSecNav
             ? '<div class="plr-sec-nav">' +
-                  '<a class="plr-back-link" id="plrBreadcrumb" onclick="window.playerSection(\'overview\')" hidden>' +
-                      '<i class="fas fa-chevron-left"></i> Players' +
-                  '</a>' +
-                  '<span class="plr-sec-sep" id="plrBreadcrumbSep" hidden></span>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
@@ -1456,29 +1452,23 @@
             secPanelsHtml;
 
         window.playerSection = function(key) {
-            var overviewEl  = document.getElementById('plrOverviewContent');
-            var breadcrumb  = document.getElementById('plrBreadcrumb');
-            var sep         = document.getElementById('plrBreadcrumbSep');
+            var overviewEl = document.getElementById('plrOverviewContent');
             ['dashPlayersInactive', 'dashPlayersGamesPlayed', 'dashPlayersLeave'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.hidden = true;
             });
             document.querySelectorAll('.plr-sec-tab').forEach(function(b) { b.classList.remove('active'); });
             if (key === 'overview') {
-                if (overviewEl)  overviewEl.hidden  = false;
-                if (breadcrumb)  breadcrumb.hidden  = true;
-                if (sep)         sep.hidden          = true;
+                if (overviewEl) overviewEl.hidden = false;
             } else {
-                if (overviewEl)  overviewEl.hidden  = true;
-                if (breadcrumb)  breadcrumb.hidden  = false;
-                if (sep)         sep.hidden          = false;
+                if (overviewEl) overviewEl.hidden = true;
                 var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
                 var target = document.getElementById(idMap[key]);
                 if (target) target.hidden = false;
+                document.querySelectorAll('.plr-sec-tab').forEach(function(b) {
+                    if ((b.getAttribute('onclick') || '').indexOf("'" + key + "'") !== -1) b.classList.add('active');
+                });
             }
-            document.querySelectorAll('.plr-sec-tab').forEach(function(b) {
-                if ((b.getAttribute('onclick') || '').indexOf("'" + key + "'") !== -1) b.classList.add('active');
-            });
         };
 
         /* Dealer participation chart */
@@ -2903,6 +2893,10 @@
         document.querySelectorAll('.dash-sub-panel').forEach(function(el) {
             el.classList.toggle('active', el.dataset.sub === sub);
         });
+        /* Re-clicking Players (or switching back to it) resets the secondary nav to overview */
+        if (sub === 'players' && typeof window.playerSection === 'function') {
+            window.playerSection('overview');
+        }
     }
 
     /* Programmatic switch (e.g. from dashMainTab) — also updates the widget's selectedIndex */
