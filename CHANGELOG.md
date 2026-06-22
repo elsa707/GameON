@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Games Overview: flat dxDataGrid with search and topic/status filters
+
+### Changed
+- Games Overview replaced the topic accordion + bar chart with a flat `dxDataGrid` table listing all games, matching the Rewards page layout.
+- Columns: Name, Topic (pill), Assigned, Attempted, Completion %, Avg. Accuracy, Avg. Play Time, Status (Active / No plays pill).
+- Search bar and two filter dropdowns (All topics, All statuses) filter the grid client-side without re-rendering.
+- Added `.gms-topic-pill`, `.gms-status-pill`, and `#gmsGrid` DX overrides to `styles-dashboard.css`.
+- Bumped to `script-dashboard.js?v=102`, `styles-dashboard.css?v=52`.
+
 ## [2026-06-22] — Split "Forecasts & anomalies" into two separate sub-tabs
 
 ### Changed

@@ -2322,6 +2322,49 @@
     background: #fafafa;
 }
 
+/* ===== Games Overview — flat dxDataGrid table ===== */
+.gms-topic-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    background: #f1f5f9;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.gms-status-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.gms-status-active { background: #dcfce7; color: #16a34a; }
+.gms-status-none   { background: #f1f5f9; color: #94a3b8; }
+
+#gmsGrid .dx-datagrid-headers {
+    background: #fafbfc !important;
+    border-bottom: 1px solid #e5e7eb !important;
+}
+#gmsGrid .dx-datagrid-headers .dx-datagrid-text-content {
+    color: #374151 !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    text-transform: none !important;
+}
+#gmsGrid .dx-header-row > td { padding-top: 12px !important; padding-bottom: 12px !important; }
+#gmsGrid .dx-datagrid-rowsview .dx-row > td {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    border-bottom-color: #f1f5f9 !important;
+    font-size: 13px;
+    color: #374151;
+}
+#gmsGrid .dx-datagrid-rowsview .dx-state-hover > td { background: #f8fafc !important; }
+
 /* ===== Leave & exclusions panel ===== */
 .lve-heading {
     font-size: 22px;

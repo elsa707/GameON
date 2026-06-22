@@ -1317,87 +1317,125 @@
     function renderGamesOverview() {
         var d       = getPeriodData(state.companyId, state.period);
         var profile = COMPANY_PROFILES[state.companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
-        if (!d) return;
+        var el      = document.getElementById('dashGamesOverview');
+        if (!d || !el) return;
 
-        function gameRow(idx, ri) {
-            var p          = d.perf[idx] || { plays:0, accuracy:0, playTime:1 };
-            var attempted  = Math.min(profile.players, Math.max(1, Math.round(p.plays / 15)));
-            var completion = p.accuracy.toFixed(1);
-            var border     = ri % 2 === 1 ? 'border-left:3px solid #f97316;' : '';
-            return '<tr style="' + border + '">' +
-                '<td class="td-game-name" style="color:#1d4ed8">' + esc(BASE_GAMES[idx]) + '</td>' +
-                '<td style="color:#1d4ed8">' + profile.players + '</td>' +
-                '<td style="color:#1d4ed8">' + attempted + '</td>' +
-                '<td>' + completion + '%</td>' +
-                '<td>' + p.accuracy.toFixed(1) + '%</td>' +
-                '<td style="color:#64748b">' + fmtGamePlayTime(p.playTime) + '</td>' +
-            '</tr>';
+        /* Build reverse map: game index → topic name */
+        var idxToTopic = {};
+        GAME_TOPICS.forEach(function(tg) {
+            tg.indices.forEach(function(i) { idxToTopic[i] = tg.topic; });
+        });
+
+        /* Build flat rows */
+        var allGameRows = BASE_GAMES.map(function(name, i) {
+            var p        = d.perf[i] || { plays: 0, accuracy: 0, playTime: 1 };
+            var attempted = Math.min(profile.players, Math.max(p.plays > 0 ? 1 : 0, Math.round(p.plays / 15)));
+            return {
+                name:       name,
+                topic:      idxToTopic[i] || 'No topic',
+                assigned:   profile.players,
+                attempted:  attempted,
+                completion: parseFloat(p.accuracy.toFixed(1)),
+                accuracy:   parseFloat(p.accuracy.toFixed(1)),
+                playTime:   fmtGamePlayTime(p.playTime),
+                status:     p.plays > 0 ? 'Active' : 'No plays'
+            };
+        });
+
+        var topics = ['All topics'].concat(GAME_TOPICS.map(function(tg) { return tg.topic; }));
+
+        el.innerHTML =
+            '<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">' +
+                '<div class="plr-search-bar" style="flex:0 0 260px">' +
+                    '<input class="plr-search-input" id="gmsOvSearch" placeholder="Search..." oninput="gmsOvFilter()">' +
+                    '<button class="plr-search-btn" onclick="gmsOvFilter()"><i class="fas fa-search"></i></button>' +
+                '</div>' +
+                '<div id="gmsTopicFilter" style="min-width:180px"></div>' +
+                '<div id="gmsStatusFilter" style="min-width:150px"></div>' +
+            '</div>' +
+            '<div id="gmsGrid"></div>';
+
+        var _filterTopic  = 'All topics';
+        var _filterStatus = 'All statuses';
+
+        function filteredRows() {
+            var q = (document.getElementById('gmsOvSearch').value || '').toLowerCase();
+            return allGameRows.filter(function(r) {
+                var topicOk  = _filterTopic  === 'All topics'   || r.topic  === _filterTopic;
+                var statusOk = _filterStatus === 'All statuses' || r.status === _filterStatus;
+                var nameOk   = !q || r.name.toLowerCase().indexOf(q) >= 0 || r.topic.toLowerCase().indexOf(q) >= 0;
+                return topicOk && statusOk && nameOk;
+            });
         }
 
-        var topicBlocks = GAME_TOPICS.map(function(tg, ti) {
-            var count = tg.indices.length;
-            var tableRows = tg.indices.map(function(idx, ri) { return gameRow(idx, ri); }).join('');
-            return '<div class="gtopic-row" data-tidx="' + ti + '" onclick="gamesTopicToggle(' + ti + ')">' +
-                    '<i class="fas fa-chevron-right gtopic-chevron" id="gtopicChev' + ti + '"></i>' +
-                    '<span class="gtopic-name">' + esc(tg.topic) + '</span>' +
-                    '<span class="gtopic-count">(' + count + ')</span>' +
-                '</div>' +
-                '<div class="gtopic-body" id="gtopicBody' + ti + '" hidden>' +
-                    '<table class="dash-perf-table">' +
-                    '<thead><tr><th>Game</th><th>Assigned</th><th>Attempted</th><th>Completion %</th><th>Avg. Accuracy</th><th>Avg. Play Time</th></tr></thead>' +
-                    '<tbody>' + tableRows + '</tbody>' +
-                    '</table>' +
-                '</div>';
-        }).join('');
+        function rebuildGrid() {
+            var inst = $('#gmsGrid').data('dxDataGrid');
+            if (inst) inst.option('dataSource', filteredRows());
+        }
 
-        /* Top 10 by completion rate for bar chart */
-        var top10 = BASE_GAMES.map(function(name, i) {
-            var p = d.perf[i] || { accuracy:0 };
-            return { name: name, completion: p.accuracy };
-        }).sort(function(a,b){ return b.completion - a.completion; }).slice(0, 10);
+        window.gmsOvFilter = rebuildGrid;
 
-        document.getElementById('dashGamesOverview').innerHTML =
-            '<div class="gtopic-list">' + topicBlocks + '</div>' +
-            '<div class="panel-card" style="margin-top:20px">' +
-                '<div class="panel-card-hd">Top 10 games by completion rate</div>' +
-                '<div class="chart-container"><div id="chartGamesCompletion"></div></div>' +
-            '</div>';
+        $('#gmsTopicFilter').dxSelectBox({
+            items: topics,
+            value: 'All topics',
+            width: '100%',
+            stylingMode: 'outlined',
+            onValueChanged: function(e) { _filterTopic = e.value; rebuildGrid(); }
+        });
 
-        window.gamesTopicToggle = function(ti) {
-            var body  = document.getElementById('gtopicBody' + ti);
-            var chev  = document.getElementById('gtopicChev' + ti);
-            if (!body) return;
-            var isOpen = !body.hasAttribute('hidden');
-            // close all
-            GAME_TOPICS.forEach(function(_, i) {
-                var b = document.getElementById('gtopicBody' + i);
-                var c = document.getElementById('gtopicChev' + i);
-                if (b) b.setAttribute('hidden', '');
-                if (c) c.style.transform = '';
-            });
-            // open clicked one unless it was already open
-            if (!isOpen) {
-                body.removeAttribute('hidden');
-                if (chev) chev.style.transform = 'rotate(90deg)';
-            }
-        };
+        $('#gmsStatusFilter').dxSelectBox({
+            items: ['All statuses', 'Active', 'No plays'],
+            value: 'All statuses',
+            width: '100%',
+            stylingMode: 'outlined',
+            onValueChanged: function(e) { _filterStatus = e.value; rebuildGrid(); }
+        });
 
-        makeChart('chartGamesCompletion', {
-            opts: {
-                dataSource: top10,
-                series: [{ argumentField: 'name', valueField: 'completion', type: 'bar', color: '#1e293b', cornerRadius: 0 }],
-                rotated: true,
-                commonAxisSettings: { tick: { visible: false }, label: { font: { size: 10, color: '#64748b' } } },
-                argumentAxis: { grid: { visible: false } },
-                valueAxis: {
-                    min: 0, max: 100,
-                    grid: { visible: false },
-                    label: { customizeText: function(i) { return i.valueText + '%'; } }
+        $('#gmsGrid').dxDataGrid({
+            dataSource: allGameRows,
+            columnAutoWidth: false,
+            showBorders: false,
+            showColumnLines: false,
+            showRowLines: true,
+            rowAlternationEnabled: false,
+            hoverStateEnabled: true,
+            paging: { pageSize: 20 },
+            pager: { showPageSizeSelector: false, showInfo: true },
+            columns: [
+                { dataField: 'name',       caption: 'Name',         minWidth: 200,
+                  cellTemplate: function(container, options) {
+                      $('<span>').css({ fontWeight: 600, color: '#0f172a', fontSize: '13px' }).text(options.value).appendTo(container);
+                  }
                 },
-                legend:  { visible: true, customizeItems: function(){ return [{ text: 'Completion %', marker: { fill:'#1e293b' } }]; } },
-                tooltip: { enabled: true, customizeTooltip: function(i) { return { text: i.argumentText + ': ' + i.value + '%' }; } },
-                size:    { height: 320 }
-            }
+                { dataField: 'topic',      caption: 'Topic',        width: 180,
+                  cellTemplate: function(container, options) {
+                      $('<span class="gms-topic-pill">').text(options.value).appendTo(container);
+                  }
+                },
+                { dataField: 'assigned',   caption: 'Assigned',     width: 100, alignment: 'left' },
+                { dataField: 'attempted',  caption: 'Attempted',    width: 110, alignment: 'left' },
+                { dataField: 'completion', caption: 'Completion %', width: 130, alignment: 'left',
+                  cellTemplate: function(container, options) {
+                      $('<span>').text(options.value + '%').appendTo(container);
+                  }
+                },
+                { dataField: 'accuracy',   caption: 'Avg. Accuracy',width: 130, alignment: 'left',
+                  cellTemplate: function(container, options) {
+                      $('<span>').text(options.value + '%').appendTo(container);
+                  }
+                },
+                { dataField: 'playTime',   caption: 'Avg. Play Time',width: 130, alignment: 'left',
+                  cellTemplate: function(container, options) {
+                      $('<span>').css({ color: '#64748b' }).text(options.value).appendTo(container);
+                  }
+                },
+                { dataField: 'status',     caption: 'Status',       width: 100, alignment: 'center',
+                  cellTemplate: function(container, options) {
+                      var isActive = options.value === 'Active';
+                      $('<span>').addClass('gms-status-pill ' + (isActive ? 'gms-status-active' : 'gms-status-none')).text(options.value).appendTo(container);
+                  }
+                }
+            ]
         });
     }
 
