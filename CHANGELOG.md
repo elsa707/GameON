@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Gamification dropdown: fix flat rendering of dept/player tree
+
+### Fixed
+- `dxTreeView` inside the gamification nested dropdown was missing `dataStructure: 'plain'`, causing DevExtreme to ignore parent–child relationships and render all departments and players at the same flat level. Added the option so departments collapse/expand correctly with players nested underneath.
+- Bumped to `script-dashboard.js?v=74`.
+
 ## [2026-06-22] — Players secondary nav: breadcrumb back link
 
 ### Changed

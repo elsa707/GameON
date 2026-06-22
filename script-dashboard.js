@@ -2478,7 +2478,7 @@
             contentTemplate: function(args) {
                 var $wrap = $('<div>');
                 $wrap.dxTreeView({
-                    items: treeItems, keyExpr: 'id', parentIdExpr: 'parentId', displayExpr: 'text',
+                    items: treeItems, dataStructure: 'plain', keyExpr: 'id', parentIdExpr: 'parentId', displayExpr: 'text',
                     selectionMode: 'single', showCheckBoxesMode: 'none',
                     onItemClick: function(ev) {
                         var item = ev.itemData;
