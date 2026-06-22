@@ -77,32 +77,11 @@
     flex-shrink: 0;
 }
 
-/* Date range box hidden by default; shown only in custom mode */
-.dash-period #dashDateRangeBox { display: none; align-items: center; }
-.dash-period.custom-mode #dashDateRangeBox { display: flex; }
-.dash-period.custom-mode #dashPeriodMonths { display: none; }
+/* Both controls always visible side-by-side */
+.dash-period #dashDateRangeBox { display: flex; align-items: center; }
 .dash-period #dashPeriodMonths { display: flex; align-items: center; }
 
-/* Toggle button */
-.dash-period-toggle {
-    width: 34px;
-    height: 34px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background: #fff;
-    color: #64748b;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-    transition: background 0.15s, color 0.15s;
-}
-.dash-period-toggle:hover { background: #f1f5f9; color: #1C2333; }
-.dash-period.custom-mode .dash-period-toggle { background: #1C2333; color: #fff; border-color: #1C2333; }
-
-/* Date range box in period bar */
+/* Shared outlined-box look for date range box */
 #dashDateRangeBox .dx-texteditor.dx-editor-outlined {
     border-color: #e2e8f0 !important;
     background: #ffffff !important;
@@ -110,15 +89,14 @@
     font-family: inherit;
     height: 38px !important;
 }
-/* Match button group height to date range box; override DX theme colours */
-.dash-period #dashPeriodMonths .dx-buttongroup { height: 38px !important; }
-.dash-period #dashPeriodMonths .dx-button { height: 38px !important; color: #4b5563 !important; border-color: #e2e8f0 !important; }
-.dash-period #dashPeriodMonths .dx-button .dx-button-text { color: #4b5563 !important; font-size: 13px !important; font-family: inherit !important; }
-.dash-period #dashPeriodMonths .dx-button.dx-item-selected,
-.dash-period #dashPeriodMonths .dx-button.dx-state-selected { background: #1C2333 !important; border-color: #1C2333 !important; color: #fff !important; }
-.dash-period #dashPeriodMonths .dx-button.dx-item-selected .dx-button-text,
-.dash-period #dashPeriodMonths .dx-button.dx-state-selected .dx-button-text { color: #fff !important; }
-.dash-period #dashPeriodMonths .dx-button:hover:not(.dx-item-selected):not(.dx-state-selected) { background: #f1f5f9 !important; color: #1C2333 !important; }
+/* Month select box — same border/background as the date range box */
+.dash-period #dashPeriodMonths .dx-texteditor.dx-editor-outlined {
+    border-color: #e2e8f0 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    height: 38px !important;
+}
+.dash-period #dashPeriodMonths .dx-texteditor-input { font-size: 13px; font-family: inherit; color: #374151; }
 #dashDateRangeBox .dx-texteditor-input { font-size: 13px; font-family: inherit; }
 #dashDateRangeBox .dx-label { font-family: inherit; }
 

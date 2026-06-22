@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Period filter: month dropdown + date range always visible
+
+### Changed
+- Replaced the `dxButtonGroup` month pills with a `dxSelectBox` dropdown (All Months / Jan–Jun 2026).
+- Date range picker (`dxDateRangeBox`) is now always visible alongside the dropdown — both controls show at the same time; the toggle button is removed.
+- Dropdown and date range picker stay in sync: selecting a month updates the date range to that month's bounds; picking a date range auto-matches the dropdown if it aligns with a month boundary.
+- CSS: removed `custom-mode` show/hide rules; added shared outlined styling for the select box to match the date range box.
+- Bumped to `script-dashboard.js?v=109`, `styles-dashboard.css?v=54`.
+
 ## [2026-06-22] — index2.html: nav restructure — Summary/Players/Games/Departments in side nav, Overview/Trends/Forecasts & anomalies as sub-tabs
 
 ### Changed

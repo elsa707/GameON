@@ -531,8 +531,8 @@
 
     function renderPeriodTabs() {
         try {
-            var bgInst = $('#dashPeriodMonths').dxButtonGroup('instance');
-            if (bgInst) bgInst.option('selectedItemKeys', [state.period]);
+            var sel = $('#dashPeriodMonths').dxSelectBox('instance');
+            if (sel) sel.option('value', state.period);
         } catch(e) {}
         try {
             var inst = $('#dashDateRangeBox').dxDateRangeBox('instance');
@@ -3026,16 +3026,7 @@
     window.dashReport    = function() { alert('Report export coming soon.'); };
     window.dashPdfReport = function() { alert('PDF export coming soon.'); };
 
-    window.dashTogglePeriodMode = function() {
-        var bar = document.getElementById('dashPeriodBar');
-        if (!bar) return;
-        var isCustom = bar.classList.toggle('custom-mode');
-        var btn = document.getElementById('dashPeriodToggle');
-        if (btn) {
-            btn.title = isCustom ? 'Back to month view' : 'Switch to custom date range';
-            btn.querySelector('i').className = isCustom ? 'fas fa-th-list' : 'fas fa-calendar-alt';
-        }
-    };
+    window.dashTogglePeriodMode = function() { /* period toggle removed — both controls always visible */ };
 
     /* ── Scope integration ───────────────────────────────────── */
 
@@ -3080,27 +3071,36 @@
                 });
                 if (matched !== state.period) {
                     state.period = matched; _dataCache = {};
-                    document.querySelectorAll('.dash-month-btn').forEach(function(btn) {
-                        btn.classList.toggle('active', btn.dataset.period === matched);
-                    });
+                    try {
+                        var sel2 = $('#dashPeriodMonths').dxSelectBox('instance');
+                        if (sel2) sel2.option('value', matched);
+                    } catch(e2) {}
                     refreshAll();
                 }
             }
         });
 
-        /* Month button group (dxButtonGroup — single connected control) */
-        var _MONTH_PILLS = [
-            { key: 'January2026',  text: 'Jan 2026' }, { key: 'February2026', text: 'Feb 2026' },
-            { key: 'March2026',    text: 'Mar 2026' }, { key: 'April2026',    text: 'Apr 2026' },
-            { key: 'May2026',      text: 'May 2026' }, { key: 'June2026',     text: 'Jun 2026' }
+        /* Month select dropdown */
+        var _MONTH_OPTIONS = [
+            { key: 'All Months',   text: 'All Months'  },
+            { key: 'January2026',  text: 'Jan 2026' },
+            { key: 'February2026', text: 'Feb 2026' },
+            { key: 'March2026',    text: 'Mar 2026' },
+            { key: 'April2026',    text: 'Apr 2026' },
+            { key: 'May2026',      text: 'May 2026' },
+            { key: 'June2026',     text: 'Jun 2026' }
         ];
-        $('#dashPeriodMonths').dxButtonGroup({
-            items: _MONTH_PILLS,
-            keyExpr: 'key',
-            selectedItemKeys: [state.period],
-            selectionMode: 'single',
-            stylingMode: 'outlined',
-            onItemClick: function(e) { dashPeriod(e.itemData.key); }
+        $('#dashPeriodMonths').dxSelectBox({
+            dataSource:    _MONTH_OPTIONS,
+            valueExpr:     'key',
+            displayExpr:   'text',
+            value:         state.period,
+            width:         140,
+            stylingMode:   'outlined',
+            searchEnabled: false,
+            onValueChanged: function(e) {
+                if (e.value && e.value !== state.period) dashPeriod(e.value);
+            }
         });
 
         /* Left vertical nav */
