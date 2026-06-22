@@ -795,6 +795,38 @@
         return anomalies;
     }
 
+    /* Combined forecasts + anomalies — used by index2.html's "Forecasts & anomalies" main tab panels */
+    function renderForecastsAnomaliesPanel(elId, companyId) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        var forecast  = buildForecastMetrics(companyId);
+        var anomalies = buildDailyAnomalies(companyId);
+        var anomalyRowsHtml = anomalies.length === 0
+            ? '<p class="fc-no-anomalies"><i class="fas fa-circle-check"></i> No anomalies detected for this period.</p>'
+            : anomalies.map(function(a) {
+                return '<div class="fc-anomaly-row">' +
+                    '<span class="fc-anomaly-date">' + esc(a.date) + '</span>' +
+                    '<span class="fc-anomaly-pct">' + a.pct.toFixed(1) + '%</span>' +
+                '</div>';
+            }).join('');
+        el.innerHTML =
+            '<h3 class="fc-section-title">Forecasts</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Participation forecast</div>' +
+                '<div class="fc-metrics-row">' +
+                    '<div class="fc-metric"><div class="fc-metric-lbl">Participation rate</div><div class="fc-metric-val">' + forecast.participation + '%</div><div class="fc-metric-sub">Projected next period</div></div>' +
+                    '<div class="fc-metric"><div class="fc-metric-lbl">Avg. accuracy</div><div class="fc-metric-val">' + forecast.accuracy + '%</div><div class="fc-metric-sub">Projected next period</div></div>' +
+                '</div>' +
+            '</div>' +
+            '<h3 class="fc-section-title" style="margin-top:28px">Anomalies</h3>' +
+            '<div class="fc-card">' +
+                '<div class="fc-card-title">Anomalies detected</div>' +
+                '<div class="fc-card-sub">Periods where participation dropped more than 10% below the period average</div>' +
+                '<div class="fc-anomaly-list">' + anomalyRowsHtml + '</div>' +
+            '</div>';
+    }
+
+    /* Split variants — used by index.html's separate Forecasts / Anomalies sub-tabs */
     function renderForecastsPanel(elId, companyId) {
         var el = document.getElementById(elId);
         if (!el) return;
@@ -2835,6 +2867,9 @@
         renderSummaryTrends();
         renderSummaryForecasts();
         renderSummaryForecastAnomaliesTab();
+        renderForecastsAnomaliesPanel('dashSummaryForecastAnomalies', state.companyId);
+        renderForecastsAnomaliesPanel('dashPlayersForecastAnomalies', state.companyId);
+        renderDeptForecastsAnomalies();
         renderGamesOverview();
         renderGamesAnomalies();
         renderTrendsCharts('dashGamesTrends', 'gms');

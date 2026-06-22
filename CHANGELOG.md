@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
+## [2026-06-22] — Fix: Forecasts & anomalies blank on index2.html
+
+### Fixed
+- index2.html "Forecasts & anomalies" main tab was blank after the sub-tab split refactor. Restored `renderForecastsAnomaliesPanel` (combined) and added back calls in `refreshAll()` for the three index2.html-specific panel IDs (`dashSummaryForecastAnomalies`, `dashPlayersForecastAnomalies`, `dashDeptForecastAnomalies`). These calls are safe on index.html — the IDs don't exist there so the function returns immediately.
+- Bumped to `script-dashboard.js?v=106`.
+
 ## [2026-06-22] — Shared grid styling; Games Overview search-only toolbar
 
 ### Changed
