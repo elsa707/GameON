@@ -1434,12 +1434,11 @@
            not when it is a standalone main tab with its own segmented sub-tabs (index.html) */
         var needsSecNav = !document.querySelector('[data-panel="players"]');
         var secNavHtml = needsSecNav
-            ? '<div class="plr-breadcrumb" id="plrBreadcrumb" hidden>' +
-                  '<a class="plr-back-link" onclick="window.playerSection(\'overview\')">' +
+            ? '<div class="plr-sec-nav">' +
+                  '<a class="plr-back-link" id="plrBreadcrumb" onclick="window.playerSection(\'overview\')" hidden>' +
                       '<i class="fas fa-chevron-left"></i> Players' +
                   '</a>' +
-              '</div>' +
-              '<div class="plr-sec-nav">' +
+                  '<span class="plr-sec-sep" id="plrBreadcrumbSep" hidden></span>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'inactive\')">Inactive</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'gamecoverage\')">Game coverage</button>' +
                   '<button class="plr-sec-tab" onclick="window.playerSection(\'leave\')">Leave &amp; exclusions</button>' +
@@ -1459,6 +1458,7 @@
         window.playerSection = function(key) {
             var overviewEl  = document.getElementById('plrOverviewContent');
             var breadcrumb  = document.getElementById('plrBreadcrumb');
+            var sep         = document.getElementById('plrBreadcrumbSep');
             ['dashPlayersInactive', 'dashPlayersGamesPlayed', 'dashPlayersLeave'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.hidden = true;
@@ -1467,9 +1467,11 @@
             if (key === 'overview') {
                 if (overviewEl)  overviewEl.hidden  = false;
                 if (breadcrumb)  breadcrumb.hidden  = true;
+                if (sep)         sep.hidden          = true;
             } else {
                 if (overviewEl)  overviewEl.hidden  = true;
                 if (breadcrumb)  breadcrumb.hidden  = false;
+                if (sep)         sep.hidden          = false;
                 var idMap = { inactive: 'dashPlayersInactive', gamecoverage: 'dashPlayersGamesPlayed', leave: 'dashPlayersLeave' };
                 var target = document.getElementById(idMap[key]);
                 if (target) target.hidden = false;

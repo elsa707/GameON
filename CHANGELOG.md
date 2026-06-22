@@ -5,7 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Project contact: elsadr@agilebridge.co.za
 
-## [2026-06-22] — Players breadcrumb moved above sub-tabs
+## [2026-06-22] — Players breadcrumb inline with sub-tabs
+
+### Changed
+- `← Players` breadcrumb is now the first item inside the `.plr-sec-nav` flex row, appearing on the same line as Inactive / Game coverage / Leave & exclusions with a thin vertical separator between them.
+- Bumped to `script-dashboard.js?v=76`, `styles-dashboard.css?v=43`.
+
+## [2026-06-22] — Players breadcrumb moved above sub-tabs (reverted)
 
 ### Changed
 - `← Players` breadcrumb now renders above the Inactive / Game coverage / Leave & exclusions tab row so the navigation hierarchy reads top-to-bottom.
